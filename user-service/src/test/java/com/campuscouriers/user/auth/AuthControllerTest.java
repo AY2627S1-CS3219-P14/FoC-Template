@@ -54,7 +54,17 @@ class AuthControllerTest {
                 postRegister(body).andExpect(status().isBadRequest());
             }
 
+            // F1.1.1 - Maximum Name Length
+            @DisplayName("F1.1.1 - Name should have a maximum length of 50 characters")
+            @Test
+            void register_longName_returns400() throws Exception {
+                Map<String, String> body = validBody();
+                body.put("name", "ThisIsAVeryLongNameThatCannotFitInto50Characters ThisIsAVeryLongSurname");
+                postRegister(body).andExpect(status().isBadRequest());
+            }
+
             // F1.1.3 - Valid NUS Email Domain
+            @DisplayName("F1.1.3 - Email format shall be validated")
             @Test
             void register_nonNUSEmail_returns400() throws Exception {
                 Map<String, String> body = validBody();
@@ -63,6 +73,7 @@ class AuthControllerTest {
             }
 
             // F1.1.3 - Valid Email Format
+            @DisplayName("F1.1.3 - Email format shall be validated to have an NUS domain")
             @Test
             void register_malformedEmail_returns400() throws Exception {
                 Map<String, String> body = validBody();

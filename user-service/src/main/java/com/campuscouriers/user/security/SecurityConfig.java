@@ -31,6 +31,7 @@ public class SecurityConfig {
 
     }
 
+    // F1.4.1 - Password shall be stored as a salted hash using SHA256 or equivalent algorithm
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

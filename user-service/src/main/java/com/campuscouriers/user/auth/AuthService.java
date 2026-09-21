@@ -20,6 +20,7 @@ public class AuthService {
     public void register(RegisterRequest request) {
 
         Account account = new Account(
+                "Student",   // to be changed later based on whether first user
                 request.email(),
                 passwordEncoder.encode(request.password())
         );

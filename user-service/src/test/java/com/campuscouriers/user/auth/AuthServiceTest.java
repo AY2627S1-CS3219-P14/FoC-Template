@@ -38,7 +38,7 @@ public class AuthServiceTest {
     private final RegisterRequest request =
             new RegisterRequest(VALID_NAME, VALID_EMAIL, VALID_PASSWORD);
 
-    @DisplayName("Before F1.3 - the service should hash the password and pass the account to the account repository")
+    @DisplayName("F1.3 + F1.4 - the service should assign type, hash the password and pass account to repository")
     @Test
     void register_savesAccountWithHashedPassword() {
 
@@ -48,6 +48,7 @@ public class AuthServiceTest {
 
         verify(accountRepository).save(accountCaptor.capture());
         Account saved = accountCaptor.getValue();
+        assertThat(saved.getType()).isEqualTo("Student");   // to be changed later for first user to be admin
         assertThat(saved.getEmail()).isEqualTo(VALID_EMAIL);
         assertThat(saved.getPasswordHash()).isEqualTo("hashed-password");
 

@@ -49,36 +49,81 @@ class AuthControllerTest {
             @ParameterizedTest
             @ValueSource(strings = {"name", "email", "password"})
             void register_emptyField_returns400(String field) throws Exception {
-                Map<String, String> body = validBody();
-                body.put(field, "");
-                postRegister(body).andExpect(status().isBadRequest());
+                postRegisterWith(field, "")
+                        .andExpect(status().isBadRequest());
             }
 
             // F1.1.1 - Maximum Name Length
             @DisplayName("F1.1.1 - Name should have a maximum length of 50 characters")
             @Test
             void register_longName_returns400() throws Exception {
-                Map<String, String> body = validBody();
-                body.put("name", "ThisIsAVeryLongNameThatCannotFitInto50Characters ThisIsAVeryLongSurname");
-                postRegister(body).andExpect(status().isBadRequest());
+                postRegisterWith("name", "ThisIsAVeryLongNameThatCannotFitInto50Characters ThisIsAVeryLongSurname")
+                        .andExpect(status().isBadRequest());
             }
 
             // F1.1.3 - Valid NUS Email Domain
             @DisplayName("F1.1.3 - Email format shall be validated")
             @Test
             void register_nonNUSEmail_returns400() throws Exception {
-                Map<String, String> body = validBody();
-                body.put("email", "NTUStudent@gmail.com");
-                postRegister(body).andExpect(status().isBadRequest());
+                postRegisterWith("email", "NTUStudent@gmail.com")
+                        .andExpect(status().isBadRequest());
             }
 
             // F1.1.3 - Valid Email Format
             @DisplayName("F1.1.3 - Email format shall be validated to have an NUS domain")
             @Test
             void register_malformedEmail_returns400() throws Exception {
-                Map<String, String> body = validBody();
-                body.put("email", "not-an-email");
-                postRegister(body).andExpect(status().isBadRequest());
+                postRegisterWith("email", "not-an-email")
+                        .andExpect(status().isBadRequest());
+            }
+
+            // F1.1.4 - Password Contains Uppercase
+            @DisplayName("F1.1.4 - Passwords should be validated to contain lowercase characters")
+            @Test
+            void register_noUpperCasePassword_returns400() throws Exception {
+                postRegisterWith("password", "lower+!_12345678")
+                        .andExpect(status().isBadRequest());
+            }
+
+            // F1.1.4 - Password Contains Lowercase
+            @DisplayName("F1.1.4 - Passwords should be validated to contain uppercase characters")
+            @Test
+            void register_noLowerCasePassword_returns400() throws Exception {
+                postRegisterWith("password", "UPPER+!_12345678")
+                        .andExpect(status().isBadRequest());
+            }
+
+            // F1.1.4 - Password Contains Numbers
+            @DisplayName("F1.1.4 - Passwords should be validated to contain numbers")
+            @Test
+            void register_noNumberPassword_returns400() throws Exception {
+                postRegisterWith("password", "lower+!_UPPERCASEATTHEEND")
+                        .andExpect(status().isBadRequest());
+            }
+
+            // F1.1.4 - Password Contains Special Characters
+            @DisplayName("F1.1.4 - Passwords should be validated to contain special characters")
+            @Test
+            void register_noSpecialCharacterPassword_returns400() throws Exception {
+                postRegisterWith("password", "lower123UPPERCASEATTHEEND")
+                        .andExpect(status().isBadRequest());
+            }
+
+            // F1.1.4 - Minimum Password Length
+            @DisplayName("F1.1.4 - Passwords should be validated to contain at least 16 characters")
+            @Test
+            void register_shortPassword_returns400() throws Exception {
+                postRegisterWith("password", "Sh0rt!123456789")
+                        .andExpect(status().isBadRequest());
+            }
+
+
+            // F1.1.4 - Maximum Password Length
+            @DisplayName("F1.1.4 - Passwords should be validated to contain at most 128 characters")
+            @Test
+            void register_longPassword_returns400() throws Exception {
+                postRegisterWith("password", "lowerUPPER1234+!".repeat(8).concat("a"))
+                        .andExpect(status().isBadRequest());
             }
 
         }
@@ -92,10 +137,16 @@ class AuthControllerTest {
             return body;
         }
 
-        private ResultActions postRegister(Map<String, String> body) throws Exception {
+        private ResultActions postRegister(Map<String, String>body) throws Exception {
             return mockMvc.perform(post("/auth/register")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(body)));
+        }
+
+        private ResultActions postRegisterWith(String field, String modifiedValue) throws Exception {
+            Map<String, String> body = validBody();
+            body.put(field, modifiedValue);
+            return postRegister(body);
         }
     }
 }

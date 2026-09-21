@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +31,9 @@ class AuthControllerTest {
     class RegistrationTests {
 
         @Nested
-        @DisplayName("F1.1. - The service should validate the name, NUS email, and password")
+        @DisplayName("F1.1 - The service should validate the name, NUS email, and password")
         class ValidateRegistrationTests {
+
             // F1.1.1 - Missing Fields
             @DisplayName("F1.1.1 - Name, email, and password shall not allowed to be null")
             @ParameterizedTest
@@ -51,6 +53,23 @@ class AuthControllerTest {
                 body.put(field, "");
                 postRegister(body).andExpect(status().isBadRequest());
             }
+
+            // F1.1.3 - Valid NUS Email Domain
+            @Test
+            void register_nonNUSEmail_returns400() throws Exception {
+                Map<String, String> body = validBody();
+                body.put("email", "NTUStudent@gmail.com");
+                postRegister(body).andExpect(status().isBadRequest());
+            }
+
+            // F1.1.3 - Valid Email Format
+            @Test
+            void register_malformedEmail_returns400() throws Exception {
+                Map<String, String> body = validBody();
+                body.put("email", "not-an-email");
+                postRegister(body).andExpect(status().isBadRequest());
+            }
+
         }
 
         // ---- Helpers ----

@@ -15,10 +15,16 @@ import jakarta.validation.Valid;
 @RequestMapping("/auth")
 public class AuthController {
 
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public void register(@Valid @RequestBody RegisterRequest request) {
-        
+        authService.register(request);
     }
     
 }

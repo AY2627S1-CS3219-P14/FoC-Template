@@ -38,9 +38,12 @@ public class AuthService {
             throw new EmailAlreadyRegisteredException();
         }
 
+        // Set Role (if first user, it is Administrator, otherwise, Student)
+        Role role = accountRepository.count() > 0 ? Role.Student : Role.Administrator;
+
         // Create Account and Profile
         Account account = new Account(
-                Role.Student,   // to be changed later based on whether first user
+                role,
                 email,
                 passwordEncoder.encode(request.password())
         );

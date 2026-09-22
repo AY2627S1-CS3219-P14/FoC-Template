@@ -73,7 +73,34 @@ public class AuthServiceTest {
         }
     }
 
-    @DisplayName("F1.3 + F1.4 - the service should assign type, hash the password and pass account to repository")
+    @DisplayName("F1.3.2 - the service should assign Student type by default, or Administrator if first user")
+    @Nested
+    class AccountTypeTests {
+        @Test
+        void register_savesUserAsStudentByDefault() {
+
+            when(accountRepository.count()).thenReturn(1L);
+
+            authService.register(request);
+
+            verify(accountRepository).save(accountCaptor.capture());
+            assertThat(accountCaptor.getValue().getType()).isEqualTo(Role.Student);
+
+        }
+
+        @Test
+        void register_savesFirstUserAsAdministrator() {
+
+            when(accountRepository.count()).thenReturn(0L);
+
+            authService.register(request);
+
+            verify(accountRepository).save(accountCaptor.capture());
+            assertThat(accountCaptor.getValue().getType()).isEqualTo(Role.Administrator);
+
+        }
+    }
+
     @Test
     void register_savesAccountWithHashedPassword() {
 
@@ -83,7 +110,6 @@ public class AuthServiceTest {
 
         verify(accountRepository).save(accountCaptor.capture());
         Account saved = accountCaptor.getValue();
-        assertThat(saved.getType()).isEqualTo(Role.Student);   // to be changed later for first user to be admin
         assertThat(saved.getEmail()).isEqualTo(VALID_EMAIL);
         assertThat(saved.getPasswordHash()).isEqualTo("hashed-password");
 

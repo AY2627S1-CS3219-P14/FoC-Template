@@ -17,6 +17,7 @@ public class Account {
 
     @Enumerated(EnumType.STRING)
     private Role type;
+    @Column(nullable = false, unique = true)
     private String email;
     private String passwordHash;
 

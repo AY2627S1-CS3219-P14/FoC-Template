@@ -4,6 +4,7 @@ import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.entity.Role;
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,12 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
 
+        // Email Duplicate Check
+        if (accountRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyRegisteredException();
+        }
+
+        // Create Account and Profile
         Account account = new Account(
                 Role.Student,   // to be changed later based on whether first user
                 request.email(),
@@ -39,6 +46,7 @@ public class AuthService {
                 request.name()
         );
 
+        // Persist Account and Profile to Database
         accountRepository.save(account);
         profileRepository.save(profile);
 

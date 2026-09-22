@@ -3,6 +3,7 @@ package com.campuscouriers.user.auth;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.entity.Role;
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -14,14 +15,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import static com.campuscouriers.user.TestConstants.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceTest {
@@ -46,6 +47,18 @@ public class AuthServiceTest {
 
     private final RegisterRequest request =
             new RegisterRequest(VALID_NAME, VALID_EMAIL, VALID_PASSWORD);
+
+    @DisplayName("F1.1.2 - Email shall not be allowed if there is an existing registration with the same email")
+    @Test
+    void register_whenEmailAlreadyRegistered_throwsAndSavesNothing() {
+        when(accountRepository.existsByEmail(VALID_EMAIL)).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(EmailAlreadyRegisteredException.class);
+
+        verify(accountRepository, never()).save(any());
+        verifyNoInteractions(profileRepository, passwordEncoder);
+    }
 
     @DisplayName("F1.3 + F1.4 - the service should assign type, hash the password and pass account to repository")
     @Test

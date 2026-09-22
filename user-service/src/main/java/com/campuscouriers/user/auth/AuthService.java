@@ -7,6 +7,7 @@ import com.campuscouriers.user.entity.Role;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +57,11 @@ public class AuthService {
         );
 
         // Persist Account and Profile to Database
-        accountRepository.save(account);
+        try {
+            accountRepository.save(account);
+        } catch (DataIntegrityViolationException ex) {
+            throw new EmailAlreadyRegisteredException();
+        }
         profileRepository.save(profile);
 
     }

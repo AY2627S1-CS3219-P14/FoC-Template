@@ -10,6 +10,8 @@ import com.campuscouriers.user.repository.ProfileRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+
 @Service
 public class AuthService {
 
@@ -29,15 +31,17 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
 
+        String email = request.email().toLowerCase(Locale.ROOT);
+
         // Email Duplicate Check
-        if (accountRepository.existsByEmail(request.email())) {
+        if (accountRepository.existsByEmail(email)) {
             throw new EmailAlreadyRegisteredException();
         }
 
         // Create Account and Profile
         Account account = new Account(
                 Role.Student,   // to be changed later based on whether first user
-                request.email(),
+                email,
                 passwordEncoder.encode(request.password())
         );
 

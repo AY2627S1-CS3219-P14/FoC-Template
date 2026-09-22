@@ -8,4 +8,5 @@ public class TestConstants {
     public static final String VALID_EMAIL = "alice@u.nus.edu";
     public static final String VALID_PASSWORD = "TEST_Str0ngPassw0rd!";
 
+    public static final String DUPLICATE_EMAIL = "Alice@U.NUS.EDU";
 }

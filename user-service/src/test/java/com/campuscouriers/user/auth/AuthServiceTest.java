@@ -7,6 +7,7 @@ import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -27,37 +28,49 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceTest {
 
-    @Mock
-    private AccountRepository accountRepository;
+    @Mock private AccountRepository accountRepository;
+    @Mock private ProfileRepository profileRepository;
+    @Mock private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private ProfileRepository profileRepository;
+    @Captor private ArgumentCaptor<Account> accountCaptor;
+    @Captor private ArgumentCaptor<Profile> profileCaptor;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Captor
-    private ArgumentCaptor<Account> accountCaptor;
-
-    @Captor
-    private ArgumentCaptor<Profile> profileCaptor;
-
-    @InjectMocks
-    private AuthService authService;
+    @InjectMocks private AuthService authService;
 
     private final RegisterRequest request =
             new RegisterRequest(VALID_NAME, VALID_EMAIL, VALID_PASSWORD);
 
     @DisplayName("F1.1.2 - Email shall not be allowed if there is an existing registration with the same email")
-    @Test
-    void register_whenEmailAlreadyRegistered_throwsAndSavesNothing() {
-        when(accountRepository.existsByEmail(VALID_EMAIL)).thenReturn(true);
+    @Nested
+    class EmailDuplicateTests {
 
-        assertThatThrownBy(() -> authService.register(request))
+        @Test
+        void register_whenEmailAlreadyRegistered_throwsAndSavesNothing() {
+            when(accountRepository.existsByEmail(VALID_EMAIL)).thenReturn(true);
+
+            assertThatThrownBy(() -> authService.register(request))
+                    .isInstanceOf(EmailAlreadyRegisteredException.class);
+
+            verify(accountRepository, never()).save(any());
+            verifyNoInteractions(profileRepository, passwordEncoder);
+        }
+
+        @Test
+        void register_storesEmailInLowerCase() {
+            authService.register(new RegisterRequest(VALID_NAME, DUPLICATE_EMAIL, VALID_PASSWORD));
+
+            verify(accountRepository).save(accountCaptor.capture());
+            assertThat(accountCaptor.getValue().getEmail()).isEqualTo(VALID_EMAIL);
+        }
+
+        @Test
+        void register_treatsEmailCaseInsensitively() {
+            when(accountRepository.existsByEmail(VALID_EMAIL)).thenReturn(true);
+
+            assertThatThrownBy(() ->
+                authService.register(new RegisterRequest(VALID_NAME, DUPLICATE_EMAIL, VALID_PASSWORD)))
                 .isInstanceOf(EmailAlreadyRegisteredException.class);
-
-        verify(accountRepository, never()).save(any());
-        verifyNoInteractions(profileRepository, passwordEncoder);
+        }
     }
 
     @DisplayName("F1.3 + F1.4 - the service should assign type, hash the password and pass account to repository")

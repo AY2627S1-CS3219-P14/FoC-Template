@@ -118,7 +118,7 @@ class AuthControllerTest {
             }
 
             // F1.1.4 - Password Contains Uppercase
-            @DisplayName("F1.1.4 - Passwords should be validated to contain lowercase characters")
+            @DisplayName("F1.1.4 - Passwords should be validated to contain uppercase characters")
             @Test
             void register_noUpperCasePassword_returns400() throws Exception {
                 postRegisterWith("password", "lower+!_12345678")

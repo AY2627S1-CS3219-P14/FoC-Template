@@ -1,11 +1,9 @@
 package com.campuscouriers.user.auth;
 
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.annotation.*;
 
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 
@@ -25,6 +23,11 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public void register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
+    }
+
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ProblemDetail handleDuplicateEmail(EmailAlreadyRegisteredException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
     
 }

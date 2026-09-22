@@ -1,8 +1,7 @@
 package com.campuscouriers.user.auth;
 
 import static com.campuscouriers.user.TestConstants.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -10,6 +9,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 import com.campuscouriers.user.auth.dto.RegisterRequest;
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.security.SecurityConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -88,6 +88,15 @@ class AuthControllerTest {
                 postRegisterWith("name", "ThisIsAVeryLongNameThatCannotFitInto50Characters ThisIsAVeryLongSurname")
                         .andExpect(status().isBadRequest());
                 verifyNoInteractions(authService);
+            }
+
+            // F1.1.2 - Duplicate Email Exception
+            @DisplayName("F1.1.2 - Email shall not be allowed if there is an existing registration with the same email")
+            @Test
+            void register_duplicateEmail_returns409() throws Exception {
+                doThrow(new EmailAlreadyRegisteredException())
+                        .when(authService).register(any(RegisterRequest.class));
+                postRegister(validBody()).andExpect(status().isConflict());
             }
 
             // F1.1.3 - Valid NUS Email Domain

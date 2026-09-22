@@ -44,6 +44,7 @@ class AuthControllerTest {
 
         @DisplayName("Valid Registration Request")
         // Valid Request
+        @Test
         void register_validRequest_returns201AndDelegatesToService() throws Exception {
             Map<String, String> body = validBody();
             postRegister(body).andExpect(status().isCreated());

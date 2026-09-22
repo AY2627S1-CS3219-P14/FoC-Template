@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 export function AppHeader() {
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:h-[76px] lg:px-8">
-      <Link to="/suppliers" className="text-lg font-semibold text-slate-950">
+      <Link to="/" className="text-lg font-semibold text-slate-950">
         Campus Couriers
       </Link>
 

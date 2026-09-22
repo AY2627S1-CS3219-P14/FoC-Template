@@ -7,10 +7,10 @@ export function NotFoundPage() {
         <p className="text-sm font-medium text-slate-500">404</p>
         <h1 className="mt-2 text-3xl font-semibold text-slate-950">Page not found</h1>
         <Link
-          to="/suppliers"
+          to="/"
           className="mt-6 inline-flex rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white"
         >
-          Back to suppliers
+          Back to dashboard
         </Link>
       </div>
     </main>

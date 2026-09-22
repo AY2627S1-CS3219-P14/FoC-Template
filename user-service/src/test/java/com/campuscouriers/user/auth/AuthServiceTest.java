@@ -1,7 +1,9 @@
 package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.entity.Account;
+import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.repository.AccountRepository;
+import com.campuscouriers.user.repository.ProfileRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,10 +29,16 @@ public class AuthServiceTest {
     private AccountRepository accountRepository;
 
     @Mock
+    private ProfileRepository profileRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Captor
     private ArgumentCaptor<Account> accountCaptor;
+
+    @Captor
+    private ArgumentCaptor<Profile> profileCaptor;
 
     @InjectMocks
     private AuthService authService;
@@ -51,6 +59,21 @@ public class AuthServiceTest {
         assertThat(saved.getType()).isEqualTo("Student");   // to be changed later for first user to be admin
         assertThat(saved.getEmail()).isEqualTo(VALID_EMAIL);
         assertThat(saved.getPasswordHash()).isEqualTo("hashed-password");
+
+    }
+
+    @DisplayName("F1.3 - the service should create a profile for the user (linked to the account)")
+    @Test
+    void register_createProfileLinkedToNewAccount() {
+
+        authService.register(request);
+
+        verify(accountRepository).save(accountCaptor.capture());
+        verify(profileRepository).save(profileCaptor.capture());
+
+        Profile profile = profileCaptor.getValue();
+        assertThat(profile.getName()).isEqualTo(VALID_NAME);
+        assertThat(profile.getAccount()).isSameAs(accountCaptor.getValue());
 
     }
 

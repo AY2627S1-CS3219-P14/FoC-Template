@@ -17,7 +17,7 @@ public record RegisterRequest(
         @NotBlank
         @Size(min = 16, max = 128)
         @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9\\s]).{8,64}$",
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9\\s]).{16,128}$",
             message = ("Password must contain uppercase & lowercase characters, " +
                 "special characters, numbers, " +
                 "and have a minimum length of 16 characters " +

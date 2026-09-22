@@ -2,6 +2,7 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
+import com.campuscouriers.user.entity.Role;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -56,7 +57,7 @@ public class AuthServiceTest {
 
         verify(accountRepository).save(accountCaptor.capture());
         Account saved = accountCaptor.getValue();
-        assertThat(saved.getType()).isEqualTo("Student");   // to be changed later for first user to be admin
+        assertThat(saved.getType()).isEqualTo(Role.Student);   // to be changed later for first user to be admin
         assertThat(saved.getEmail()).isEqualTo(VALID_EMAIL);
         assertThat(saved.getPasswordHash()).isEqualTo("hashed-password");
 

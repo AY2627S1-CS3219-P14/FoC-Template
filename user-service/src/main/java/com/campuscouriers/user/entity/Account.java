@@ -15,14 +15,14 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private Role type;
     private String email;
     private String passwordHash;
 
     protected Account() {}  // required by JPA
 
-    public Account(String type, String email, String passwordHash) {
+    public Account(Role type, String email, String passwordHash) {
         this.type = type;
         this.email = email;
         this.passwordHash = passwordHash;

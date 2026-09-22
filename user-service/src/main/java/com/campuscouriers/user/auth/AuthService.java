@@ -3,6 +3,7 @@ package com.campuscouriers.user.auth;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
+import com.campuscouriers.user.entity.Role;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,7 +29,7 @@ public class AuthService {
     public void register(RegisterRequest request) {
 
         Account account = new Account(
-                "Student",   // to be changed later based on whether first user
+                Role.Student,   // to be changed later based on whether first user
                 request.email(),
                 passwordEncoder.encode(request.password())
         );

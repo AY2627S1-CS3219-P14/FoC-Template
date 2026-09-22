@@ -9,6 +9,7 @@ import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
@@ -29,6 +30,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional
     public void register(RegisterRequest request) {
 
         String email = request.email().toLowerCase(Locale.ROOT);

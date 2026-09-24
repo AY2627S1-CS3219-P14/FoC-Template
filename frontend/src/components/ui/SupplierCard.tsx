@@ -9,7 +9,7 @@ export function SupplierCard({ supplier, onSelect }: SupplierCardProps) {
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       {supplier.imageUrl ? (
-        <img src={supplier.imageUrl} alt="" className="h-44 w-full object-cover" />
+        <img src={supplier.imageUrl} alt={supplier.name} className="h-44 w-full object-cover" />
       ) : null}
       <div className="p-4">
         <h2 className="font-semibold text-slate-950">{supplier.name}</h2>

@@ -15,7 +15,7 @@ withdrawn, or exchanged for money, and only circulate within the platform.
 | Name | Role |
 | ----- | ----- |
 | Melodi Joy Halim | User Service |
-| Your Name | Your ownership |
+| Lin Yu Xin | Supplier Service |
 | Your Name | Your ownership |
 | Your Name | Your ownership |
 | Your Name | Your ownership |

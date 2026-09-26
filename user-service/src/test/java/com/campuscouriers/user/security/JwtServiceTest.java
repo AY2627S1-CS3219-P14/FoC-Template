@@ -2,6 +2,7 @@ package com.campuscouriers.user.security;
 
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.exception.InvalidAccessTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,6 +78,23 @@ public class JwtServiceTest {
         assertThat(claims.accountId()).isEqualTo(mockUUID);
         assertThat(claims.email()).isEqualTo(VALID_EMAIL);
         assertThat(claims.type()).isEqualTo(AccountType.Student);
+    }
+
+    @Test
+    void parseAndValidate_withATokenSignedByADifferentKey_throws() {
+        KeyPair otherKeyPair = Jwts.SIG.RS256.keyPair().build();
+        String foreignToken = Jwts.builder()
+                .subject(new UUID(0L, 42L).toString())
+                .issuer("campuscouriers-user-service")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(Duration.ofMinutes(15))))
+                .claim("email", VALID_EMAIL)
+                .claim("type", "Student")
+                .signWith(otherKeyPair.getPrivate(), Jwts.SIG.RS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.parseAndValidate(foreignToken))
+                .isInstanceOf(InvalidAccessTokenException.class);
     }
 
     private static Account accountWithId(UUID id, String email, AccountType type) {

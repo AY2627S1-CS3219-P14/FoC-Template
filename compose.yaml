@@ -1,0 +1,22 @@
+services:
+  supplier-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${SUPPLIER_DB_NAME}
+      POSTGRES_USER: ${SUPPLIER_DB_USERNAME}
+      POSTGRES_PASSWORD: ${SUPPLIER_DB_PASSWORD}
+    ports:
+      - "${SUPPLIER_DB_PORT:-5433}:5432"
+    volumes:
+      - supplier-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${SUPPLIER_DB_USERNAME} -d ${SUPPLIER_DB_NAME}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  supplier-db-data:

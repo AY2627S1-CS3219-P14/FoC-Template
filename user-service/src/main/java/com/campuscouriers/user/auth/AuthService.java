@@ -3,7 +3,7 @@ package com.campuscouriers.user.auth;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
-import com.campuscouriers.user.entity.Role;
+import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
@@ -42,7 +42,7 @@ public class AuthService {
         }
 
         // Set Role (if first user, it is Administrator, otherwise, Student)
-        Role role = accountRepository.count() > 0 ? Role.Student : Role.Administrator;
+        AccountType role = accountRepository.count() > 0 ? AccountType.Student : AccountType.Administrator;
 
         // Create Account and Profile
         Account account = new Account(

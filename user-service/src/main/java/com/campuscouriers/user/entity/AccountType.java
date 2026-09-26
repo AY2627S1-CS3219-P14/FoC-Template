@@ -1,6 +1,6 @@
 package com.campuscouriers.user.entity;
 
-public enum Role {
+public enum AccountType {
     Student,
     Administrator
 }

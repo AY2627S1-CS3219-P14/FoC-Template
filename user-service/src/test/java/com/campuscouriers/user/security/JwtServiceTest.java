@@ -64,6 +64,20 @@ public class JwtServiceTest {
         assertThat(claims.get("type", String.class)).isEqualTo("Student");
     }
 
+    @Test
+    void parseAndValidate_returnsTheOriginalClaims() {
+        when(clock.instant()).thenReturn(now);
+        UUID mockUUID = new UUID(0L, 42L);
+        Account account = accountWithId(mockUUID, VALID_EMAIL, AccountType.Student);
+        String token = jwtService.generateAccessToken(account);
+
+        AccessTokenClaims claims = jwtService.parseAndValidate(token);
+
+        assertThat(claims.accountId()).isEqualTo(mockUUID);
+        assertThat(claims.email()).isEqualTo(VALID_EMAIL);
+        assertThat(claims.type()).isEqualTo(AccountType.Student);
+    }
+
     private static Account accountWithId(UUID id, String email, AccountType type) {
         Account account = new Account(type, email, "hashed-password");
         ReflectionTestUtils.setField(account, "id", id);

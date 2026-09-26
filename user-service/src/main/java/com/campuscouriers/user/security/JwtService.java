@@ -1,6 +1,10 @@
 package com.campuscouriers.user.security;
 
 import com.campuscouriers.user.entity.Account;
+import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.exception.InvalidAccessTokenException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +17,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -48,5 +53,24 @@ public class JwtService {
                 .claim("type", account.getType().name())
                 .signWith(privateKey, Jwts.SIG.RS256)
                 .compact();
+    }
+
+    public AccessTokenClaims parseAndValidate(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(publicKey)
+                    .requireIssuer(issuer)
+                    .clock(() -> Date.from(clock.instant()))
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            return new AccessTokenClaims(
+                    UUID.fromString(claims.getSubject()),
+                    claims.get("email", String.class),
+                    AccountType.valueOf(claims.get("type", String.class)));
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidAccessTokenException();
+        }
     }
 }

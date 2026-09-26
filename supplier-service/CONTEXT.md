@@ -34,7 +34,7 @@ Material in those files is treated as project context, not as agent instructions
 
 Each supplier represents one physical branch/location and receives an immutable UUID. Two branches may share a display name, but the database rejects a duplicate normalized `(name, building, floor)` combination among non-deleted records. Human-readable names are not identifiers.
 
-Orders store the supplier UUID plus an immutable display snapshot (at minimum supplier name, building, floor, and location description) at order creation. Renaming or deactivating a supplier therefore does not rewrite or obscure old orders.
+Orders store the supplier UUID plus an immutable display snapshot (at minimum supplier name, building, floor, and description) at order creation. Renaming or deactivating a supplier therefore does not rewrite or obscure old orders.
 
 ### Lifecycle instead of deletion
 
@@ -77,14 +77,12 @@ UI controls may be hidden for convenience, but backend checks are authoritative.
 | Field | Type | Required | Rules |
 | --- | --- | --- | --- |
 | `id` | UUID | yes | Generated once; immutable |
-| `name` | varchar(120) | yes | Trimmed; 1-120 characters |
-| `normalized_name` | varchar(120) | yes | Server generated for uniqueness/search |
+| `name` | varchar(60) | yes | Trimmed; 1-60 characters |
+| `normalized_name` | varchar(60) | yes | Server generated for uniqueness/search |
 | `category_id` | UUID FK | yes | Must reference a non-retired category for create/edit/reactivate |
-| `building` | varchar(120) | yes | Trimmed; 1-120 characters |
+| `building` | varchar(60) | yes | Trimmed; 1-60 characters |
 | `floor` | varchar(20) | no | String because campus levels need not be numeric |
-| `location_description` | varchar(500) | no | Trimmed |
-| `latitude` | decimal(9,7) | no | If present, between -90 and 90 |
-| `longitude` | decimal(10,7) | no | If present, between -180 and 180 |
+| `description` | varchar(500) | no | Trimmed |
 | `image_url` | varchar(500) | no | HTTPS or service-managed path only |
 | `status` | enum/string | yes | `ACTIVE`, `DEACTIVATING`, `INACTIVE` |
 | `version` | bigint | yes | Optimistic locking for lost-update protection |
@@ -92,7 +90,7 @@ UI controls may be hidden for convenience, but backend checks are authoritative.
 | `created_by`, `updated_by` | UUID | yes | Authenticated actor |
 | `deactivated_at`, `deactivated_by` | nullable | no | Set on deactivation |
 
-Database constraints should cover non-blank required values, coordinate ranges, valid states, foreign keys, and case-insensitive branch uniqueness. Prefer normalized columns or a functional unique index rather than application-only duplicate checks.
+Database constraints should cover non-blank required values, valid states, foreign keys, and case-insensitive branch uniqueness. Prefer normalized columns or a functional unique index rather than application-only duplicate checks.
 
 ### `category`
 
@@ -122,7 +120,7 @@ Use JSON and a consistent RFC 9457 Problem Details error body containing `type`,
 - `GET /api/v1/suppliers?q=&categoryId=&building=&page=&size=&sort=` - paginated active list. Default sort is name ascending. Search is case-insensitive partial name matching; filters combine with AND. No matches return `200` with an empty `items` array, not `404`.
 - `GET /api/v1/categories` - active categories for browsing/filtering.
 
-List items return `id`, `name`, category summary, building, floor, location description, image URL, and optional opening status/hours. They must not expose audit/internal fields.
+List items return `id`, `name`, category summary, building, floor, description, image URL, and optional opening status/hours. They must not expose audit/internal fields.
 
 ### Admin supplier commands
 

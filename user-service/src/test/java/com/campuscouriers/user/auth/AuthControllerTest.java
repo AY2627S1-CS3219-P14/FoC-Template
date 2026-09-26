@@ -194,5 +194,24 @@ class AuthControllerTest {
             body.put(field, modifiedValue);
             return postRegister(body);
         }
+
+        // F2 - Login Profile: /auth/login
+        @Nested
+        @DisplayName("F1 - Login Profile: /auth/login")
+        class LoginTests {
+            @ParameterizedTest
+            @ValueSource(strings = {"email", "password"})
+            void login_missingField_returns400(String field) throws Exception {
+                Map<String, String> body = new HashMap<>();
+                body.put("email", VALID_EMAIL);
+                body.put("password", VALID_PASSWORD);
+                body.remove(field);
+
+                mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))
+                ).andExpect(status().isBadRequest());
+            }
+        }
     }
 }

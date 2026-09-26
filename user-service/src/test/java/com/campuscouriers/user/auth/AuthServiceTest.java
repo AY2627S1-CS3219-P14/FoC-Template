@@ -2,7 +2,7 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
-import com.campuscouriers.user.entity.Role;
+import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
@@ -84,7 +84,7 @@ public class AuthServiceTest {
             authService.register(request);
 
             verify(accountRepository).save(accountCaptor.capture());
-            assertThat(accountCaptor.getValue().getType()).isEqualTo(Role.Student);
+            assertThat(accountCaptor.getValue().getType()).isEqualTo(AccountType.Student);
 
         }
 
@@ -96,7 +96,7 @@ public class AuthServiceTest {
             authService.register(request);
 
             verify(accountRepository).save(accountCaptor.capture());
-            assertThat(accountCaptor.getValue().getType()).isEqualTo(Role.Administrator);
+            assertThat(accountCaptor.getValue().getType()).isEqualTo(AccountType.Administrator);
 
         }
     }

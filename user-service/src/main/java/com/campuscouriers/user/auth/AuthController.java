@@ -1,5 +1,6 @@
 package com.campuscouriers.user.auth;
 
+import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,9 @@ public class AuthController {
     public void register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
     }
+
+    @PostMapping("/login")
+    public void login(@Valid @RequestBody LoginRequest request) {}
 
     // For when the duplicate email check returns false at the service level
     @ExceptionHandler(EmailAlreadyRegisteredException.class)

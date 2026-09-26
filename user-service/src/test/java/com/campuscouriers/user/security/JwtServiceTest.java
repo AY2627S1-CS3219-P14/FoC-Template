@@ -97,6 +97,24 @@ public class JwtServiceTest {
                 .isInstanceOf(InvalidAccessTokenException.class);
     }
 
+    @Test
+    void parseAndValidate_withAnExpiredToken_throws() {
+        when(clock.instant()).thenReturn(now);
+        Instant past = Instant.parse("2020-01-01T00:00:00Z");
+        String expiredToken = Jwts.builder()
+                .subject(new UUID(0L, 42L).toString())
+                .issuer("campuscouriers-user-service")
+                .issuedAt(Date.from(past))
+                .expiration(Date.from(past.plus(Duration.ofMinutes(15))))
+                .claim("email", VALID_EMAIL)
+                .claim("type", "Student")
+                .signWith(keyPair.getPrivate(), Jwts.SIG.RS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.parseAndValidate(expiredToken))
+                .isInstanceOf(InvalidAccessTokenException.class);
+    }
+
     private static Account accountWithId(UUID id, String email, AccountType type) {
         Account account = new Account(type, email, "hashed-password");
         ReflectionTestUtils.setField(account, "id", id);

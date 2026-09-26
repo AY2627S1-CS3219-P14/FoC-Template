@@ -115,6 +115,21 @@ public class JwtServiceTest {
                 .isInstanceOf(InvalidAccessTokenException.class);
     }
 
+    @Test
+    void parseAndValidate_withAMismatchedIssuer_throws() {
+        when(clock.instant()).thenReturn(now);
+        String token = Jwts.builder()
+                .subject(new UUID(0L, 42L).toString())
+                .issuer("some-other-service")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(Duration.ofMinutes(15))))
+                .signWith(keyPair.getPrivate(), Jwts.SIG.RS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.parseAndValidate(token))
+                .isInstanceOf(InvalidAccessTokenException.class);
+    }
+
     private static Account accountWithId(UUID id, String email, AccountType type) {
         Account account = new Account(type, email, "hashed-password");
         ReflectionTestUtils.setField(account, "id", id);

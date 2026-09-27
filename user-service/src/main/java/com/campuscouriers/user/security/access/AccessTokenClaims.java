@@ -10,4 +10,10 @@ public record AccessTokenClaims(
         AccountType type
 ) {
 
+    public AccessTokenClaims {
+        if (accountId == null || email == null || email.isBlank() || type == null) {
+            throw new IllegalArgumentException("Access token is missing required claims");
+        }
+    }
+
 }

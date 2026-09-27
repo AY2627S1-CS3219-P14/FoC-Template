@@ -69,10 +69,13 @@ public class JwtService {
                     .parseSignedClaims(token)
                     .getPayload();
 
+            String subject = claims.getSubject();
+            String type = claims.get("type", String.class);
+
             return new AccessTokenClaims(
-                    UUID.fromString(claims.getSubject()),
+                    subject == null ? null : UUID.fromString(subject),
                     claims.get("email", String.class),
-                    AccountType.valueOf(claims.get("type", String.class)));
+                    type == null ? null : AccountType.valueOf(type));
         } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidAccessTokenException();
         }

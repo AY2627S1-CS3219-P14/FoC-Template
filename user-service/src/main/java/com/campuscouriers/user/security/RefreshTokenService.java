@@ -32,6 +32,7 @@ public class RefreshTokenService {
         this.ttl = DurationStyle.detectAndParse(ttl);
     }
 
+    // Issuing a Refresh token (30-day expiry checked lazily)
     public String issue(Account account) {
         String rawToken = UUID.randomUUID().toString();
         RefreshToken token = new RefreshToken(tokenHasher.hash(rawToken), account, clock.instant().plus(ttl));
@@ -39,9 +40,16 @@ public class RefreshTokenService {
         return rawToken;
     }
 
+    // Redeeming Refresh Token (one-time usage)
     public Account redeem(String rawToken) {
+
         RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHasher.hash(rawToken))
                 .orElseThrow(InvalidRefreshTokenException::new);
+
+        if (token.getExpiresAt().isBefore(clock.instant())) {
+            refreshTokenRepository.delete(token);
+            throw new InvalidRefreshTokenException();
+        }
 
         Account account = token.getAccount();
         refreshTokenRepository.delete(token);

@@ -3,6 +3,7 @@ package com.campuscouriers.user.security;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.entity.RefreshToken;
+import com.campuscouriers.user.exception.InvalidRefreshTokenException;
 import com.campuscouriers.user.repository.RefreshTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,6 +61,7 @@ public class RefreshTokenServiceTest {
 
     @Test
     void redeem_withAValidToken_returnsTheAccountAndDeletesTheToken() {
+        when(clock.instant()).thenReturn(now);
         when(tokenHasher.hash("raw-token")).thenReturn("hashed-value");
         RefreshToken stored = new RefreshToken("hashed-value", account, now.plus(Duration.ofDays(1)));
         when(refreshTokenRepository.findByTokenHash("hashed-value")).thenReturn(Optional.of(stored));
@@ -67,6 +70,28 @@ public class RefreshTokenServiceTest {
 
         assertThat(result).isSameAs(account);
         verify(refreshTokenRepository).delete(stored);
+    }
+
+    @Test
+    void redeem_withAnUnknownToken_throws() {
+        when(tokenHasher.hash("bad-token")).thenReturn("hashed-value");
+        when(refreshTokenRepository.findByTokenHash("hashed-value")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> refreshTokenService.redeem("bad-token"))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+    }
+
+    @Test
+    void redeem_withAnExpiredToken_throwsAndDeletesTheToken() {
+        when(clock.instant()).thenReturn(now);
+        when(tokenHasher.hash("old-token")).thenReturn("hashed-value");
+        RefreshToken expired = new RefreshToken("hashed-value", account, now.minusSeconds(1));
+        when(refreshTokenRepository.findByTokenHash("hashed-value")).thenReturn(Optional.of(expired));
+
+        assertThatThrownBy(() -> refreshTokenService.redeem("old-token"))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(refreshTokenRepository).delete(expired);
     }
 
 }

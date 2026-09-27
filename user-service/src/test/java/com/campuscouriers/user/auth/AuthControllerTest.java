@@ -3,13 +3,19 @@ package com.campuscouriers.user.auth;
 import static com.campuscouriers.user.TestConstants.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Map;
 import java.util.HashMap;
 
+import com.campuscouriers.user.auth.dto.LoginRequest;
+import com.campuscouriers.user.auth.dto.LoginResponse;
+import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
+import com.campuscouriers.user.exception.InvalidCredentialsException;
+import com.campuscouriers.user.exception.InvalidRefreshTokenException;
 import com.campuscouriers.user.security.SecurityConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -193,6 +199,90 @@ class AuthControllerTest {
             Map<String, String> body = validBody();
             body.put(field, modifiedValue);
             return postRegister(body);
+        }
+
+        // F2 - Login Profile: /auth/login
+        @Nested
+        @DisplayName("F2 - Login Profile: /auth/login")
+        class LoginTests {
+
+            @Test
+            void login_withValidCredentials_returns200WithTokens() throws Exception {
+                LoginResponse response = new LoginResponse("access-token", "refresh-token", 900L);
+                when(authService.login(new LoginRequest(VALID_EMAIL, VALID_PASSWORD))).thenReturn(response);
+
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(String.format("""
+                            {"email":"%s","password":"%s"}
+                            """, VALID_EMAIL, VALID_PASSWORD)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.accessToken").value("access-token"))
+                        .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+                        .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                        .andExpect(jsonPath("$.expiresIn").value(900));
+            }
+
+            @ParameterizedTest
+            @ValueSource(strings = {"email", "password"})
+            void login_missingField_returns400(String field) throws Exception {
+                Map<String, String> body = new HashMap<>();
+                body.put("email", VALID_EMAIL);
+                body.put("password", VALID_PASSWORD);
+                body.remove(field);
+
+                mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body))
+                ).andExpect(status().isBadRequest());
+            }
+
+            @Test
+            void login_withInvalidCredentials_returns401() throws Exception {
+                doThrow(new InvalidCredentialsException())
+                        .when(authService).login(new LoginRequest(VALID_EMAIL, "wrong"));
+
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(String.format("""
+                            {"email":"%s","password":"wrong"}
+                            """, VALID_EMAIL)))
+                        .andExpect(status().isUnauthorized());
+            }
+
+        }
+
+        // F4 - Refresh Token: /auth/refresh
+        @Nested
+        @DisplayName("F4 - Refresh Token: /auth/refresh")
+        class RefreshTokenTests {
+            @Test
+            void refresh_withAValidToken_returns200WithNewTokens() throws Exception {
+                LoginResponse response = new LoginResponse("new-access", "new-refresh", 900L);
+                when(authService.refresh(new RefreshRequest("old-token"))).thenReturn(response);
+
+                mockMvc.perform(post("/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                            {"refreshToken":"old-token"}
+                            """))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.accessToken").value("new-access"))
+                        .andExpect(jsonPath("$.refreshToken").value("new-refresh"));
+            }
+
+            @Test
+            void refresh_withAnInvalidToken_returns401() throws Exception {
+                doThrow(new InvalidRefreshTokenException())
+                        .when(authService).refresh(new RefreshRequest("bad-token"));
+
+                mockMvc.perform(post("/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                            {"refreshToken":"bad-token"}
+                            """))
+                        .andExpect(status().isUnauthorized());
+            }
         }
     }
 }

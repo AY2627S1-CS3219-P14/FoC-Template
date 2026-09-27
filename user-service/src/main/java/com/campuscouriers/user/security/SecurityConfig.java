@@ -1,5 +1,6 @@
 package com.campuscouriers.user.security;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,7 +24,8 @@ public class SecurityConfig {
                 s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/register").permitAll()
+                    .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                    .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/.well-known/jwks.json").permitAll()
                 .anyRequest().authenticated()
             );
 

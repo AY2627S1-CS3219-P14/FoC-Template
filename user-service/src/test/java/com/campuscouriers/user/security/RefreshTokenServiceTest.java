@@ -6,6 +6,7 @@ import com.campuscouriers.user.entity.RefreshToken;
 import com.campuscouriers.user.exception.InvalidRefreshTokenException;
 import com.campuscouriers.user.repository.RefreshTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -44,6 +45,7 @@ public class RefreshTokenServiceTest {
         refreshTokenService = new RefreshTokenService(refreshTokenRepository, tokenHasher, clock, "30d");
     }
 
+    @DisplayName("F2.3.2 - the user service should issue longer-lived refresh tokens with a lifetime of 30 days")
     @Test
     void issue_savesAHashedTokenLinkedToTheAccountWithA30DayExpiry() {
         when(clock.instant()).thenReturn(now);
@@ -59,6 +61,7 @@ public class RefreshTokenServiceTest {
         assertThat(rawToken).isNotBlank();
     }
 
+    @DisplayName("F4.3 - the user service shall invalidate the refresh token upon redemption on rotation")
     @Test
     void redeem_withAValidToken_returnsTheAccountAndDeletesTheToken() {
         when(clock.instant()).thenReturn(now);
@@ -72,6 +75,7 @@ public class RefreshTokenServiceTest {
         verify(refreshTokenRepository).delete(stored);
     }
 
+    @DisplayName("F4.1 - the user service should verify the submitted refresh token is valid and unexpired.")
     @Test
     void redeem_withAnUnknownToken_throws() {
         when(tokenHasher.hash("bad-token")).thenReturn("hashed-value");
@@ -81,6 +85,7 @@ public class RefreshTokenServiceTest {
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 
+    @DisplayName("F4.1.1 - the user service shall reject expired refresh tokens")
     @Test
     void redeem_withAnExpiredToken_throwsAndDeletesTheToken() {
         when(clock.instant()).thenReturn(now);
@@ -93,5 +98,9 @@ public class RefreshTokenServiceTest {
 
         verify(refreshTokenRepository).delete(expired);
     }
+
+    // F4.1.2 - the user service shall reject a refresh token that has already been used
+    // this is implicitly fulfilled as used refresh tokens are deleted upon use on rotation
+    // such used tokens will be caught as an unknown token as they cannot be found by the repository
 
 }

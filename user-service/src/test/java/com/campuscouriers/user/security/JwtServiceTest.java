@@ -6,6 +6,7 @@ import com.campuscouriers.user.exception.InvalidAccessTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -43,6 +44,7 @@ public class JwtServiceTest {
                 "campuscouriers-user-service", "15m");
     }
 
+    @DisplayName("F2.3.1 - the user service should issue short-lived access tokens with a lifetime of 15 minutes")
     @Test
     void generateAccessToken_includesAccountIdEmailAndType() {
         when(clock.instant()).thenReturn(now);
@@ -66,6 +68,10 @@ public class JwtServiceTest {
         assertThat(claims.get("type", String.class)).isEqualTo("Student");
     }
 
+    // The parsing and validation of the JWT tokens to form AccessTokenClaims are for internal use of the user service
+    // Other services should have their own version as well
+
+    // Valid Access Token
     @Test
     void parseAndValidate_returnsTheOriginalClaims() {
         when(clock.instant()).thenReturn(now);
@@ -80,6 +86,7 @@ public class JwtServiceTest {
         assertThat(claims.type()).isEqualTo(AccountType.Student);
     }
 
+    // Wrong Signing Key Pair on Access Token
     @Test
     void parseAndValidate_withATokenSignedByADifferentKey_throws() {
         KeyPair otherKeyPair = Jwts.SIG.RS256.keyPair().build();
@@ -97,6 +104,7 @@ public class JwtServiceTest {
                 .isInstanceOf(InvalidAccessTokenException.class);
     }
 
+    // Expired Access Token
     @Test
     void parseAndValidate_withAnExpiredToken_throws() {
         when(clock.instant()).thenReturn(now);
@@ -115,6 +123,7 @@ public class JwtServiceTest {
                 .isInstanceOf(InvalidAccessTokenException.class);
     }
 
+    // Wrong Issuer on Access Token
     @Test
     void parseAndValidate_withAMismatchedIssuer_throws() {
         when(clock.instant()).thenReturn(now);

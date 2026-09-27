@@ -29,22 +29,26 @@ public class JwtService {
     private final String issuer;
     @Getter
     private final Duration accessTokenTtl;
+    private final String keyId;
 
     public JwtService(PrivateKey privateKey,
                       PublicKey publicKey,
                       Clock clock,
                       @Value("${app.jwt.issuer}") String issuer,
-                      @Value("${app.jwt.access-token-ttl}") String accessTokenTtl ) {
+                      @Value("${app.jwt.access-token-ttl}") String accessTokenTtl,
+                      @Value("${app.jwt.key-id}") String keyId) {
         this.privateKey = privateKey;
         this.publicKey = publicKey;
         this.clock = clock;
         this.issuer = issuer;
         this.accessTokenTtl = DurationStyle.detectAndParse(accessTokenTtl);
+        this.keyId = keyId;
     }
 
     public String generateAccessToken(Account account) {
         Instant now = clock.instant();
         return Jwts.builder()
+                .header().keyId(keyId).and()
                 .subject(String.valueOf(account.getId()))
                 .issuer(issuer)
                 .issuedAt(Date.from(now))

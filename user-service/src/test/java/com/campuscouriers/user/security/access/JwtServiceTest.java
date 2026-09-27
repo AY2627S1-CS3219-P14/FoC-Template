@@ -4,6 +4,7 @@ import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.exception.InvalidAccessTokenException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,7 +42,7 @@ public class JwtServiceTest {
     void createService() {
         keyPair = Jwts.SIG.RS256.keyPair().build();
         jwtService = new JwtService(keyPair.getPrivate(), keyPair.getPublic(), clock,
-                "campuscouriers-user-service", "15m");
+                "campuscouriers-user-service", "15m", "user-service-test-key-1");
     }
 
     @DisplayName("F2.3.1 - the user service should issue short-lived access tokens with a lifetime of 15 minutes")
@@ -53,13 +54,15 @@ public class JwtServiceTest {
 
         String token = jwtService.generateAccessToken(account);
 
-        Claims claims = Jwts.parser()
+        Jws<Claims> jws = Jwts.parser()
                 .verifyWith(keyPair.getPublic())
                 .clock(() -> Date.from(now.plus(DurationStyle.detectAndParse("5m"))))
                 .build()
-                .parseSignedClaims(token)
-                .getPayload();
+                .parseSignedClaims(token);
 
+        Claims claims = jws.getPayload();
+
+        assertThat(jws.getHeader().getKeyId()).isEqualTo("user-service-test-key-1");
         assertThat(claims.getSubject()).isEqualTo(mockUUID.toString());
         assertThat(claims.getIssuer()).isEqualTo("campuscouriers-user-service");
         assertThat(claims.getIssuedAt().toInstant()).isEqualTo(now);

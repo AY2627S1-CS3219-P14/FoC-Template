@@ -46,14 +46,11 @@ public class RefreshTokenService {
         RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHasher.hash(rawToken))
                 .orElseThrow(InvalidRefreshTokenException::new);
 
-if (!token.getExpiresAt().isAfter(clock.instant())) {
-            refreshTokenRepository.delete(token);
+        if (refreshTokenRepository.consume(token.getId(), clock.instant()) == 0) {
             throw new InvalidRefreshTokenException();
         }
 
-        Account account = token.getAccount();
-        refreshTokenRepository.delete(token);
-        return account;
+        return token.getAccount();
     }
 
 }

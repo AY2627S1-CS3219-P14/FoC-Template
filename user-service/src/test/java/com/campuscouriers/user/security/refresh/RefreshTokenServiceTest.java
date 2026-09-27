@@ -13,11 +13,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -67,12 +69,15 @@ public class RefreshTokenServiceTest {
         when(clock.instant()).thenReturn(now);
         when(tokenHasher.hash("raw-token")).thenReturn("hashed-value");
         RefreshToken stored = new RefreshToken("hashed-value", account, now.plus(Duration.ofDays(1)));
+        UUID tokenId = UUID.randomUUID();
+        ReflectionTestUtils.setField(stored, "id", tokenId);
         when(refreshTokenRepository.findByTokenHash("hashed-value")).thenReturn(Optional.of(stored));
+        when(refreshTokenRepository.consume(tokenId, now)).thenReturn(1);
 
         Account result = refreshTokenService.redeem("raw-token");
 
         assertThat(result).isSameAs(account);
-        verify(refreshTokenRepository).delete(stored);
+        verify(refreshTokenRepository).consume(tokenId, now);
     }
 
     @DisplayName("F4.1 - the user service should verify the submitted refresh token is valid and unexpired.")
@@ -91,12 +96,15 @@ public class RefreshTokenServiceTest {
         when(clock.instant()).thenReturn(now);
         when(tokenHasher.hash("old-token")).thenReturn("hashed-value");
         RefreshToken expired = new RefreshToken("hashed-value", account, now.minusSeconds(1));
+        UUID tokenId = UUID.randomUUID();
+        ReflectionTestUtils.setField(expired, "id", tokenId);
         when(refreshTokenRepository.findByTokenHash("hashed-value")).thenReturn(Optional.of(expired));
+        when(refreshTokenRepository.consume(tokenId, now)).thenReturn(0);
 
         assertThatThrownBy(() -> refreshTokenService.redeem("old-token"))
                 .isInstanceOf(InvalidRefreshTokenException.class);
 
-        verify(refreshTokenRepository).delete(expired);
+        verify(refreshTokenRepository).consume(tokenId, now);
     }
 
     // F4.1.2 - the user service shall reject a refresh token that has already been used

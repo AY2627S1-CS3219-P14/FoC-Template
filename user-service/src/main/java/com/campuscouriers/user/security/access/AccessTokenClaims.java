@@ -1,4 +1,4 @@
-package com.campuscouriers.user.security;
+package com.campuscouriers.user.security.access;
 
 import com.campuscouriers.user.entity.AccountType;
 

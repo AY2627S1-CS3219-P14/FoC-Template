@@ -1,4 +1,4 @@
-package com.campuscouriers.user.security;
+package com.campuscouriers.user.security.jwk;
 
 import java.util.List;
 

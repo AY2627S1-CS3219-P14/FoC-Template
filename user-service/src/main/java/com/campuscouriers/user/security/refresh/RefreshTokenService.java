@@ -1,4 +1,4 @@
-package com.campuscouriers.user.security;
+package com.campuscouriers.user.security.refresh;
 
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.RefreshToken;

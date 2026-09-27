@@ -1,4 +1,4 @@
-package com.campuscouriers.user.security;
+package com.campuscouriers.user.security.jwk;
 
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Test;

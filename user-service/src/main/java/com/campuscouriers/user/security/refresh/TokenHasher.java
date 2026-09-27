@@ -1,4 +1,4 @@
-package com.campuscouriers.user.security;
+package com.campuscouriers.user.security.refresh;
 
 import org.springframework.stereotype.Component;
 

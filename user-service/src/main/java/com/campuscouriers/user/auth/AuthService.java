@@ -88,6 +88,11 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
+        Account account = maybeAccount.get();
+        if (!passwordEncoder.matches(request.password(), account.getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+
         throw new InvalidCredentialsException();    // for now
     }
 

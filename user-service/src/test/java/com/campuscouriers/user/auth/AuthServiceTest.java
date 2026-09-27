@@ -153,9 +153,21 @@ public class AuthServiceTest {
 
     }
 
+    @DisplayName("F2.2 - the user service shall verify the submitted password hash against the stored password hash")
+    @Test
+    void login_withWrongPassword_throwsTheSameGenericError() {
+        Account account = new Account(AccountType.Student, VALID_EMAIL, "hashed");
+        when(accountRepository.findByEmail(VALID_EMAIL)).thenReturn(Optional.of(account));
+        when(passwordEncoder.matches("wrong-password", "hashed")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(VALID_EMAIL, "wrong-password")))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
+
     // F2.2.1 is implicitly fulfilled through BCryptPasswordEncoder.matches() comparing in constant time
     // BCrypt.checkpw checks every byte instead of stopping at the first difference
 
     // F2.2.2 is implicitly fulfilled through the use of InvalidCredentialsException.java
+
 
 }

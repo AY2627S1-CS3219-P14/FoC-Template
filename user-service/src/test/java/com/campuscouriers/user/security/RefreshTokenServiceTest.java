@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -54,6 +55,18 @@ public class RefreshTokenServiceTest {
         assertThat(saved.getAccount()).isSameAs(account);
         assertThat(saved.getExpiresAt()).isEqualTo(now.plus(Duration.ofDays(30)));
         assertThat(rawToken).isNotBlank();
+    }
+
+    @Test
+    void redeem_withAValidToken_returnsTheAccountAndDeletesTheToken() {
+        when(tokenHasher.hash("raw-token")).thenReturn("hashed-value");
+        RefreshToken stored = new RefreshToken("hashed-value", account, now.plus(Duration.ofDays(1)));
+        when(refreshTokenRepository.findByTokenHash("hashed-value")).thenReturn(Optional.of(stored));
+
+        Account result = refreshTokenService.redeem("raw-token");
+
+        assertThat(result).isSameAs(account);
+        verify(refreshTokenRepository).delete(stored);
     }
 
 }

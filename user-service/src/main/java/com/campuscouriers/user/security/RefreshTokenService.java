@@ -2,6 +2,7 @@ package com.campuscouriers.user.security;
 
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.RefreshToken;
+import com.campuscouriers.user.exception.InvalidRefreshTokenException;
 import com.campuscouriers.user.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.convert.DurationStyle;
@@ -36,6 +37,15 @@ public class RefreshTokenService {
         RefreshToken token = new RefreshToken(tokenHasher.hash(rawToken), account, clock.instant().plus(ttl));
         refreshTokenRepository.save(token);
         return rawToken;
+    }
+
+    public Account redeem(String rawToken) {
+        RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHasher.hash(rawToken))
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        Account account = token.getAccount();
+        refreshTokenRepository.delete(token);
+        return account;
     }
 
 }

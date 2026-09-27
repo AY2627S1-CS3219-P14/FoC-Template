@@ -1,8 +1,8 @@
 # CS3219 — Software Design and Architecture (AY2627 Sem 1)
 
-## Friend on Campus (FoC)
+## CampusCouriers
 
-**Friend on Campus (FoC)** is a peer-to-peer campus errand platform where
+**CampusCouriers** is a peer-to-peer campus errand platform where
 students can request items to be collected from stores or facilities on
 campus, and other students can fulfil (and deliver) those requests. The
 platform runs on a closed credit economy — credits cannot be bought,
@@ -14,11 +14,11 @@ withdrawn, or exchanged for money, and only circulate within the platform.
 
 | Name | Role |
 | ----- | ----- |
-| Melodi Joy Halim | User Service |
-| Your Name | Your ownership |
-| Your Name | Your ownership |
-| Your Name | Your ownership |
-| Your Name | Your ownership |
+| MELODI JOY HALIM ([@meloppeitreet](https://github.com/meloppeitreet)) | User Service |
+| LIN YU XIN ([@watermelonisred](https://github.com/watermelonisred)) | Supplier Service |
+| TAN YE XIN ([@yx-tzzz](https://github.com/yx-tzzz)) | Credit Service |
+| YEO YONG XUAN ([@yoyongxuan](https://github.com/yoyongxuan)) | Order Service |
+| YONG YI-TZE ELLIOT ([@yytelliot](https://github.com/yytelliot)) | Frontend React App |
 
 ---
 

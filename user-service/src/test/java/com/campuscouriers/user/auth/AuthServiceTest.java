@@ -2,6 +2,7 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
+import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.entity.AccountType;
@@ -188,5 +189,20 @@ public class AuthServiceTest {
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(900L);
     }
+
+    @DisplayName("F4 - the user service shall allow users to refresh their tokens")
+    @Test
+    void refresh_withAValidToken_returnsNewTokens() {
+        Account account = new Account(AccountType.Student, VALID_EMAIL, "hashed");
+        when(refreshTokenService.redeem("old-refresh-token")).thenReturn(account);
+        when(jwtService.generateAccessToken(account)).thenReturn("new-access-token");
+        when(jwtService.getAccessTokenTtl()).thenReturn(Duration.ofMinutes(15));
+        when(refreshTokenService.issue(account)).thenReturn("new-refresh-token");
+
+        LoginResponse response = authService.refresh(new RefreshRequest("old-refresh-token"));
+
+        assertThat(response.accessToken()).isEqualTo("new-access-token");
+        assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
+    }   // Uses redemption from the RefreshTokenService
 
 }

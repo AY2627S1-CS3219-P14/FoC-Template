@@ -11,9 +11,11 @@ import java.util.HashMap;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
+import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InvalidCredentialsException;
+import com.campuscouriers.user.exception.InvalidRefreshTokenException;
 import com.campuscouriers.user.security.SecurityConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -248,6 +250,39 @@ class AuthControllerTest {
                         .andExpect(status().isUnauthorized());
             }
 
+        }
+
+        // F4 - Refresh Token: /auth/refresh
+        @Nested
+        @DisplayName("F4 - Refresh Token: /auth/refresh")
+        class RefreshTokenTests {
+            @Test
+            void refresh_withAValidToken_returns200WithNewTokens() throws Exception {
+                LoginResponse response = new LoginResponse("new-access", "new-refresh", 900L);
+                when(authService.refresh(new RefreshRequest("old-token"))).thenReturn(response);
+
+                mockMvc.perform(post("/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                            {"refreshToken":"old-token"}
+                            """))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.accessToken").value("new-access"))
+                        .andExpect(jsonPath("$.refreshToken").value("new-refresh"));
+            }
+
+            @Test
+            void refresh_withAnInvalidToken_returns401() throws Exception {
+                doThrow(new InvalidRefreshTokenException())
+                        .when(authService).refresh(new RefreshRequest("bad-token"));
+
+                mockMvc.perform(post("/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                            {"refreshToken":"bad-token"}
+                            """))
+                        .andExpect(status().isUnauthorized());
+            }
         }
     }
 }

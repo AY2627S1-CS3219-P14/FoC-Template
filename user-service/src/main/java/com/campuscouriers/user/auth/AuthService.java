@@ -2,6 +2,7 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
+import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
@@ -100,6 +101,12 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(account);
         String refreshToken = refreshTokenService.issue(account);
         return new LoginResponse(accessToken, refreshToken, jwtService.getAccessTokenTtl().toSeconds());
+    }
+
+    @Transactional
+    public LoginResponse refresh(RefreshRequest request) {
+        Account account = refreshTokenService.redeem(request.refreshToken());
+        return issueSession(account);
     }
 
 }

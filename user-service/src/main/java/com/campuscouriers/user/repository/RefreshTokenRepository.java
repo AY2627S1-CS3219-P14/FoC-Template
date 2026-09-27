@@ -16,4 +16,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Modifying
     @Query("delete from RefreshToken t where t.id = :id and t.expiresAt > :now")
     int consume(@Param("id") UUID id, @Param("now") Instant now);
+
+    @Modifying
+    @Query("delete from RefreshToken t where t.tokenHash = :tokenHash and t.account.id = :accountId")
+    int revoke(@Param("tokenHash") String tokenHash, @Param("accountId") UUID accountId);
 }

@@ -1,5 +1,6 @@
 package com.campuscouriers.user.security.jwk;
 
+import com.campuscouriers.user.security.access.JwtService;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigInteger;
@@ -38,6 +40,8 @@ public class JwkSetControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @MockitoBean
+    private JwtService jwtService;    // required by SecurityConfig's JwtAuthenticationFilter
 
     @Test
     void jwkSet_returns200WithAnRsaKey() throws Exception {

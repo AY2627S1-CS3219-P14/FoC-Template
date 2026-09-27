@@ -93,7 +93,13 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
-        throw new InvalidCredentialsException();    // for now
+        return issueSession(account);
+    }
+
+    private LoginResponse issueSession(Account account) {
+        String accessToken = jwtService.generateAccessToken(account);
+        String refreshToken = refreshTokenService.issue(account);
+        return new LoginResponse(accessToken, refreshToken, jwtService.getAccessTokenTtl().toSeconds());
     }
 
 }

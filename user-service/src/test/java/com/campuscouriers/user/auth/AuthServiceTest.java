@@ -1,6 +1,7 @@
 package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
+import com.campuscouriers.user.auth.dto.LoginResponse;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.entity.AccountType;
@@ -27,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import static com.campuscouriers.user.TestConstants.*;
@@ -169,5 +171,22 @@ public class AuthServiceTest {
 
     // F2.2.2 is implicitly fulfilled through the use of InvalidCredentialsException.java
 
+    @DisplayName("F2.3 - the user service shall issue a full session upon successful verification")
+    @Test
+    void login_withCorrectCredentials_returnsAccessAndRefreshTokens() {
+        Account account = new Account(AccountType.Student, VALID_EMAIL, "hashed");
+        when(accountRepository.findByEmail(VALID_EMAIL)).thenReturn(Optional.of(account));
+        when(passwordEncoder.matches(VALID_PASSWORD, "hashed")).thenReturn(true);
+        when(jwtService.generateAccessToken(account)).thenReturn("signed.jwt.token");
+        when(jwtService.getAccessTokenTtl()).thenReturn(Duration.ofMinutes(15));
+        when(refreshTokenService.issue(account)).thenReturn("raw-refresh-token");
+
+        LoginResponse response = authService.login(new LoginRequest(VALID_EMAIL, VALID_PASSWORD));
+
+        assertThat(response.accessToken()).isEqualTo("signed.jwt.token");
+        assertThat(response.refreshToken()).isEqualTo("raw-refresh-token");
+        assertThat(response.tokenType()).isEqualTo("Bearer");
+        assertThat(response.expiresIn()).isEqualTo(900L);
+    }
 
 }

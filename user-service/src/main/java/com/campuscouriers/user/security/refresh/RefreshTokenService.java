@@ -53,4 +53,9 @@ public class RefreshTokenService {
         return token.getAccount();
     }
 
+    // Revoking Refresh Token on logout (no-op if unknown, already revoked, or owned by another account)
+    public void revoke(String rawToken, UUID accountId) {
+        refreshTokenRepository.revoke(tokenHasher.hash(rawToken), accountId);
+    }
+
 }

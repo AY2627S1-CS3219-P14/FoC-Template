@@ -17,6 +17,7 @@ import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InvalidCredentialsException;
 import com.campuscouriers.user.exception.InvalidRefreshTokenException;
 import com.campuscouriers.user.security.SecurityConfig;
+import com.campuscouriers.user.security.access.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,8 @@ class AuthControllerTest {
     private MockMvc mockMvc;
     @MockitoBean
     private AuthService authService;
+    @MockitoBean
+    private JwtService jwtService;    // required by SecurityConfig's JwtAuthenticationFilter
 
     ObjectMapper objectMapper = new ObjectMapper();
 

@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
@@ -105,6 +106,29 @@ public class RefreshTokenServiceTest {
                 .isInstanceOf(InvalidRefreshTokenException.class);
 
         verify(refreshTokenRepository).consume(tokenId, now);
+    }
+
+    @DisplayName("F22 - logout shall revoke the submitted refresh token only for the authenticated account")
+    @Test
+    void revoke_hashesTheTokenAndDeletesOnlyForTheGivenAccount() {
+        UUID accountId = UUID.randomUUID();
+        when(tokenHasher.hash("raw-token")).thenReturn("hashed-value");
+        when(refreshTokenRepository.revoke("hashed-value", accountId)).thenReturn(1);
+
+        refreshTokenService.revoke("raw-token", accountId);
+
+        verify(refreshTokenRepository).revoke("hashed-value", accountId);
+    }
+
+    @DisplayName("F22 - logout shall change nothing and not fail for an unknown, revoked, or foreign refresh token")
+    @Test
+    void revoke_withAnUnknownOrForeignToken_doesNotThrow() {
+        UUID accountId = UUID.randomUUID();
+        when(tokenHasher.hash("foreign-token")).thenReturn("hashed-value");
+        when(refreshTokenRepository.revoke("hashed-value", accountId)).thenReturn(0);
+
+        assertThatCode(() -> refreshTokenService.revoke("foreign-token", accountId))
+                .doesNotThrowAnyException();
     }
 
     // F4.1.2 - the user service shall reject a refresh token that has already been used

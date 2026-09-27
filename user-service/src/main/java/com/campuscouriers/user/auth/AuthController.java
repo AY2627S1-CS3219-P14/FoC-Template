@@ -2,13 +2,16 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
+import com.campuscouriers.user.auth.dto.LogoutRequest;
 import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InvalidCredentialsException;
 import com.campuscouriers.user.exception.InvalidRefreshTokenException;
+import com.campuscouriers.user.security.access.AccessTokenClaims;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.campuscouriers.user.auth.dto.RegisterRequest;
@@ -38,6 +41,13 @@ public class AuthController {
     @PostMapping("/refresh")
     public LoginResponse refresh(@Valid @RequestBody RefreshRequest request) {
         return authService.refresh(request);
+    }
+
+    // Logs out the current device only; the frontend handles the redirect to the login page
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@AuthenticationPrincipal AccessTokenClaims claims, @Valid @RequestBody LogoutRequest request) {
+        authService.logout(claims.accountId(), request);
     }
 
     // For when the duplicate email check returns false at the service level

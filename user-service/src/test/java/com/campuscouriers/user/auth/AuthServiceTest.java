@@ -2,6 +2,7 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
+import com.campuscouriers.user.auth.dto.LogoutRequest;
 import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
@@ -31,6 +32,7 @@ import com.campuscouriers.user.auth.dto.RegisterRequest;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.campuscouriers.user.TestConstants.*;
 import static org.mockito.Mockito.*;
@@ -204,5 +206,16 @@ public class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("new-access-token");
         assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
     }   // Uses redemption from the RefreshTokenService
+
+    @DisplayName("F22 - logout shall revoke the refresh token for the authenticated account")
+    @Test
+    void logout_revokesTheRefreshTokenForTheAuthenticatedAccount() {
+        UUID accountId = UUID.randomUUID();
+
+        authService.logout(accountId, new LogoutRequest("raw-refresh-token"));
+
+        verify(refreshTokenService).revoke("raw-refresh-token", accountId);
+        verifyNoInteractions(jwtService, accountRepository);
+    }
 
 }

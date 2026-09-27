@@ -2,6 +2,7 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
+import com.campuscouriers.user.auth.dto.LogoutRequest;
 import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -107,6 +109,11 @@ public class AuthService {
     public LoginResponse refresh(RefreshRequest request) {
         Account account = refreshTokenService.redeem(request.refreshToken());
         return issueSession(account);
+    }
+
+    @Transactional
+    public void logout(UUID accountId, LogoutRequest request) {
+        refreshTokenService.revoke(request.refreshToken(), accountId);
     }
 
 }

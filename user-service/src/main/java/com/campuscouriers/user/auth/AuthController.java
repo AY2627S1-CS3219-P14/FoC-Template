@@ -1,7 +1,9 @@
 package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
+import com.campuscouriers.user.auth.dto.LoginResponse;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
+import com.campuscouriers.user.exception.InvalidCredentialsException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -28,7 +30,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public void login(@Valid @RequestBody LoginRequest request) {}
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
+    }
 
     // For when the duplicate email check returns false at the service level
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
@@ -42,6 +46,12 @@ public class AuthController {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
                 "The request could not be completed due to a conflict." // kept generic to prevent data leak
         );
+    }
+
+    // For when either the email or password is invalid for a login request
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
     
 }

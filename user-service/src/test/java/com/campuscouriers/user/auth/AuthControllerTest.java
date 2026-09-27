@@ -3,13 +3,17 @@ package com.campuscouriers.user.auth;
 import static com.campuscouriers.user.TestConstants.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Map;
 import java.util.HashMap;
 
+import com.campuscouriers.user.auth.dto.LoginRequest;
+import com.campuscouriers.user.auth.dto.LoginResponse;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
+import com.campuscouriers.user.exception.InvalidCredentialsException;
 import com.campuscouriers.user.security.SecurityConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -197,8 +201,26 @@ class AuthControllerTest {
 
         // F2 - Login Profile: /auth/login
         @Nested
-        @DisplayName("F1 - Login Profile: /auth/login")
+        @DisplayName("F2 - Login Profile: /auth/login")
         class LoginTests {
+
+            @Test
+            void login_withValidCredentials_returns200WithTokens() throws Exception {
+                LoginResponse response = new LoginResponse("access-token", "refresh-token", 900L);
+                when(authService.login(new LoginRequest(VALID_EMAIL, VALID_PASSWORD))).thenReturn(response);
+
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(String.format("""
+                            {"email":"%s","password":"%s"}
+                            """, VALID_EMAIL, VALID_PASSWORD)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.accessToken").value("access-token"))
+                        .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+                        .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                        .andExpect(jsonPath("$.expiresIn").value(900));
+            }
+
             @ParameterizedTest
             @ValueSource(strings = {"email", "password"})
             void login_missingField_returns400(String field) throws Exception {
@@ -212,6 +234,20 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(body))
                 ).andExpect(status().isBadRequest());
             }
+
+            @Test
+            void login_withInvalidCredentials_returns401() throws Exception {
+                doThrow(new InvalidCredentialsException())
+                        .when(authService).login(new LoginRequest(VALID_EMAIL, "wrong"));
+
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(String.format("""
+                            {"email":"%s","password":"wrong"}
+                            """, VALID_EMAIL)))
+                        .andExpect(status().isUnauthorized());
+            }
+
         }
     }
 }

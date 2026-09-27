@@ -1,10 +1,13 @@
 package com.campuscouriers.user.security;
 
+import org.springframework.stereotype.Component;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+@Component
 public class TokenHasher {
 
     public String hash(String rawToken) {

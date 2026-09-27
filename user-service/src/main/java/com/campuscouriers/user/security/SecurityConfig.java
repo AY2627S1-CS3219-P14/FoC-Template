@@ -23,7 +23,7 @@ public class SecurityConfig {
                 s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/register", "/auth/login", "/auth/refresh").permitAll()
+                .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/.well-known/jwks.json").permitAll()
                 .anyRequest().authenticated()
             );
 

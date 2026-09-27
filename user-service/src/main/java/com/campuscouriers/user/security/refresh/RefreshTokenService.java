@@ -46,7 +46,7 @@ public class RefreshTokenService {
         RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHasher.hash(rawToken))
                 .orElseThrow(InvalidRefreshTokenException::new);
 
-        if (token.getExpiresAt().isBefore(clock.instant())) {
+if (!token.getExpiresAt().isAfter(clock.instant())) {
             refreshTokenRepository.delete(token);
             throw new InvalidRefreshTokenException();
         }

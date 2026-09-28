@@ -4,6 +4,7 @@ import com.campuscouriers.supplier.dto.CreateSupplierRequest;
 import com.campuscouriers.supplier.dto.SupplierResponse;
 import com.campuscouriers.supplier.dto.PageMetadata;
 import com.campuscouriers.supplier.dto.SupplierPageResponse;
+import com.campuscouriers.supplier.dto.UpdateSupplierRequest;
 import com.campuscouriers.supplier.entity.Building;
 import com.campuscouriers.supplier.entity.BuildingStatus;
 import com.campuscouriers.supplier.entity.Category;
@@ -118,6 +119,68 @@ public class SupplierService {
                 suppliers.getContent().stream().map(SupplierResponse::from).toList(),
                 PageMetadata.from(suppliers)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public SupplierResponse findActiveById(UUID id) {
+        Supplier supplier = supplierRepository.findByIdAndStatus(id, SupplierStatus.ACTIVE)
+                .orElseThrow(() -> new ReferenceNotFoundException("Supplier", id));
+        return SupplierResponse.from(supplier);
+    }
+
+    @Transactional
+    public SupplierResponse update(UUID id, UpdateSupplierRequest request) {
+        Supplier supplier = supplierRepository.findById(id)
+                .orElseThrow(() -> new ReferenceNotFoundException("Supplier", id));
+        Category category = activeCategory(request.categoryId());
+        Building building = activeBuilding(request.buildingId());
+
+        String displayName = NameNormalizer.displayName(request.name());
+        String normalizedName = NameNormalizer.normalizedName(displayName);
+        String floor = optionalDisplayValue(request.floor());
+        String normalizedFloor = floor == null ? "" : floor.toLowerCase(Locale.ROOT);
+
+        if (supplierRepository.existsByNormalizedNameAndBuildingIdAndIdNot(
+                normalizedName, building.getId(), id)) {
+            throw new DuplicateSupplierException(displayName);
+        }
+
+        supplier.updateDetails(
+                displayName,
+                normalizedName,
+                category,
+                building,
+                floor,
+                normalizedFloor,
+                optionalDisplayValue(request.description()),
+                request.openingTime(),
+                request.closingTime(),
+                optionalDisplayValue(request.imageUrl())
+        );
+
+        try {
+            return SupplierResponse.from(supplierRepository.saveAndFlush(supplier));
+        } catch (DataIntegrityViolationException exception) {
+            throw new DuplicateSupplierException(displayName);
+        }
+    }
+
+    private Category activeCategory(UUID id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ReferenceNotFoundException("Category", id));
+        if (category.getStatus() != CategoryStatus.ACTIVE) {
+            throw new ReferenceNotActiveException("Category");
+        }
+        return category;
+    }
+
+    private Building activeBuilding(UUID id) {
+        Building building = buildingRepository.findById(id)
+                .orElseThrow(() -> new ReferenceNotFoundException("Building", id));
+        if (building.getStatus() != BuildingStatus.ACTIVE) {
+            throw new ReferenceNotActiveException("Building");
+        }
+        return building;
     }
 
     private void validatePagination(int page, int size) {

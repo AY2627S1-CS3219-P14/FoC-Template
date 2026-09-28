@@ -95,4 +95,28 @@ public class Supplier {
         this.imageUrl = imageUrl;
         this.status = SupplierStatus.ACTIVE;
     }
+
+    public void updateDetails(
+            String name,
+            String normalizedName,
+            Category category,
+            Building building,
+            String floor,
+            String normalizedFloor,
+            String description,
+            LocalTime openingTime,
+            LocalTime closingTime,
+            String imageUrl
+    ) {
+        this.name = name;
+        this.normalizedName = normalizedName;
+        this.category = category;
+        this.building = building;
+        this.floor = floor;
+        this.normalizedFloor = normalizedFloor;
+        this.description = description;
+        this.openingTime = openingTime;
+        this.closingTime = closingTime;
+        this.imageUrl = imageUrl;
+    }
 }

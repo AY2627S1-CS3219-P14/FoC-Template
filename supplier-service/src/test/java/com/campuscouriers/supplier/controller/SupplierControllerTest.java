@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -175,6 +176,56 @@ class SupplierControllerTest {
                         .content(validJson(categoryId, buildingId)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
+    }
+
+    @Test
+    void findActiveById_existingSupplier_returns200() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID buildingId = UUID.randomUUID();
+        when(supplierService.findActiveById(supplierId))
+                .thenReturn(response(supplierId, categoryId, buildingId, "Coffee Bean"));
+
+        mockMvc.perform(get("/suppliers/{id}", supplierId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(supplierId.toString()))
+                .andExpect(jsonPath("$.name").value("Coffee Bean"));
+    }
+
+    @Test
+    void update_validRequest_returns200() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID buildingId = UUID.randomUUID();
+        when(supplierService.update(org.mockito.ArgumentMatchers.eq(supplierId), any()))
+                .thenReturn(response(supplierId, categoryId, buildingId, "Updated Shop"));
+
+        mockMvc.perform(put("/suppliers/{id}", supplierId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(categoryId, buildingId).replace("Coffee Bean", "Updated Shop")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(supplierId.toString()))
+                .andExpect(jsonPath("$.name").value("Updated Shop"));
+    }
+
+    @Test
+    void update_invalidRequest_returns400WithoutCallingService() throws Exception {
+        mockMvc.perform(put("/suppliers/{id}", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"\"}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(supplierService);
+    }
+
+    private SupplierResponse response(
+            UUID supplierId, UUID categoryId, UUID buildingId, String name) {
+        return new SupplierResponse(
+                supplierId, name,
+                new SupplierResponse.ReferenceSummary(categoryId, "Food"),
+                new SupplierResponse.ReferenceSummary(buildingId, "COM3"),
+                "1", "Near the main entrance", LocalTime.of(9, 0),
+                LocalTime.of(18, 0), null, SupplierStatus.ACTIVE);
     }
 
     private String validJson(UUID categoryId, UUID buildingId) {

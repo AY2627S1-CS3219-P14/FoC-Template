@@ -85,6 +85,26 @@ class SupplierRepositoryTest {
     }
 
     @Test
+    void existsByBranchIdentityExcludingId_ignoresSupplierBeingUpdated() {
+        Supplier saved = supplierRepository.saveAndFlush(
+                supplier("Coffee Bean", "coffee bean", "1", "1"));
+
+        assertThat(supplierRepository.existsByNormalizedNameAndBuildingIdAndIdNot(
+                "coffee bean", building.getId(), saved.getId())).isFalse();
+    }
+
+    @Test
+    void findByIdAndStatus_returnsOnlyMatchingStatus() {
+        Supplier saved = supplierRepository.saveAndFlush(
+                supplier("Coffee Bean", "coffee bean", "1", "1"));
+
+        assertThat(supplierRepository.findByIdAndStatus(saved.getId(), SupplierStatus.ACTIVE))
+                .isPresent();
+        assertThat(supplierRepository.findByIdAndStatus(saved.getId(), SupplierStatus.INACTIVE))
+                .isEmpty();
+    }
+
+    @Test
     void branchUniqueConstraint_rejectsCaseVariantAtSameBuilding() {
         supplierRepository.saveAndFlush(supplier("Coffee Bean", "coffee bean", "1", "1"));
 

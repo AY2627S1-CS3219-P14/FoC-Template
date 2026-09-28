@@ -1,6 +1,7 @@
 package com.campuscouriers.supplier.service;
 
 import com.campuscouriers.supplier.dto.CreateSupplierRequest;
+import com.campuscouriers.supplier.dto.UpdateSupplierRequest;
 import com.campuscouriers.supplier.entity.Building;
 import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.Supplier;
@@ -24,6 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.mockito.ArgumentMatchers;
 
 import java.time.LocalTime;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -138,6 +140,88 @@ class SupplierServiceTest {
                 .isInstanceOf(DuplicateSupplierException.class);
 
         verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void findActiveById_existingActiveSupplier_returnsResponse() {
+        UUID supplierId = UUID.randomUUID();
+        Supplier supplier = supplier("Coffee Bean", category, building);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+        when(supplierRepository.findByIdAndStatus(supplierId, SupplierStatus.ACTIVE))
+                .thenReturn(Optional.of(supplier));
+
+        var response = supplierService.findActiveById(supplierId);
+
+        assertThat(response.id()).isEqualTo(supplierId);
+        assertThat(response.name()).isEqualTo("Coffee Bean");
+    }
+
+    @Test
+    void findActiveById_unknownOrInactiveSupplier_throwsNotFound() {
+        UUID supplierId = UUID.randomUUID();
+        when(supplierRepository.findByIdAndStatus(supplierId, SupplierStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> supplierService.findActiveById(supplierId))
+                .isInstanceOf(ReferenceNotFoundException.class);
+    }
+
+    @Test
+    void update_validRequest_replacesEditableFieldsAndPreservesIdentityAndStatus() {
+        UUID supplierId = UUID.randomUUID();
+        Supplier supplier = supplier("Old Name", category, building);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+        Category newCategory = new Category("Retail", "retail");
+        Building newBuilding = new Building("COM2", "com2");
+        UUID newCategoryId = UUID.randomUUID();
+        UUID newBuildingId = UUID.randomUUID();
+        ReflectionTestUtils.setField(newCategory, "id", newCategoryId);
+        ReflectionTestUtils.setField(newBuilding, "id", newBuildingId);
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+        when(categoryRepository.findById(newCategoryId)).thenReturn(Optional.of(newCategory));
+        when(buildingRepository.findById(newBuildingId)).thenReturn(Optional.of(newBuilding));
+        when(supplierRepository.saveAndFlush(supplier)).thenReturn(supplier);
+
+        var response = supplierService.update(supplierId, new UpdateSupplierRequest(
+                "  New   Name ", newCategoryId, newBuildingId, "  Level  2 ",
+                " Updated description ", LocalTime.of(10, 0), LocalTime.of(20, 0), null));
+
+        verify(supplierRepository).existsByNormalizedNameAndBuildingIdAndIdNot(
+                "new name", newBuildingId, supplierId);
+        assertThat(response.id()).isEqualTo(supplierId);
+        assertThat(supplier.getName()).isEqualTo("New Name");
+        assertThat(supplier.getFloor()).isEqualTo("Level 2");
+        assertThat(supplier.getCategory()).isSameAs(newCategory);
+        assertThat(supplier.getBuilding()).isSameAs(newBuilding);
+        assertThat(supplier.getStatus()).isEqualTo(SupplierStatus.ACTIVE);
+    }
+
+    @Test
+    void update_duplicateOtherSupplier_throwsAndDoesNotSave() {
+        UUID supplierId = UUID.randomUUID();
+        Supplier supplier = supplier("Old Name", category, building);
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(buildingRepository.findById(buildingId)).thenReturn(Optional.of(building));
+        when(supplierRepository.existsByNormalizedNameAndBuildingIdAndIdNot(
+                "coffee bean", buildingId, supplierId)).thenReturn(true);
+
+        assertThatThrownBy(() -> supplierService.update(supplierId, updateRequest("Coffee Bean")))
+                .isInstanceOf(DuplicateSupplierException.class);
+
+        verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
+    private Supplier supplier(String name, Category supplierCategory, Building supplierBuilding) {
+        return new Supplier(
+                name, name.toLowerCase(Locale.ROOT), supplierCategory, supplierBuilding,
+                "1", "1", "Description", LocalTime.of(9, 0), LocalTime.of(18, 0), null);
+    }
+
+    private UpdateSupplierRequest updateRequest(String name) {
+        return new UpdateSupplierRequest(
+                name, categoryId, buildingId, "1", "Description",
+                LocalTime.of(9, 0), LocalTime.of(18, 0), null);
     }
 
     private CreateSupplierRequest validRequest(String name, String floor) {

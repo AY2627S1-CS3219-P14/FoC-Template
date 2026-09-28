@@ -32,11 +32,14 @@ export function SupplierCard({ supplier, onSelect, isSelected = false }: Supplie
 
       <div className="flex flex-1 flex-col p-5">
         <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-          {supplier.category}
+          {supplier.category.name}
         </span>
 
         <h2 className="mt-3 text-lg font-semibold text-slate-950">{supplier.name}</h2>
-        <p className="mt-1 text-sm font-medium text-slate-700">{supplier.building}</p>
+        <p className="mt-1 text-sm font-medium text-slate-700">
+          {supplier.building.name}
+          {supplier.floor ? ` · Level ${supplier.floor}` : null}
+        </p>
         <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">
           {supplier.description || 'No description is available for this supplier yet.'}
         </p>

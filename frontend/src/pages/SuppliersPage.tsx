@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { SearchInput } from '../components/ui/SearchInput'
 import { SupplierCard } from '../components/ui/SupplierCard'
-import { mockSuppliers } from '../features/suppliers/supplier.mock'
+import { mockSupplierResponse } from '../features/suppliers/supplier.mock'
 
 function normaliseSearchValue(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -11,7 +11,7 @@ export function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
   const normalisedSearchTerm = normaliseSearchValue(searchTerm)
-  const filteredSuppliers = mockSuppliers.filter((supplier) =>
+  const filteredSuppliers = mockSupplierResponse.items.filter((supplier) =>
     normaliseSearchValue(supplier.name).includes(normalisedSearchTerm),
   )
 

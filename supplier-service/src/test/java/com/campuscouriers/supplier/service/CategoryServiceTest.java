@@ -19,6 +19,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTest {
 
@@ -27,6 +29,16 @@ class CategoryServiceTest {
 
     @InjectMocks
     private CategoryService categoryService;
+
+    @Test
+    void findActive_returnsRepositoryResultsInResponse() {
+        when(categoryRepository.findAllByStatusOrderByNormalizedNameAsc(CategoryStatus.ACTIVE))
+                .thenReturn(List.of(new Category("Food", "food")));
+
+        var response = categoryService.findActive();
+
+        assertThat(response.items()).extracting(item -> item.name()).containsExactly("Food");
+    }
 
     @Test
     void create_trimsAndNormalizesNameAndDefaultsToActive() {

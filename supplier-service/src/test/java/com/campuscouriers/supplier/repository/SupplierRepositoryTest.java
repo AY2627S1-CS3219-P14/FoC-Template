@@ -3,16 +3,21 @@ package com.campuscouriers.supplier.repository;
 import com.campuscouriers.supplier.entity.Building;
 import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.Supplier;
+import com.campuscouriers.supplier.entity.SupplierStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalTime;
 
@@ -47,6 +52,28 @@ class SupplierRepositoryTest {
     void setUp() {
         category = categoryRepository.saveAndFlush(new Category("Food", "food"));
         building = buildingRepository.saveAndFlush(new Building("COM3", "com3"));
+    }
+
+    @Test
+    void specifications_applyActiveSearchCategoryAndBuildingFilters() {
+        supplierRepository.saveAndFlush(supplier("Coffee Bean", "coffee bean", "1", "1"));
+        supplierRepository.saveAndFlush(supplier("Tea House", "tea house", "1", "1"));
+        Supplier inactive = supplier("Old Coffee", "old coffee", "1", "1");
+        ReflectionTestUtils.setField(inactive, "status", SupplierStatus.INACTIVE);
+        supplierRepository.saveAndFlush(inactive);
+
+        Specification<Supplier> filters = Specification
+                .where(SupplierSpecifications.hasStatus(SupplierStatus.ACTIVE))
+                .and(SupplierSpecifications.nameContains("COFFEE"))
+                .and(SupplierSpecifications.hasCategory(category.getId()))
+                .and(SupplierSpecifications.hasBuilding(building.getId()));
+
+        var result = supplierRepository.findAll(
+                filters, PageRequest.of(0, 20, Sort.by("name")));
+
+        assertThat(result.getContent()).extracting(Supplier::getName)
+                .containsExactly("Coffee Bean");
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
     @Test

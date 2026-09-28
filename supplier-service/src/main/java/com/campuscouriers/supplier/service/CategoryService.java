@@ -2,7 +2,9 @@ package com.campuscouriers.supplier.service;
 
 import com.campuscouriers.supplier.dto.CategoryResponse;
 import com.campuscouriers.supplier.dto.CreateCategoryRequest;
+import com.campuscouriers.supplier.dto.ItemListResponse;
 import com.campuscouriers.supplier.entity.Category;
+import com.campuscouriers.supplier.entity.CategoryStatus;
 import com.campuscouriers.supplier.exception.DuplicateCategoryException;
 import com.campuscouriers.supplier.repository.CategoryRepository;
 import com.campuscouriers.supplier.util.NameNormalizer;
@@ -34,5 +36,14 @@ public class CategoryService {
         } catch (DataIntegrityViolationException exception) {
             throw new DuplicateCategoryException(displayName);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public ItemListResponse<CategoryResponse> findActive() {
+        return new ItemListResponse<>(categoryRepository
+                .findAllByStatusOrderByNormalizedNameAsc(CategoryStatus.ACTIVE)
+                .stream()
+                .map(CategoryResponse::from)
+                .toList());
     }
 }

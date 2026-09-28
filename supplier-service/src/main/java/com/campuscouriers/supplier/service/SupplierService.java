@@ -2,23 +2,33 @@ package com.campuscouriers.supplier.service;
 
 import com.campuscouriers.supplier.dto.CreateSupplierRequest;
 import com.campuscouriers.supplier.dto.SupplierResponse;
+import com.campuscouriers.supplier.dto.PageMetadata;
+import com.campuscouriers.supplier.dto.SupplierPageResponse;
 import com.campuscouriers.supplier.entity.Building;
 import com.campuscouriers.supplier.entity.BuildingStatus;
 import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.CategoryStatus;
 import com.campuscouriers.supplier.entity.Supplier;
+import com.campuscouriers.supplier.entity.SupplierStatus;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
 import com.campuscouriers.supplier.exception.ReferenceNotActiveException;
 import com.campuscouriers.supplier.exception.ReferenceNotFoundException;
+import com.campuscouriers.supplier.exception.InvalidQueryParameterException;
 import com.campuscouriers.supplier.repository.BuildingRepository;
 import com.campuscouriers.supplier.repository.CategoryRepository;
 import com.campuscouriers.supplier.repository.SupplierRepository;
+import com.campuscouriers.supplier.repository.SupplierSpecifications;
 import com.campuscouriers.supplier.util.NameNormalizer;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class SupplierService {
@@ -79,6 +89,53 @@ public class SupplierService {
         } catch (DataIntegrityViolationException exception) {
             throw new DuplicateSupplierException(displayName);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public SupplierPageResponse findActive(
+            String query,
+            UUID categoryId,
+            UUID buildingId,
+            int page,
+            int size,
+            String sort
+    ) {
+        validatePagination(page, size);
+        Sort.Direction direction = parseSortDirection(sort);
+
+        Specification<Supplier> specification = Specification
+                .where(SupplierSpecifications.hasStatus(SupplierStatus.ACTIVE))
+                .and(SupplierSpecifications.nameContains(query))
+                .and(SupplierSpecifications.hasCategory(categoryId))
+                .and(SupplierSpecifications.hasBuilding(buildingId));
+
+        Page<Supplier> suppliers = supplierRepository.findAll(
+                specification,
+                PageRequest.of(page, size, Sort.by(direction, "normalizedName"))
+        );
+
+        return new SupplierPageResponse(
+                suppliers.getContent().stream().map(SupplierResponse::from).toList(),
+                PageMetadata.from(suppliers)
+        );
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new InvalidQueryParameterException("Page must be zero or greater");
+        }
+        if (size < 1 || size > 100) {
+            throw new InvalidQueryParameterException("Size must be between 1 and 100");
+        }
+    }
+
+    private Sort.Direction parseSortDirection(String sort) {
+        return switch (sort) {
+            case "name,asc" -> Sort.Direction.ASC;
+            case "name,desc" -> Sort.Direction.DESC;
+            default -> throw new InvalidQueryParameterException(
+                    "Sort must be either name,asc or name,desc");
+        };
     }
 
     private String optionalDisplayValue(String value) {

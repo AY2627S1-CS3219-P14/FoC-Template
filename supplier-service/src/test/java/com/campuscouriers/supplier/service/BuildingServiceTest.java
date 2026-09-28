@@ -19,6 +19,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 @ExtendWith(MockitoExtension.class)
 class BuildingServiceTest {
 
@@ -27,6 +29,16 @@ class BuildingServiceTest {
 
     @InjectMocks
     private BuildingService buildingService;
+
+    @Test
+    void findActive_returnsRepositoryResultsInResponse() {
+        when(buildingRepository.findAllByStatusOrderByNormalizedNameAsc(BuildingStatus.ACTIVE))
+                .thenReturn(List.of(new Building("COM3", "com3")));
+
+        var response = buildingService.findActive();
+
+        assertThat(response.items()).extracting(item -> item.name()).containsExactly("COM3");
+    }
 
     @Test
     void create_trimsAndNormalizesNameAndDefaultsToActive() {

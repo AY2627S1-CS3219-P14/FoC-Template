@@ -1,6 +1,7 @@
 package com.campuscouriers.supplier.repository;
 
 import com.campuscouriers.supplier.entity.Category;
+import com.campuscouriers.supplier.entity.CategoryStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -10,6 +11,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +32,19 @@ class CategoryRepositoryTest {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Test
+    void findAllByStatusOrderByNormalizedNameAsc_returnsOnlyActiveCategoriesAlphabetically() {
+        categoryRepository.saveAndFlush(new Category("Shopping", "shopping"));
+        categoryRepository.saveAndFlush(new Category("Food", "food"));
+        Category retired = new Category("Old", "old");
+        ReflectionTestUtils.setField(retired, "status", CategoryStatus.RETIRED);
+        categoryRepository.saveAndFlush(retired);
+
+        assertThat(categoryRepository.findAllByStatusOrderByNormalizedNameAsc(CategoryStatus.ACTIVE))
+                .extracting(Category::getName)
+                .containsExactly("Food", "Shopping");
+    }
 
     @Test
     void findByNormalizedName_findsPersistedCategory() {

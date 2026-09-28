@@ -1,6 +1,7 @@
 package com.campuscouriers.supplier.repository;
 
 import com.campuscouriers.supplier.entity.Building;
+import com.campuscouriers.supplier.entity.BuildingStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -10,6 +11,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +32,19 @@ class BuildingRepositoryTest {
 
     @Autowired
     private BuildingRepository buildingRepository;
+
+    @Test
+    void findAllByStatusOrderByNormalizedNameAsc_returnsOnlyActiveBuildingsAlphabetically() {
+        buildingRepository.saveAndFlush(new Building("COM3", "com3"));
+        buildingRepository.saveAndFlush(new Building("Central Library", "central library"));
+        Building retired = new Building("Old Building", "old building");
+        ReflectionTestUtils.setField(retired, "status", BuildingStatus.RETIRED);
+        buildingRepository.saveAndFlush(retired);
+
+        assertThat(buildingRepository.findAllByStatusOrderByNormalizedNameAsc(BuildingStatus.ACTIVE))
+                .extracting(Building::getName)
+                .containsExactly("Central Library", "COM3");
+    }
 
     @Test
     void findByNormalizedName_findsPersistedBuilding() {

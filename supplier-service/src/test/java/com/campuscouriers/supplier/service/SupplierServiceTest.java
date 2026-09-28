@@ -18,6 +18,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.mockito.ArgumentMatchers;
 
 import java.time.LocalTime;
 import java.util.Optional;
@@ -56,6 +60,39 @@ class SupplierServiceTest {
         building = new Building("COM3", "com3");
         ReflectionTestUtils.setField(category, "id", categoryId);
         ReflectionTestUtils.setField(building, "id", buildingId);
+    }
+
+    @Test
+    void findActive_withoutOptionalFilters_returnsPage() {
+        when(supplierRepository.findAll(
+                ArgumentMatchers.<Specification<Supplier>>any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(java.util.List.of()));
+
+        var response = supplierService.findActive(null, null, null, 0, 20, "name,asc");
+
+        assertThat(response.items()).isEmpty();
+        verify(supplierRepository).findAll(
+                ArgumentMatchers.<Specification<Supplier>>any(), any(Pageable.class));
+    }
+
+    @Test
+    void findActive_returnsMappedPageWithRequestedPaginationAndSort() {
+        Supplier supplier = new Supplier(
+                "Coffee Bean", "coffee bean", category, building, "1", "1",
+                "Near the entrance", LocalTime.of(9, 0), LocalTime.of(18, 0), null);
+        when(supplierRepository.findAll(
+                ArgumentMatchers.<Specification<Supplier>>any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(java.util.List.of(supplier)));
+
+        var response = supplierService.findActive(
+                "coffee", categoryId, buildingId, 0, 10, "name,desc");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(supplierRepository).findAll(
+                ArgumentMatchers.<Specification<Supplier>>any(), pageableCaptor.capture());
+        assertThat(response.items()).extracting(item -> item.name()).containsExactly("Coffee Bean");
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+        assertThat(pageableCaptor.getValue().getSort().getOrderFor("normalizedName").isDescending()).isTrue();
     }
 
     @Test

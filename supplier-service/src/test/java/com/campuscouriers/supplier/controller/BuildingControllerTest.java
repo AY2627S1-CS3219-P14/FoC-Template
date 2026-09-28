@@ -3,6 +3,7 @@ package com.campuscouriers.supplier.controller;
 import com.campuscouriers.supplier.dto.BuildingResponse;
 import com.campuscouriers.supplier.dto.CreateBuildingRequest;
 import com.campuscouriers.supplier.entity.BuildingStatus;
+import com.campuscouriers.supplier.dto.ItemListResponse;
 import com.campuscouriers.supplier.exception.DuplicateBuildingException;
 import com.campuscouriers.supplier.exception.GlobalExceptionHandler;
 import com.campuscouriers.supplier.service.BuildingService;
@@ -16,12 +17,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,6 +39,19 @@ class BuildingControllerTest {
 
     @MockitoBean
     private BuildingService buildingService;
+
+    @Test
+    void findActive_returnsItems() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(buildingService.findActive()).thenReturn(new ItemListResponse<>(List.of(
+                new BuildingResponse(id, "COM3", BuildingStatus.ACTIVE)
+        )));
+
+        mockMvc.perform(get("/buildings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(id.toString()))
+                .andExpect(jsonPath("$.items[0].name").value("COM3"));
+    }
 
     @Test
     void create_validRequest_returns201() throws Exception {

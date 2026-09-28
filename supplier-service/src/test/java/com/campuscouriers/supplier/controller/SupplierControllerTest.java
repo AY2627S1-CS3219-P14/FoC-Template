@@ -2,6 +2,8 @@ package com.campuscouriers.supplier.controller;
 
 import com.campuscouriers.supplier.dto.CreateSupplierRequest;
 import com.campuscouriers.supplier.dto.SupplierResponse;
+import com.campuscouriers.supplier.dto.SupplierPageResponse;
+import com.campuscouriers.supplier.dto.PageMetadata;
 import com.campuscouriers.supplier.entity.SupplierStatus;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
 import com.campuscouriers.supplier.exception.GlobalExceptionHandler;
@@ -18,12 +20,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalTime;
 import java.util.UUID;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,6 +42,52 @@ class SupplierControllerTest {
 
     @MockitoBean
     private SupplierService supplierService;
+
+    @Test
+    void findActive_withFilters_returnsPage() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID buildingId = UUID.randomUUID();
+        SupplierResponse item = new SupplierResponse(
+                supplierId,
+                "Coffee Bean",
+                new SupplierResponse.ReferenceSummary(categoryId, "Food"),
+                new SupplierResponse.ReferenceSummary(buildingId, "COM3"),
+                "1",
+                "Near the entrance",
+                LocalTime.of(9, 0),
+                LocalTime.of(18, 0),
+                null,
+                SupplierStatus.ACTIVE
+        );
+        when(supplierService.findActive("coffee", categoryId, buildingId, 0, 10, "name,desc"))
+                .thenReturn(new SupplierPageResponse(
+                        List.of(item), new PageMetadata(0, 10, 1, 1, false, false)));
+
+        mockMvc.perform(get("/suppliers")
+                        .param("q", "coffee")
+                        .param("categoryId", categoryId.toString())
+                        .param("buildingId", buildingId.toString())
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "name,desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(supplierId.toString()))
+                .andExpect(jsonPath("$.items[0].description").value("Near the entrance"))
+                .andExpect(jsonPath("$.page.number").value(0))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
+    }
+
+    @Test
+    void findActive_invalidSize_returns400() throws Exception {
+        doThrow(new com.campuscouriers.supplier.exception.InvalidQueryParameterException(
+                "Size must be between 1 and 100"))
+                .when(supplierService).findActive(null, null, null, 0, 101, "name,asc");
+
+        mockMvc.perform(get("/suppliers").param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Size must be between 1 and 100"));
+    }
 
     @Test
     void create_validRequest_returns201() throws Exception {

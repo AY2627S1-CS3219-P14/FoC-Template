@@ -2,7 +2,9 @@ package com.campuscouriers.supplier.service;
 
 import com.campuscouriers.supplier.dto.BuildingResponse;
 import com.campuscouriers.supplier.dto.CreateBuildingRequest;
+import com.campuscouriers.supplier.dto.ItemListResponse;
 import com.campuscouriers.supplier.entity.Building;
+import com.campuscouriers.supplier.entity.BuildingStatus;
 import com.campuscouriers.supplier.exception.DuplicateBuildingException;
 import com.campuscouriers.supplier.repository.BuildingRepository;
 import com.campuscouriers.supplier.util.NameNormalizer;
@@ -34,5 +36,14 @@ public class BuildingService {
         } catch (DataIntegrityViolationException exception) {
             throw new DuplicateBuildingException(displayName);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public ItemListResponse<BuildingResponse> findActive() {
+        return new ItemListResponse<>(buildingRepository
+                .findAllByStatusOrderByNormalizedNameAsc(BuildingStatus.ACTIVE)
+                .stream()
+                .map(BuildingResponse::from)
+                .toList());
     }
 }

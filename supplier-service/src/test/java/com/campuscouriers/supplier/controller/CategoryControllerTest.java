@@ -3,6 +3,7 @@ package com.campuscouriers.supplier.controller;
 import com.campuscouriers.supplier.dto.CategoryResponse;
 import com.campuscouriers.supplier.dto.CreateCategoryRequest;
 import com.campuscouriers.supplier.entity.CategoryStatus;
+import com.campuscouriers.supplier.dto.ItemListResponse;
 import com.campuscouriers.supplier.exception.DuplicateCategoryException;
 import com.campuscouriers.supplier.exception.GlobalExceptionHandler;
 import com.campuscouriers.supplier.service.CategoryService;
@@ -16,12 +17,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,6 +39,19 @@ class CategoryControllerTest {
 
     @MockitoBean
     private CategoryService categoryService;
+
+    @Test
+    void findActive_returnsItems() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(categoryService.findActive()).thenReturn(new ItemListResponse<>(List.of(
+                new CategoryResponse(id, "Food", CategoryStatus.ACTIVE)
+        )));
+
+        mockMvc.perform(get("/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(id.toString()))
+                .andExpect(jsonPath("$.items[0].name").value("Food"));
+    }
 
     @Test
     void create_validRequest_returns201() throws Exception {

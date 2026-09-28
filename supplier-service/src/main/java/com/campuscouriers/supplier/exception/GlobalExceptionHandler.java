@@ -32,4 +32,9 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleReferenceNotActive(ReferenceNotActiveException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
     }
+
+    @ExceptionHandler(InvalidQueryParameterException.class)
+    public ProblemDetail handleInvalidQueryParameter(InvalidQueryParameterException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
 }

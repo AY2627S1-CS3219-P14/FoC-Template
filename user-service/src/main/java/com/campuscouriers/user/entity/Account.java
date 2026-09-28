@@ -29,4 +29,8 @@ public class Account {
         this.passwordHash = passwordHash;
     }
 
+    public void changeType(AccountType type) {
+        this.type = type;
+    }
+
 }

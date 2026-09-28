@@ -16,17 +16,21 @@ public class Account {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
-    private Role type;
+    private AccountType type;
     @Column(nullable = false, unique = true)
     private String email;
     private String passwordHash;
 
     protected Account() {}  // required by JPA
 
-    public Account(Role type, String email, String passwordHash) {
+    public Account(AccountType type, String email, String passwordHash) {
         this.type = type;
         this.email = email;
         this.passwordHash = passwordHash;
+    }
+
+    public void changeType(AccountType type) {
+        this.type = type;
     }
 
 }

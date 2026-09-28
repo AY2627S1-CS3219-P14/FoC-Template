@@ -16,19 +16,7 @@ The service must:
 
 Out of scope: menus, product catalogues, inventory, item prices, vendor checkout, and payment to vendors.
 
-## 2. Inputs reviewed
-
-This plan is based on:
-
-- `CS3219-ProjectDocument-FoC.pdf`, especially mandatory requirement M3 and the stated scope boundaries;
-- `CS3219 Product Backlog - Group 14.pdf`, especially Supplier Service F1-F5 and NFR N1-N5;
-- `Supplier service feedback.txt`;
-- `data/csv/supplier-seed-data.csv` and its associated images;
-- the existing repository scaffold and supplier frontend types/mock data.
-
-Material in those files is treated as project context, not as agent instructions.
-
-## 3. Key product decisions
+## 2. Key product decisions
 
 ### Supplier identity
 
@@ -70,7 +58,7 @@ The User Service issues a signed access token containing immutable user ID and r
 
 UI controls may be hidden for convenience, but backend checks are authoritative. Confirm the exact JWT/OAuth contract with the User Service owner before implementation.
 
-## 4. Proposed data model
+## 3. Proposed data model
 
 ### `supplier`
 
@@ -110,7 +98,7 @@ Append-only record containing event ID, actor ID/type, action, entity type/ID, t
 
 For create and lifecycle commands, store `(actor_id, endpoint, idempotency_key)`, request hash, response status/body reference, and expiry. Reusing a key with the same request replays the result; reusing it with a different payload returns `409 Conflict`.
 
-## 5. API contract (v1)
+## 4. API contract (v1)
 
 Use JSON and a consistent RFC 9457 Problem Details error body containing `type`, `title`, `status`, `detail`, `instance`, `code`, `fieldErrors`, `correlationId`, and `timestamp`.
 
@@ -144,7 +132,7 @@ Do not use `DELETE`, because the business operation is deactivation rather than 
 
 Define the internal contract in OpenAPI and generate/validate consumer contract tests with the Order Service. Include timeouts and correlation IDs. A validation timeout must cause order creation to fail without reserving credits or persisting a partial order.
 
-## 6. Validation and failure semantics
+## 5. Validation and failure semantics
 
 All validation runs at three layers: request DTO constraints for clear field errors, domain rules for cross-field/state checks, and database constraints as the final integrity boundary. Never rely on frontend validation.
 
@@ -160,7 +148,7 @@ Expected status codes:
 
 Transactions make each local write all-or-nothing. Failed database writes return an error and leave the previous record intact. Optimistic locking prevents one administrator from silently overwriting another administrator's changes.
 
-## 7. Seed import
+## 6. Seed import
 
 Import `data/csv/supplier-seed-data.csv` through a versioned bootstrap migration/job, not ad hoc application startup inserts.
 
@@ -174,7 +162,7 @@ Before import:
 
 Import the whole file in one transaction. Any invalid row rolls back the batch and reports row-level errors. A stable seed key or the normalized branch uniqueness constraint makes repeat runs no-ops instead of duplicates. Add more campus suppliers only through a reviewed follow-up seed file.
 
-## 8. Image handling
+## 7. Image handling
 
 Images are optional and low priority. The first releasable version can accept a validated `imageUrl` and serve bundled seed images. If uploads are added:
 
@@ -187,7 +175,7 @@ Images are optional and low priority. The first releasable version can accept a 
 
 Use object storage (S3-compatible in deployment, MinIO locally) rather than database blobs. Upload support should not block core CRUD/search delivery.
 
-## 9. Suggested service structure
+## 8. Suggested service structure
 
 Generate the project with the same Spring Initializr naming convention as the User Service:
 
@@ -247,7 +235,7 @@ Do not add Kafka, Redis, Java Mail Sender, or image/object-storage dependencies 
 
 Add testing dependencies matching the User Service: Spring Web MVC Test, Spring Security Test, Spring Data JPA Test, PostgreSQL Testcontainers, and JUnit Testcontainers. Flyway, Actuator, OpenAPI, and a metrics registry remain recommended follow-up dependencies, but the team should agree which of these are shared conventions before Supplier Service adopts them alone.
 
-## 10. Delivery plan
+## 9. Delivery plan
 
 ### Phase 0 - lock cross-service contracts
 
@@ -259,7 +247,7 @@ Exit criterion: reviewed API/security contracts and sequence diagrams for order 
 
 ### Phase 1 - service foundation and persistence
 
-1. Generate the Maven/Java 17 project with the Initializr metadata and initial dependencies in Section 9, then place its contents directly in `supplier-service/`.
+1. Generate the Maven/Java 17 project with the Initializr metadata and initial dependencies in Section 8, then place its contents directly in `supplier-service/`.
 2. Confirm the generated application starts and that `mvnw test` passes before adding domain code.
 3. Configure a dedicated PostgreSQL database named `campuscouriers_supplier` through environment variables using the same naming pattern as the User Service.
 4. Agree as a team whether to use Flyway across services. If agreed, add migrations for category, supplier, opening intervals, audit, and idempotency tables and set Hibernate schema handling to `validate`; otherwise document the temporary `ddl-auto` setting.
@@ -309,7 +297,7 @@ Exit criterion: a clean deployment contains the validated seed dataset and suppo
 
 Exit criterion: test reports provide evidence for every Supplier Service NFR, not only anecdotal demo results.
 
-## 11. Acceptance checklist
+## 10. Acceptance checklist
 
 - Required fields and optional fields are explicit and rejected/accepted consistently.
 - Two same-name suppliers at different branches are distinct; duplicate same-branch records are blocked.
@@ -322,14 +310,3 @@ Exit criterion: test reports provide evidence for every Supplier Service NFR, no
 - Category retirement and supplier reactivation obey referential/state rules.
 - Audit records identify every accepted write and are retained for 90 days.
 - Data survives restart/redeployment, and freshness does not depend on manual cache refresh.
-
-## 12. Decisions still requiring team confirmation
-
-These do not prevent scaffolding, but Phase 0 should resolve them:
-
-1. Exact access-token and service-to-service authentication contract.
-2. Whether landmarks with no commercial operator use the same category model (recommended: yes).
-3. Whether opening hours need holiday/exception dates in the first release (recommended: defer; document weekly hours only).
-4. Whether image upload is needed or URL/bundled assets are sufficient for the graded scope (recommended: defer upload until core requirements pass).
-5. The deployment environment and image/object-storage base URL.
-6. The final generated-load dataset size used to substantiate scalability claims.

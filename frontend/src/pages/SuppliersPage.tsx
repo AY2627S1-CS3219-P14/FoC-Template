@@ -136,7 +136,7 @@ export function SuppliersPage() {
         Select the supplier for your campus errand.
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-[minmax(16rem,1fr)_12rem_12rem]">
+      <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-[minmax(16rem,1fr)_18rem_18rem]">
         <div className="col-span-2 xl:col-span-1">
           <SearchInput
             label="Search suppliers by name"

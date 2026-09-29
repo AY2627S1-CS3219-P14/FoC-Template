@@ -1,4 +1,7 @@
-import type { SupplierListResponse } from './supplier.types'
+import type {
+  SupplierListResponse,
+  SupplierReferenceListResponse,
+} from './supplier.types'
 
 const supplierApiBaseUrl = (import.meta.env.VITE_SUPPLIER_API_URL ?? '').trim().replace(/\/+$/, '')
 
@@ -28,6 +31,28 @@ export class SupplierApiError extends Error {
   }
 }
 
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  let response: Response
+
+  try {
+    response = await fetch(`${supplierApiBaseUrl}${path}`, {
+      headers: { Accept: 'application/json' },
+      signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error
+    throw new SupplierApiError('Could not connect to the Supplier Service.', 0)
+  }
+
+  if (!response.ok) {
+    const problem = (await response.json().catch(() => null)) as ProblemDetails | null
+    const message = problem?.detail ?? problem?.title ?? 'Unable to load supplier data.'
+    throw new SupplierApiError(message, response.status)
+  }
+
+  return (await response.json()) as T
+}
+
 export async function listSuppliers(
   {
     query,
@@ -49,23 +74,13 @@ export async function listSuppliers(
   if (categoryId) searchParams.set('categoryId', categoryId)
   if (buildingId) searchParams.set('buildingId', buildingId)
 
-  let response: Response
+  return getJson<SupplierListResponse>(`/suppliers?${searchParams}`, signal)
+}
 
-  try {
-    response = await fetch(`${supplierApiBaseUrl}/suppliers?${searchParams}`, {
-      headers: { Accept: 'application/json' },
-      signal,
-    })
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error
-    throw new SupplierApiError('Could not connect to the Supplier Service.', 0)
-  }
+export function listSupplierCategories(signal?: AbortSignal) {
+  return getJson<SupplierReferenceListResponse>('/categories', signal)
+}
 
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => null)) as ProblemDetails | null
-    const message = problem?.detail ?? problem?.title ?? 'Unable to load suppliers.'
-    throw new SupplierApiError(message, response.status)
-  }
-
-  return (await response.json()) as SupplierListResponse
+export function listSupplierBuildings(signal?: AbortSignal) {
+  return getJson<SupplierReferenceListResponse>('/buildings', signal)
 }

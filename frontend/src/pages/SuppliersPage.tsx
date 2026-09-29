@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { SearchInput } from '../components/ui/SearchInput'
+import { Select } from '../components/ui/Select'
 import { SupplierCard } from '../components/ui/SupplierCard'
-import { listSuppliers } from '../features/suppliers/supplier.api'
-import type { SupplierListResponse } from '../features/suppliers/supplier.types'
+import {
+  listSupplierBuildings,
+  listSupplierCategories,
+  listSuppliers,
+} from '../features/suppliers/supplier.api'
+import type {
+  SupplierListResponse,
+  SupplierReference,
+} from '../features/suppliers/supplier.types'
 
 const SEARCH_DEBOUNCE_MS = 300
 const SUPPLIERS_PER_PAGE = 20
@@ -10,12 +18,44 @@ const SUPPLIERS_PER_PAGE = 20
 export function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+  const [buildingId, setBuildingId] = useState('')
+  const [categories, setCategories] = useState<SupplierReference[]>([])
+  const [buildings, setBuildings] = useState<SupplierReference[]>([])
+  const [areFiltersLoading, setAreFiltersLoading] = useState(true)
+  const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null)
+  const [filterRetryCount, setFilterRetryCount] = useState(0)
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
   const [pageNumber, setPageNumber] = useState(0)
   const [supplierResponse, setSupplierResponse] = useState<SupplierListResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    Promise.all([
+      listSupplierCategories(controller.signal),
+      listSupplierBuildings(controller.signal),
+    ])
+      .then(([categoryResponse, buildingResponse]) => {
+        setCategories(categoryResponse.items)
+        setBuildings(buildingResponse.items)
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+
+        setFilterErrorMessage(
+          error instanceof Error ? error.message : 'Unable to load supplier filters.',
+        )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAreFiltersLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [filterRetryCount])
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -38,9 +78,10 @@ export function SuppliersPage() {
     listSuppliers(
       {
         query: debouncedSearchTerm || undefined,
+        categoryId: categoryId || undefined,
+        buildingId: buildingId || undefined,
         page: pageNumber,
         size: SUPPLIERS_PER_PAGE,
-        sort: 'name,asc',
       },
       controller.signal,
     )
@@ -55,7 +96,7 @@ export function SuppliersPage() {
       })
 
     return () => controller.abort()
-  }, [debouncedSearchTerm, pageNumber, retryCount])
+  }, [buildingId, categoryId, debouncedSearchTerm, pageNumber, retryCount])
 
   const suppliers = supplierResponse?.items ?? []
   const page = supplierResponse?.page
@@ -72,6 +113,20 @@ export function SuppliersPage() {
     setRetryCount((count) => count + 1)
   }
 
+  function updateFilter(update: () => void) {
+    setIsLoading(true)
+    setErrorMessage(null)
+    setSelectedSupplierId(null)
+    setPageNumber(0)
+    update()
+  }
+
+  function retryFilters() {
+    setAreFiltersLoading(true)
+    setFilterErrorMessage(null)
+    setFilterRetryCount((count) => count + 1)
+  }
+
   return (
     <section>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
@@ -81,14 +136,50 @@ export function SuppliersPage() {
         Select the supplier for your campus errand.
       </p>
 
-      <SearchInput
-        label="Search suppliers by name"
-        placeholder="Search suppliers by name"
-        value={searchTerm}
-        onChange={(event) => setSearchTerm(event.target.value)}
-        autoComplete="off"
-        className="mt-6 max-w-xl"
-      />
+      <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-[minmax(16rem,1fr)_18rem_18rem]">
+        <div className="col-span-2 xl:col-span-1">
+          <SearchInput
+            label="Search suppliers by name"
+            placeholder="Search suppliers by name"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            autoComplete="off"
+          />
+        </div>
+        <Select
+          label="Filter by category"
+          value={categoryId}
+          disabled={areFiltersLoading}
+          onChange={(event) => updateFilter(() => setCategoryId(event.target.value))}
+          options={[
+            { label: 'All categories', value: '' },
+            ...categories.map((category) => ({ label: category.name, value: category.id })),
+          ]}
+        />
+        <Select
+          label="Filter by building"
+          value={buildingId}
+          disabled={areFiltersLoading}
+          onChange={(event) => updateFilter(() => setBuildingId(event.target.value))}
+          options={[
+            { label: 'All buildings', value: '' },
+            ...buildings.map((building) => ({ label: building.name, value: building.id })),
+          ]}
+        />
+      </div>
+
+      {filterErrorMessage ? (
+        <p className="mt-3 text-sm text-amber-700" role="alert">
+          The category and building filters could not be loaded.{' '}
+          <button
+            type="button"
+            onClick={retryFilters}
+            className="cursor-pointer font-semibold underline underline-offset-2"
+          >
+            Try again
+          </button>
+        </p>
+      ) : null}
 
       <p className="mt-4 text-sm text-slate-500" aria-live="polite">
         {isLoading

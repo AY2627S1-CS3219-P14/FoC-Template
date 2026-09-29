@@ -31,3 +31,7 @@ export type SupplierListResponse = {
   items: Supplier[]
   page: SupplierPage
 }
+
+export type SupplierReferenceListResponse = {
+  items: SupplierReference[]
+}

@@ -1,18 +1,16 @@
 package com.campuscouriers.user.auth.dto;
 
-import jakarta.validation.constraints.Email;
+import com.campuscouriers.user.validation.NusEmail;
+import com.campuscouriers.user.validation.ValidName;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
 
-        @NotBlank @Size(max = 50) String name,
+        @ValidName String name,
 
-        @NotBlank @Email(
-            regexp = "^[A-Za-z0-9._%+-]+@(.+\\.|yale-|duke-)?nus\\.edu(\\.sg)?$",
-            message = "Email must belong to NUS domain"
-        ) String email,
+        @NusEmail String email,
 
         @NotBlank
         @Size(min = 16, max = 128)

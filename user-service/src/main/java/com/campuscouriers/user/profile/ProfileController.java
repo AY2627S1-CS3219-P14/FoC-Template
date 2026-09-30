@@ -1,8 +1,12 @@
 package com.campuscouriers.user.profile;
 
+import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidProfileException;
+import com.campuscouriers.user.profile.dto.NameResponse;
 import com.campuscouriers.user.profile.dto.ProfileResponse;
+import com.campuscouriers.user.profile.dto.UpdateNameRequest;
 import com.campuscouriers.user.security.access.AccessTokenClaims;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,10 +34,23 @@ public class ProfileController {
         return profileService.getProfile(profileId, claims);
     }
 
-    // For when the caller is neither the owner nor an Administrator, or the profile does not exist
+    @PatchMapping("/{profileId}/name")
+    public NameResponse updateName(@PathVariable UUID profileId,
+                                   @Valid @RequestBody UpdateNameRequest request,
+                                   @AuthenticationPrincipal AccessTokenClaims claims) {
+        return profileService.updateName(profileId, request.name(), claims);
+    }
+
+    // For when the profile does not exist, or a GET caller is neither the owner nor an Administrator
     @ExceptionHandler(InvalidProfileException.class)
     public ProblemDetail handleInvalidProfile(InvalidProfileException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    // For when the caller is not the owner of the profile being modified
+    @ExceptionHandler(InsufficientPermissionException.class)
+    public ProblemDetail handleInsufficientPermission(InsufficientPermissionException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
 }

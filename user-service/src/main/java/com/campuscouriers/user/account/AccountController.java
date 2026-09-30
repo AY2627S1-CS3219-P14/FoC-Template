@@ -1,7 +1,10 @@
 package com.campuscouriers.user.account;
 
 import com.campuscouriers.user.account.dto.AccountResponse;
+import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.account.dto.UpdateAccountTypeRequest;
+import com.campuscouriers.user.account.dto.UpdateEmailRequest;
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidAccountException;
 import com.campuscouriers.user.exception.LastAdministratorException;
@@ -14,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-// Only PATCH is mapped; other methods on /{accountId} are rejected by Spring MVC with 405
+// Only PATCH is mapped; other methods on /{accountId} and /{accountId}/email are rejected by Spring MVC with 405
 @RestController
 @RequestMapping("/api/v1/accounts")
 public class AccountController {
@@ -32,13 +35,21 @@ public class AccountController {
         return accountService.updateType(accountId, request.accountType(), claims);
     }
 
+    @PatchMapping("/{accountId}/email")
+    public EmailResponse updateEmail(@PathVariable UUID accountId,
+                                     @Valid @RequestBody UpdateEmailRequest request,
+                                     @AuthenticationPrincipal AccessTokenClaims claims) {
+        return accountService.updateEmail(accountId, request.email(), claims);
+    }
+
     // For when the target account does not exist
     @ExceptionHandler(InvalidAccountException.class)
     public ProblemDetail handleInvalidAccount(InvalidAccountException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    // For when the caller is not an Administrator, or is modifying their own account
+    // For when the caller is not an Administrator or is changing their own type,
+    // or is changing the email of an account they do not own
     @ExceptionHandler(InsufficientPermissionException.class)
     public ProblemDetail handleInsufficientPermission(InsufficientPermissionException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
@@ -47,6 +58,12 @@ public class AccountController {
     // For when a demotion would leave zero administrators
     @ExceptionHandler(LastAdministratorException.class)
     public ProblemDetail handleLastAdministrator(LastAdministratorException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    // For when the new email already belongs to another account
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ProblemDetail handleEmailAlreadyRegistered(EmailAlreadyRegisteredException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 

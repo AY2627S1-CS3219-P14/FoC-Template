@@ -3,7 +3,9 @@ package com.campuscouriers.user.profile;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.entity.Profile;
+import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidProfileException;
+import com.campuscouriers.user.profile.dto.NameResponse;
 import com.campuscouriers.user.profile.dto.ProfileResponse;
 import com.campuscouriers.user.repository.ProfileRepository;
 import com.campuscouriers.user.security.access.AccessTokenClaims;
@@ -105,6 +107,49 @@ public class ProfileServiceTest {
             when(profileRepository.findById(ownerId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> profileService.getMyProfile(owner))
+                    .isInstanceOf(InvalidProfileException.class);
+        }
+    }
+
+    @DisplayName("The user service shall allow only the profile owner to change the profile name")
+    @Nested
+    class UpdateNameTests {
+
+        private static final String NEW_NAME = "Alice Lim";
+
+        @Test
+        void updateName_asOwner_changesAndReturnsTheName() {
+            Profile profile = profileFor(ownerId);
+            when(profileRepository.findById(ownerId)).thenReturn(Optional.of(profile));
+
+            NameResponse response = profileService.updateName(ownerId, NEW_NAME, owner);
+
+            assertThat(profile.getName()).isEqualTo(NEW_NAME);
+            assertThat(response).isEqualTo(new NameResponse(NEW_NAME));
+        }
+
+        @Test
+        void updateName_asNonOwnerStudent_throwsWithoutQueryingTheRepository() {
+            assertThatThrownBy(() -> profileService.updateName(ownerId, NEW_NAME, otherStudent))
+                    .isInstanceOf(InsufficientPermissionException.class);
+
+            verifyNoInteractions(profileRepository);
+        }
+
+        @DisplayName("Administrators have no special access to other users' names")
+        @Test
+        void updateName_asAdministratorOnAnotherProfile_throwsWithoutQueryingTheRepository() {
+            assertThatThrownBy(() -> profileService.updateName(ownerId, NEW_NAME, administrator))
+                    .isInstanceOf(InsufficientPermissionException.class);
+
+            verifyNoInteractions(profileRepository);
+        }
+
+        @Test
+        void updateName_asOwnerWithMissingProfile_throws() {
+            when(profileRepository.findById(ownerId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> profileService.updateName(ownerId, NEW_NAME, owner))
                     .isInstanceOf(InvalidProfileException.class);
         }
     }

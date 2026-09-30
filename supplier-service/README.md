@@ -83,6 +83,132 @@ mvn spring-boot:run
 
 The service starts at [http://localhost:8080](http://localhost:8080).
 
+## Seed the initial supplier data
+
+The importer reads `src/main/resources/seed/supplier-seed-data.csv` and runs at
+startup when `SUPPLIER_SEED_ENABLED=true`. It creates missing categories,
+buildings, and suppliers. Existing suppliers are skipped, so the same file can
+be imported again without creating duplicates. Disable seeding after the import.
+
+### Windows PowerShell
+
+From the repository root, start PostgreSQL:
+
+```powershell
+cd C:\path\to\CS3219
+docker compose --env-file .env up -d supplier-db
+```
+
+For a clean import, delete existing suppliers before deleting the referenced
+buildings and categories. Skip this command when testing the importer's
+idempotent rerun behavior.
+
+```powershell
+docker compose --env-file .env exec -T supplier-db `
+  psql -U supplier -d campuscouriers_supplier `
+  -v ON_ERROR_STOP=1 `
+  -c "BEGIN; DELETE FROM suppliers; DELETE FROM buildings; DELETE FROM categories; COMMIT;"
+```
+
+Configure and start the service from `supplier-service`:
+
+```powershell
+cd supplier-service
+
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "5433"
+$env:DB_NAME = "campuscouriers_supplier"
+$env:DB_USERNAME = "supplier"
+$env:DB_PASSWORD = "password"
+$env:SUPPLIER_SEED_ENABLED = "true"
+$env:SUPPLIER_SEED_FILE = "classpath:seed/supplier-seed-data.csv"
+
+.\mvnw.cmd spring-boot:run
+```
+
+System-installed Maven can be used instead:
+
+```powershell
+mvn spring-boot:run
+```
+
+Wait for the `Supplier seed import complete` log message, then press `Ctrl+C`.
+The committed records remain in PostgreSQL after the service stops.
+
+From the repository root, verify the stored counts. `psql` runs inside the
+PostgreSQL container; it does not need to be installed on Windows.
+
+```powershell
+cd ..
+docker compose --env-file .env exec -T supplier-db `
+  psql -U supplier -d campuscouriers_supplier `
+  -c "SELECT (SELECT COUNT(*) FROM suppliers) AS suppliers, (SELECT COUNT(*) FROM buildings) AS buildings, (SELECT COUNT(*) FROM categories) AS categories;"
+```
+
+Disable seeding in the current terminal before the next normal startup:
+
+```powershell
+Remove-Item Env:SUPPLIER_SEED_ENABLED
+Remove-Item Env:SUPPLIER_SEED_FILE
+```
+
+### macOS/Linux (bash or zsh)
+
+From the repository root, start PostgreSQL:
+
+```bash
+cd /path/to/CS3219
+docker compose --env-file .env up -d supplier-db
+```
+
+For a clean import, clear suppliers, buildings, and categories in foreign-key-safe
+order. Skip this command when testing an idempotent rerun.
+
+```bash
+docker compose --env-file .env exec -T supplier-db \
+  psql -U supplier -d campuscouriers_supplier \
+  -v ON_ERROR_STOP=1 \
+  -c "BEGIN; DELETE FROM suppliers; DELETE FROM buildings; DELETE FROM categories; COMMIT;"
+```
+
+Configure and start the service:
+
+```bash
+cd supplier-service
+
+export DB_HOST=localhost
+export DB_PORT=5433
+export DB_NAME=campuscouriers_supplier
+export DB_USERNAME=supplier
+export DB_PASSWORD=password
+export SUPPLIER_SEED_ENABLED=true
+export SUPPLIER_SEED_FILE=classpath:seed/supplier-seed-data.csv
+
+./mvnw spring-boot:run
+```
+
+System-installed Maven can be used instead:
+
+```bash
+mvn spring-boot:run
+```
+
+Wait for the `Supplier seed import complete` log message, then press `Ctrl+C`.
+Verify the persisted counts from the repository root:
+
+```bash
+cd ..
+docker compose --env-file .env exec -T supplier-db \
+  psql -U supplier -d campuscouriers_supplier \
+  -c "SELECT (SELECT COUNT(*) FROM suppliers) AS suppliers, (SELECT COUNT(*) FROM buildings) AS buildings, (SELECT COUNT(*) FROM categories) AS categories;"
+```
+
+Disable seeding in the current shell:
+
+```bash
+unset SUPPLIER_SEED_ENABLED SUPPLIER_SEED_FILE
+```
+
 
 ## Run the tests
 

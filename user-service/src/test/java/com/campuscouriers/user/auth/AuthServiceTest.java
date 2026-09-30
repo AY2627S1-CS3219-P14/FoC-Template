@@ -1,5 +1,6 @@
 package com.campuscouriers.user.auth;
 
+import com.campuscouriers.user.account.AccountCreationService;
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
 import com.campuscouriers.user.auth.dto.LogoutRequest;
@@ -13,13 +14,13 @@ import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import com.campuscouriers.user.security.access.JwtService;
 import com.campuscouriers.user.security.refresh.RefreshTokenService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,10 +48,18 @@ public class AuthServiceTest {
     @Captor private ArgumentCaptor<Account> accountCaptor;
     @Captor private ArgumentCaptor<Profile> profileCaptor;
 
-    @InjectMocks private AuthService authService;
-
     @Mock private JwtService jwtService;
     @Mock private RefreshTokenService refreshTokenService;
+
+    private AuthService authService;
+
+    // Real AccountCreationService over the mocks, so registration is tested through the shared creation path
+    @BeforeEach
+    void setUp() {
+        AccountCreationService accountCreationService =
+                new AccountCreationService(accountRepository, profileRepository, passwordEncoder);
+        authService = new AuthService(accountRepository, accountCreationService, passwordEncoder, jwtService, refreshTokenService);
+    }
 
     private final RegisterRequest request =
             new RegisterRequest(VALID_NAME, VALID_EMAIL, VALID_PASSWORD);
@@ -88,13 +97,11 @@ public class AuthServiceTest {
         }
     }
 
-    @DisplayName("F1.3.2 - the service should assign Student type by default, or Administrator if first user")
+    @DisplayName("F1.3.2 - the service should always assign Student type; administrators come from the bootstrap")
     @Nested
     class AccountTypeTests {
         @Test
-        void register_savesUserAsStudentByDefault() {
-
-            when(accountRepository.count()).thenReturn(1L);
+        void register_savesUserAsStudent() {
 
             authService.register(request);
 
@@ -104,14 +111,14 @@ public class AuthServiceTest {
         }
 
         @Test
-        void register_savesFirstUserAsAdministrator() {
-
-            when(accountRepository.count()).thenReturn(0L);
+        void register_neverGrantsAdministrator_evenWhenNoAccountsExist() {
 
             authService.register(request);
 
             verify(accountRepository).save(accountCaptor.capture());
-            assertThat(accountCaptor.getValue().getType()).isEqualTo(AccountType.Administrator);
+            assertThat(accountCaptor.getValue().getType()).isEqualTo(AccountType.Student);
+            verify(accountRepository, never()).count();
+            verify(accountRepository, never()).existsByType(any());
 
         }
     }

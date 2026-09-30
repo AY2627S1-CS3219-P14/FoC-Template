@@ -1,8 +1,10 @@
 package com.campuscouriers.user.account;
 
 import com.campuscouriers.user.account.dto.AccountResponse;
+import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidAccountException;
 import com.campuscouriers.user.exception.LastAdministratorException;
@@ -17,9 +19,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
@@ -145,6 +149,107 @@ public class AccountServiceTest {
             accountService.updateType(targetId, AccountType.Student, administrator);
 
             assertThat(target.getType()).isEqualTo(AccountType.Student);
+        }
+    }
+
+    @DisplayName("The user service shall allow only the account owner to change the account email")
+    @Nested
+    class UpdateEmailTests {
+
+        private static final String NEW_EMAIL = "alice.lim@u.nus.edu";
+
+        private final AccessTokenClaims owner =
+                new AccessTokenClaims(targetId, VALID_EMAIL, AccountType.Student);
+
+        @Test
+        void updateEmail_asOwner_changesPersistsAndReturnsTheEmail() {
+            Account target = account(targetId, AccountType.Student);
+            when(accountRepository.findById(targetId)).thenReturn(Optional.of(target));
+            when(accountRepository.existsByEmail(NEW_EMAIL)).thenReturn(false);
+
+            EmailResponse response = accountService.updateEmail(targetId, NEW_EMAIL, owner);
+
+            assertThat(target.getEmail()).isEqualTo(NEW_EMAIL);
+            assertThat(response).isEqualTo(new EmailResponse(NEW_EMAIL));
+            verify(accountRepository).saveAndFlush(target);
+        }
+
+        @Test
+        void updateEmail_withMixedCase_storesTheLowerCasedEmail() {
+            Account target = account(targetId, AccountType.Student);
+            when(accountRepository.findById(targetId)).thenReturn(Optional.of(target));
+            when(accountRepository.existsByEmail(NEW_EMAIL)).thenReturn(false);
+
+            EmailResponse response = accountService.updateEmail(targetId, "Alice.Lim@u.nus.edu", owner);
+
+            assertThat(target.getEmail()).isEqualTo(NEW_EMAIL);
+            assertThat(response).isEqualTo(new EmailResponse(NEW_EMAIL));
+            verify(accountRepository).existsByEmail(NEW_EMAIL);
+        }
+
+        @DisplayName("Resubmitting the current email (in any case) is a no-op, not a duplicate")
+        @Test
+        void updateEmail_withTheCurrentEmail_returnsItWithoutSaving() {
+            Account target = account(targetId, AccountType.Student);
+            when(accountRepository.findById(targetId)).thenReturn(Optional.of(target));
+
+            EmailResponse response = accountService.updateEmail(targetId, "ALICE@u.nus.edu", owner);
+
+            assertThat(response).isEqualTo(new EmailResponse(VALID_EMAIL));
+            verify(accountRepository, never()).existsByEmail(any());
+            verify(accountRepository, never()).saveAndFlush(any());
+        }
+
+        @Test
+        void updateEmail_toAnEmailAlreadyInUse_throwsAndLeavesEmailUnchanged() {
+            Account target = account(targetId, AccountType.Student);
+            when(accountRepository.findById(targetId)).thenReturn(Optional.of(target));
+            when(accountRepository.existsByEmail(NEW_EMAIL)).thenReturn(true);
+
+            assertThatThrownBy(() -> accountService.updateEmail(targetId, NEW_EMAIL, owner))
+                    .isInstanceOf(EmailAlreadyRegisteredException.class);
+
+            assertThat(target.getEmail()).isEqualTo(VALID_EMAIL);
+            verify(accountRepository, never()).saveAndFlush(any());
+        }
+
+        // e.g. two concurrent requests both pass the existsByEmail check
+        @Test
+        void updateEmail_whenUniqueConstraintRejectsTheFlush_throwsEmailAlreadyRegistered() {
+            Account target = account(targetId, AccountType.Student);
+            when(accountRepository.findById(targetId)).thenReturn(Optional.of(target));
+            when(accountRepository.existsByEmail(NEW_EMAIL)).thenReturn(false);
+            when(accountRepository.saveAndFlush(target)).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+            assertThatThrownBy(() -> accountService.updateEmail(targetId, NEW_EMAIL, owner))
+                    .isInstanceOf(EmailAlreadyRegisteredException.class);
+        }
+
+        @Test
+        void updateEmail_asNonOwnerStudent_throwsWithoutQueryingTheRepository() {
+            assertThatThrownBy(() -> accountService.updateEmail(targetId, NEW_EMAIL, student))
+                    .isInstanceOf(InsufficientPermissionException.class);
+
+            verifyNoInteractions(accountRepository);
+        }
+
+        @DisplayName("Administrators have no special access to other users' emails")
+        @Test
+        void updateEmail_asAdministratorOnAnotherAccount_throwsWithoutQueryingTheRepository() {
+            assertThatThrownBy(() -> accountService.updateEmail(targetId, NEW_EMAIL, administrator))
+                    .isInstanceOf(InsufficientPermissionException.class);
+
+            verifyNoInteractions(accountRepository);
+        }
+
+        @Test
+        void updateEmail_asOwnerWithMissingAccount_throws() {
+            when(accountRepository.findById(targetId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> accountService.updateEmail(targetId, NEW_EMAIL, owner))
+                    .isInstanceOf(InvalidAccountException.class);
+
+            verify(accountRepository, never()).saveAndFlush(any());
         }
     }
 

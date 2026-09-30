@@ -33,4 +33,8 @@ public class Account {
         this.type = type;
     }
 
+    public void changeEmail(String email) {
+        this.email = email;
+    }
+
 }

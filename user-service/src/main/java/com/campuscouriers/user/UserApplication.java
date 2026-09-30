@@ -1,7 +1,9 @@
 package com.campuscouriers.user;
 
+import com.campuscouriers.user.bootstrap.AdminBootstrapRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 import java.time.Clock;
@@ -15,7 +17,12 @@ public class UserApplication {
 	}
 
 	public static void main(String[] args) {
-		SpringApplication.run(UserApplication.class, args);
+		ConfigurableApplicationContext context = SpringApplication.run(UserApplication.class, args);
+
+		// Bootstrap-only job: the administrator bootstrap has run (a failure would have thrown above), so shut down
+		if (context.getEnvironment().matchesProfiles(AdminBootstrapRunner.BOOTSTRAP_ONLY_PROFILE)) {
+			System.exit(SpringApplication.exit(context));
+		}
 	}
 
 }

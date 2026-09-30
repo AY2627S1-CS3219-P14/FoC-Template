@@ -34,3 +34,6 @@ build/
 
 ### Keys ###
 src/main/resources/keys/
+
+### JWT keys (mounted into the container at runtime) ###
+keys/

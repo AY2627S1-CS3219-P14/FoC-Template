@@ -1,20 +1,17 @@
 package com.campuscouriers.user.auth;
 
+import com.campuscouriers.user.account.AccountCreationService;
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
 import com.campuscouriers.user.auth.dto.LogoutRequest;
 import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
-import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.entity.AccountType;
-import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InvalidCredentialsException;
 import com.campuscouriers.user.repository.AccountRepository;
-import com.campuscouriers.user.repository.ProfileRepository;
 import com.campuscouriers.user.security.access.JwtService;
 import com.campuscouriers.user.security.refresh.RefreshTokenService;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +24,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final AccountRepository accountRepository;
-    private final ProfileRepository profileRepository;
+    private final AccountCreationService accountCreationService;
     private final PasswordEncoder passwordEncoder;
 
     private final JwtService jwtService;
@@ -35,51 +32,21 @@ public class AuthService {
 
     public AuthService(
         AccountRepository accountRepository,
-        ProfileRepository profileRepository,
+        AccountCreationService accountCreationService,
         PasswordEncoder passwordEncoder,
         JwtService jwtService,
         RefreshTokenService refreshTokenService
     ) {
         this.accountRepository = accountRepository;
-        this.profileRepository = profileRepository;
+        this.accountCreationService = accountCreationService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
     }
 
-    @Transactional
+    // Registration always creates a Student; administrators come from the bootstrap or a promotion
     public void register(RegisterRequest request) {
-
-        String email = request.email().toLowerCase(Locale.ROOT);
-
-        // Email Duplicate Check
-        if (accountRepository.existsByEmail(email)) {
-            throw new EmailAlreadyRegisteredException();
-        }
-
-        // Set Role (if first user, it is Administrator, otherwise, Student)
-        AccountType role = accountRepository.count() > 0 ? AccountType.Student : AccountType.Administrator;
-
-        // Create Account and Profile
-        Account account = new Account(
-                role,
-                email,
-                passwordEncoder.encode(request.password())
-        );
-
-        Profile profile = new Profile(
-                account,
-                request.name()
-        );
-
-        // Persist Account and Profile to Database
-        try {
-            accountRepository.save(account);
-        } catch (DataIntegrityViolationException ex) {
-            throw new EmailAlreadyRegisteredException();
-        }
-        profileRepository.save(profile);
-
+        accountCreationService.create(AccountType.Student, request.email(), request.password(), request.name());
     }
 
     public LoginResponse login(LoginRequest request) {

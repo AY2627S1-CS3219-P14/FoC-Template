@@ -97,6 +97,7 @@ From the repository root, start PostgreSQL:
 ```powershell
 cd C:\path\to\CS3219
 docker compose --env-file .env up -d supplier-db
+docker compose --env-file .env stop supplier-service
 ```
 
 For a clean import, delete existing suppliers before deleting the referenced
@@ -110,46 +111,31 @@ docker compose --env-file .env exec -T supplier-db `
   -c "BEGIN; DELETE FROM suppliers; DELETE FROM buildings; DELETE FROM categories; COMMIT;"
 ```
 
-Configure and start the service from `supplier-service`:
+Run the supplier service as a one-off container with seeding enabled:
 
 ```powershell
-cd supplier-service
-
-$env:DB_HOST = "localhost"
-$env:DB_PORT = "5433"
-$env:DB_NAME = "campuscouriers_supplier"
-$env:DB_USERNAME = "supplier"
-$env:DB_PASSWORD = "password"
-$env:SUPPLIER_SEED_ENABLED = "true"
-$env:SUPPLIER_SEED_FILE = "classpath:seed/supplier-seed-data.csv"
-
-.\mvnw.cmd spring-boot:run
-```
-
-System-installed Maven can be used instead:
-
-```powershell
-mvn spring-boot:run
+docker compose --env-file .env run --rm `
+  -e SUPPLIER_SEED_ENABLED=true `
+  -e SUPPLIER_SEED_FILE=classpath:seed/supplier-seed-data.csv `
+  supplier-service
 ```
 
 Wait for the `Supplier seed import complete` log message, then press `Ctrl+C`.
-The committed records remain in PostgreSQL after the service stops.
+The one-off container is removed, but the committed records remain in PostgreSQL.
 
 From the repository root, verify the stored counts. `psql` runs inside the
 PostgreSQL container; it does not need to be installed on Windows.
 
 ```powershell
-cd ..
 docker compose --env-file .env exec -T supplier-db `
   psql -U supplier -d campuscouriers_supplier `
   -c "SELECT (SELECT COUNT(*) FROM suppliers) AS suppliers, (SELECT COUNT(*) FROM buildings) AS buildings, (SELECT COUNT(*) FROM categories) AS categories;"
 ```
 
-Disable seeding in the current terminal before the next normal startup:
+Start the normal long-running service with seeding disabled (the default):
 
 ```powershell
-Remove-Item Env:SUPPLIER_SEED_ENABLED
-Remove-Item Env:SUPPLIER_SEED_FILE
+docker compose --env-file .env up -d supplier-service
 ```
 
 ### macOS/Linux (bash or zsh)
@@ -159,6 +145,7 @@ From the repository root, start PostgreSQL:
 ```bash
 cd /path/to/CS3219
 docker compose --env-file .env up -d supplier-db
+docker compose --env-file .env stop supplier-service
 ```
 
 For a clean import, clear suppliers, buildings, and categories in foreign-key-safe
@@ -171,29 +158,17 @@ docker compose --env-file .env exec -T supplier-db \
   -c "BEGIN; DELETE FROM suppliers; DELETE FROM buildings; DELETE FROM categories; COMMIT;"
 ```
 
-Configure and start the service:
+Run the supplier service as a one-off container with seeding enabled:
 
 ```bash
-cd supplier-service
-
-export DB_HOST=localhost
-export DB_PORT=5433
-export DB_NAME=campuscouriers_supplier
-export DB_USERNAME=supplier
-export DB_PASSWORD=password
-export SUPPLIER_SEED_ENABLED=true
-export SUPPLIER_SEED_FILE=classpath:seed/supplier-seed-data.csv
-
-./mvnw spring-boot:run
-```
-
-System-installed Maven can be used instead:
-
-```bash
-mvn spring-boot:run
+docker compose --env-file .env run --rm \
+  -e SUPPLIER_SEED_ENABLED=true \
+  -e SUPPLIER_SEED_FILE=classpath:seed/supplier-seed-data.csv \
+  supplier-service
 ```
 
 Wait for the `Supplier seed import complete` log message, then press `Ctrl+C`.
+The one-off container is removed, but the committed records remain in PostgreSQL.
 Verify the persisted counts from the repository root:
 
 ```bash
@@ -203,10 +178,10 @@ docker compose --env-file .env exec -T supplier-db \
   -c "SELECT (SELECT COUNT(*) FROM suppliers) AS suppliers, (SELECT COUNT(*) FROM buildings) AS buildings, (SELECT COUNT(*) FROM categories) AS categories;"
 ```
 
-Disable seeding in the current shell:
+Start the normal long-running service with seeding disabled (the default):
 
 ```bash
-unset SUPPLIER_SEED_ENABLED SUPPLIER_SEED_FILE
+docker compose --env-file .env up -d supplier-service
 ```
 
 

@@ -29,6 +29,22 @@ services:
       retries: 10
     restart: unless-stopped
 
+  supplier-service:
+    build: ./supplier-service
+    image: campuscouriers/supplier-service
+    environment:
+      DB_HOST: supplier-db
+      DB_PORT: 5432
+      DB_NAME: ${SUPPLIER_DB_NAME}
+      DB_USERNAME: ${SUPPLIER_DB_USERNAME}
+      DB_PASSWORD: ${SUPPLIER_DB_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      supplier-db:
+        condition: service_healthy
+    restart: unless-stopped
+
   user-db:
     image: postgres:16-alpine
     environment:
@@ -64,6 +80,17 @@ services:
         condition: service_healthy
     networks:
       - user-net
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: campuscouriers/frontend
+    environment:
+      VITE_SUPPLIER_API_URL: ${VITE_SUPPLIER_API_URL:-http://localhost:8080}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - supplier-service
     restart: unless-stopped
 
   # One-off job: creates the first administrator if none exists, then exits (non-zero on failure).

@@ -2,7 +2,9 @@ package com.campuscouriers.user.profile;
 
 import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.entity.Profile;
+import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidProfileException;
+import com.campuscouriers.user.profile.dto.NameResponse;
 import com.campuscouriers.user.profile.dto.ProfileResponse;
 import com.campuscouriers.user.repository.ProfileRepository;
 import com.campuscouriers.user.security.access.AccessTokenClaims;
@@ -44,6 +46,22 @@ public class ProfileService {
         return profileRepository.findById(caller.accountId())
                 .map(this::toResponse)
                 .orElseThrow(InvalidProfileException::new);
+    }
+
+    // Available to the profile's owner only
+    @Transactional
+    public NameResponse updateName(UUID profileId, String name, AccessTokenClaims caller) {
+
+        // Checked before the lookup so non-owners cannot probe which profiles exist
+        if (!profileId.equals(caller.accountId())) {
+            throw new InsufficientPermissionException();
+        }
+
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(InvalidProfileException::new);
+
+        profile.changeName(name);  // flushed on commit
+        return new NameResponse(profile.getName());
     }
 
     private ProfileResponse toResponse(Profile profile) {

@@ -1,7 +1,9 @@
 package com.campuscouriers.user.account;
 
 import com.campuscouriers.user.account.dto.AccountResponse;
+import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidAccessTokenException;
 import com.campuscouriers.user.exception.InvalidAccountException;
@@ -208,7 +210,155 @@ class AccountControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("Edit Account Email: PATCH /api/v1/accounts/{accountId}/email")
+    class UpdateEmailTests {
+
+        private static final String NEW_EMAIL = "bob.lee@u.nus.edu";
+        private final UUID ownId = student.accountId();
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "bob.lee@u.nus.edu",
+                "bob@nus.edu.sg",
+                "bob@comp.nus.edu.sg",
+                "bob@yale-nus.edu.sg",
+                "bob@duke-nus.edu.sg",
+                "Bob.Lee@u.nus.edu"
+        })
+        void updateEmail_withNusEmail_returns200WithTheEmail(String email) throws Exception {
+            when(accountService.updateEmail(ownId, email, student)).thenReturn(new EmailResponse(email));
+
+            patchEmail(STUDENT_TOKEN, ownId.toString(), emailBody(email))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.email").value(email))
+                    .andExpect(jsonPath("$.type").doesNotExist());
+
+            verify(accountService).updateEmail(ownId, email, student);
+        }
+
+        @Test
+        void updateEmail_withExtraFields_ignoresThemAndReturns200() throws Exception {
+            when(accountService.updateEmail(ownId, NEW_EMAIL, student)).thenReturn(new EmailResponse(NEW_EMAIL));
+
+            patchEmail(STUDENT_TOKEN, ownId.toString(), """
+                    {"email":"bob.lee@u.nus.edu","type":"Administrator"}
+                    """)
+                    .andExpect(status().isOk());
+
+            verify(accountService).updateEmail(ownId, NEW_EMAIL, student);
+            verify(accountService, never()).updateType(any(), any(), any());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "bob@gmail.com",
+                "bob@u.nus.edu.evil.com",
+                "bob@fakenus.edu",
+                "bob@nus.com",
+                "bob@U.NUS.EDU",    // domain match is case-sensitive, as at registration
+                "not-an-email",
+                "@u.nus.edu",
+                "",
+                "   "
+        })
+        void updateEmail_withInvalidOrNonNusEmail_returns400(String email) throws Exception {
+            patchEmail(STUDENT_TOKEN, ownId.toString(), emailBody(email))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(accountService);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"{}", "{\"email\":null}", "{\"mail\":\"bob@u.nus.edu\"}", "", "{\"email\":", "{\"email\":[\"bob@u.nus.edu\"]}"})
+        void updateEmail_withMissingOrUnreadableEmail_returns400(String content) throws Exception {
+            patchEmail(STUDENT_TOKEN, ownId.toString(), content)
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(accountService);
+        }
+
+        @Test
+        void updateEmail_withMalformedAccountId_returns400() throws Exception {
+            patchEmail(STUDENT_TOKEN, "not-a-uuid", emailBody(NEW_EMAIL))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(accountService);
+        }
+
+        @Test
+        void updateEmail_asNonOwner_returns403() throws Exception {
+            when(accountService.updateEmail(targetId, NEW_EMAIL, student))
+                    .thenThrow(new InsufficientPermissionException());
+
+            patchEmail(STUDENT_TOKEN, targetId.toString(), emailBody(NEW_EMAIL))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void updateEmail_withMissingAccount_returns404() throws Exception {
+            when(accountService.updateEmail(ownId, NEW_EMAIL, student)).thenThrow(new InvalidAccountException());
+
+            patchEmail(STUDENT_TOKEN, ownId.toString(), emailBody(NEW_EMAIL))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void updateEmail_toAnEmailAlreadyInUse_returns409() throws Exception {
+            when(accountService.updateEmail(ownId, NEW_EMAIL, student))
+                    .thenThrow(new EmailAlreadyRegisteredException());
+
+            patchEmail(STUDENT_TOKEN, ownId.toString(), emailBody(NEW_EMAIL))
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
+        void updateEmail_withoutAccessToken_returns401() throws Exception {
+            mockMvc.perform(patch("/api/v1/accounts/{id}/email", ownId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(emailBody(NEW_EMAIL)))
+                    .andExpect(status().isUnauthorized());
+
+            verifyNoInteractions(accountService);
+        }
+
+        @Test
+        void updateEmail_withInvalidAccessToken_returns401() throws Exception {
+            when(jwtService.parseAndValidate("bad-token")).thenThrow(new InvalidAccessTokenException());
+
+            patchEmail("bad-token", ownId.toString(), emailBody(NEW_EMAIL))
+                    .andExpect(status().isUnauthorized());
+
+            verifyNoInteractions(accountService);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"GET", "POST", "PUT", "DELETE"})
+        void email_withOtherMethods_returns405(String method) throws Exception {
+            mockMvc.perform(request(HttpMethod.valueOf(method), "/api/v1/accounts/{id}/email", ownId)
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + STUDENT_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(emailBody(NEW_EMAIL)))
+                    .andExpect(status().isMethodNotAllowed());
+
+            verifyNoInteractions(accountService);
+        }
+    }
+
     // ---- Helpers ----
+    private static String emailBody(String email) {
+        return String.format("""
+                {"email":"%s"}
+                """, email);
+    }
+
+    private ResultActions patchEmail(String token, String accountId, String content) throws Exception {
+        return mockMvc.perform(patch("/api/v1/accounts/" + accountId + "/email")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content));
+    }
+
     private static String body(String type) {
         return String.format("""
                 {"type":"%s"}

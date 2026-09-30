@@ -1,17 +1,21 @@
 package com.campuscouriers.user.account;
 
 import com.campuscouriers.user.account.dto.AccountResponse;
+import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidAccountException;
 import com.campuscouriers.user.exception.LastAdministratorException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.security.access.AccessTokenClaims;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -58,6 +62,39 @@ public class AccountService {
 
         target.changeType(newType);  // flushed on commit
         return AccountResponse.from(target);
+    }
+
+    // Available to the account's owner only
+    @Transactional
+    public EmailResponse updateEmail(UUID accountId, String email, AccessTokenClaims caller) {
+
+        // Checked before the lookup so non-owners cannot probe which accounts exist
+        if (!accountId.equals(caller.accountId())) {
+            throw new InsufficientPermissionException();
+        }
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(InvalidAccountException::new);
+
+        String normalizedEmail = email.toLowerCase(Locale.ROOT);
+        if (normalizedEmail.equals(account.getEmail())) {
+            return new EmailResponse(account.getEmail());
+        }
+
+        if (accountRepository.existsByEmail(normalizedEmail)) {
+            throw new EmailAlreadyRegisteredException();
+        }
+
+        account.changeEmail(normalizedEmail);
+
+        // Flushed here so a concurrent request claiming the same email fails the unique constraint as a 409
+        try {
+            accountRepository.saveAndFlush(account);
+        } catch (DataIntegrityViolationException ex) {
+            throw new EmailAlreadyRegisteredException();
+        }
+
+        return new EmailResponse(account.getEmail());
     }
 
 }

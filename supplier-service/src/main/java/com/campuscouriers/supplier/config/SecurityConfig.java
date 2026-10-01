@@ -23,7 +23,6 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> { })
-                .authorizeHttpRequests(requests -> requests.anyRequest().permitAll())
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(HttpMethod.GET,
                                 "/suppliers/**", "/categories/**", "/buildings/**")
@@ -55,6 +54,8 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
         authoritiesConverter.setAuthoritiesClaimName("type");

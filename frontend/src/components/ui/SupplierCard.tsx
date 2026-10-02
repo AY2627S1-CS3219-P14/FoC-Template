@@ -8,50 +8,58 @@ type SupplierCardProps = {
 
 export function SupplierCard({ supplier, onSelect, isSelected = false }: SupplierCardProps) {
   return (
-    <article
-      className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-        isSelected ? 'border-emerald-600 ring-2 ring-emerald-100' : 'border-slate-200'
-      }`}
-    >
-      {supplier.imageUrl ? (
-        <img
-          src={supplier.imageUrl}
-          alt={`${supplier.name} storefront`}
-          loading="lazy"
-          decoding="async"
-          className="h-44 w-full object-cover"
-        />
-      ) : (
-        <div
-          className="flex h-44 items-center justify-center bg-slate-100 text-4xl font-semibold text-slate-400"
-          aria-label={`No image available for ${supplier.name}`}
-        >
-          {supplier.name.charAt(0)}
+    <article className="flex h-full flex-col gap-2.5">
+      <div
+        className={`overflow-hidden rounded-[18px] border bg-white shadow-[0_8px_24px_rgba(22,59,42,0.07)] transition ${
+          isSelected ? 'border-[#175c45] ring-2 ring-[#ddf3e7]' : 'border-[#dde3de]'
+        }`}
+      >
+        {supplier.imageUrl ? (
+          <img
+            src={supplier.imageUrl}
+            alt={`${supplier.name} storefront`}
+            loading="lazy"
+            decoding="async"
+            className="h-48 w-full object-cover sm:h-52 xl:h-56"
+          />
+        ) : (
+          <div
+            className="flex h-48 items-center justify-center bg-[#e8efe9] text-4xl font-semibold text-[#7d9387] sm:h-52 xl:h-56"
+            aria-label={`No image available for ${supplier.name}`}
+          >
+            {supplier.name.charAt(0)}
+          </div>
+        )}
+
+        <div className="px-4 py-3.5">
+          <h2 className="text-base font-semibold tracking-[-0.01em] text-[#17211d]">
+            {supplier.name}
+          </h2>
+          <div className="mt-1.5 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-[#4c5b53]">
+                {supplier.building.name}
+                {supplier.floor ? ` · Level ${supplier.floor}` : null}
+              </p>
+              <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#68736c]">
+                {supplier.description || 'No description is available for this supplier yet.'}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-[#ddf3e7] px-2.5 py-1 text-[11px] font-medium text-[#175c45]">
+              {supplier.category.name}
+            </span>
+          </div>
         </div>
-      )}
-
-      <div className="flex flex-1 flex-col p-5">
-        <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-          {supplier.category.name}
-        </span>
-
-        <h2 className="mt-3 text-lg font-semibold text-slate-950">{supplier.name}</h2>
-        <p className="mt-1 text-sm font-medium text-slate-700">
-          {supplier.building.name}
-          {supplier.floor ? ` · Level ${supplier.floor}` : null}
-        </p>
-        <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">
-          {supplier.description || 'No description is available for this supplier yet.'}
-        </p>
-
-        <button
-          type="button"
-          onClick={() => onSelect(supplier)}
-          className={`mt-5 w-full cursor-pointer rounded-lg px-4 py-3 text-sm font-semibold transition bg-emerald-700 text-white hover:bg-emerald-800`}
-        >
-          Create Errand
-        </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => onSelect(supplier)}
+        className="flex h-11 w-full cursor-pointer items-center justify-between rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+      >
+        <span>{isSelected ? 'Supplier selected' : 'Create errand here'}</span>
+        <span aria-hidden="true">→</span>
+      </button>
     </article>
   )
 }

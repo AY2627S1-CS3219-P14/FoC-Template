@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import routeIcon from '../assets/route.svg'
-import studentAvatars from '../assets/student-avatars.svg'
 import { login } from '../features/auth/auth.api'
 import { saveSession } from '../features/auth/auth.storage'
 

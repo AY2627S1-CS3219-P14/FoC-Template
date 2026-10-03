@@ -2,9 +2,6 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.account.AccountCreationService;
 import com.campuscouriers.user.auth.dto.LoginRequest;
-import com.campuscouriers.user.auth.dto.LoginResponse;
-import com.campuscouriers.user.auth.dto.LogoutRequest;
-import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
@@ -49,7 +46,7 @@ public class AuthService {
         accountCreationService.create(AccountType.Student, request.email(), request.password(), request.name());
     }
 
-    public LoginResponse login(LoginRequest request) {
+    public AuthTokens login(LoginRequest request) {
         String email = request.email().toLowerCase(Locale.ROOT);
         Optional<Account> maybeAccount = accountRepository.findByEmail(email);
 
@@ -66,21 +63,21 @@ public class AuthService {
         return issueSession(account);
     }
 
-    private LoginResponse issueSession(Account account) {
+    private AuthTokens issueSession(Account account) {
         String accessToken = jwtService.generateAccessToken(account);
         String refreshToken = refreshTokenService.issue(account);
-        return new LoginResponse(accessToken, refreshToken, jwtService.getAccessTokenTtl().toSeconds());
+        return new AuthTokens(accessToken, refreshToken, jwtService.getAccessTokenTtl().toSeconds());
     }
 
     @Transactional
-    public LoginResponse refresh(RefreshRequest request) {
-        Account account = refreshTokenService.redeem(request.refreshToken());
+    public AuthTokens refresh(String rawRefreshToken) {
+        Account account = refreshTokenService.redeem(rawRefreshToken);
         return issueSession(account);
     }
 
     @Transactional
-    public void logout(UUID accountId, LogoutRequest request) {
-        refreshTokenService.revoke(request.refreshToken(), accountId);
+    public void logout(UUID accountId, String rawRefreshToken) {
+        refreshTokenService.revoke(rawRefreshToken, accountId);
     }
 
 }

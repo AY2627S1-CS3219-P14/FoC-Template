@@ -16,9 +16,11 @@ public class Account {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable=false)
     private AccountType type;
     @Column(nullable = false, unique = true)
     private String email;
+    @Column(nullable=false)
     private String passwordHash;
 
     protected Account() {}  // required by JPA

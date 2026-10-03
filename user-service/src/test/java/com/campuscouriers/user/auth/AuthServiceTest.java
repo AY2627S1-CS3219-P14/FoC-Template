@@ -2,9 +2,6 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.account.AccountCreationService;
 import com.campuscouriers.user.auth.dto.LoginRequest;
-import com.campuscouriers.user.auth.dto.LoginResponse;
-import com.campuscouriers.user.auth.dto.LogoutRequest;
-import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.entity.AccountType;
@@ -191,12 +188,11 @@ public class AuthServiceTest {
         when(jwtService.getAccessTokenTtl()).thenReturn(Duration.ofMinutes(15));
         when(refreshTokenService.issue(account)).thenReturn("raw-refresh-token");
 
-        LoginResponse response = authService.login(new LoginRequest(VALID_EMAIL, VALID_PASSWORD));
+        AuthTokens tokens = authService.login(new LoginRequest(VALID_EMAIL, VALID_PASSWORD));
 
-        assertThat(response.accessToken()).isEqualTo("signed.jwt.token");
-        assertThat(response.refreshToken()).isEqualTo("raw-refresh-token");
-        assertThat(response.tokenType()).isEqualTo("Bearer");
-        assertThat(response.expiresIn()).isEqualTo(900L);
+        assertThat(tokens.accessToken()).isEqualTo("signed.jwt.token");
+        assertThat(tokens.refreshToken()).isEqualTo("raw-refresh-token");
+        assertThat(tokens.expiresIn()).isEqualTo(900L);
     }
 
     @DisplayName("F4 - the user service shall allow users to refresh their tokens")
@@ -208,10 +204,10 @@ public class AuthServiceTest {
         when(jwtService.getAccessTokenTtl()).thenReturn(Duration.ofMinutes(15));
         when(refreshTokenService.issue(account)).thenReturn("new-refresh-token");
 
-        LoginResponse response = authService.refresh(new RefreshRequest("old-refresh-token"));
+        AuthTokens tokens = authService.refresh("old-refresh-token");
 
-        assertThat(response.accessToken()).isEqualTo("new-access-token");
-        assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
+        assertThat(tokens.accessToken()).isEqualTo("new-access-token");
+        assertThat(tokens.refreshToken()).isEqualTo("new-refresh-token");
     }   // Uses redemption from the RefreshTokenService
 
     @DisplayName("F22 - logout shall revoke the refresh token for the authenticated account")
@@ -219,7 +215,7 @@ public class AuthServiceTest {
     void logout_revokesTheRefreshTokenForTheAuthenticatedAccount() {
         UUID accountId = UUID.randomUUID();
 
-        authService.logout(accountId, new LogoutRequest("raw-refresh-token"));
+        authService.logout(accountId, "raw-refresh-token");
 
         verify(refreshTokenService).revoke("raw-refresh-token", accountId);
         verifyNoInteractions(jwtService, accountRepository);

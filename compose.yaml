@@ -39,7 +39,7 @@ services:
       DB_USERNAME: ${SUPPLIER_DB_USERNAME}
       DB_PASSWORD: ${SUPPLIER_DB_PASSWORD}
       SUPPLIER_CORS_ALLOWED_ORIGINS: ${SUPPLIER_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
-      USER_SERVICE_URL: http://user-service:8080
+      USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
     ports:
       - "8080:8080"
     depends_on:

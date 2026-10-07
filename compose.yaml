@@ -10,6 +10,44 @@ x-user-service-env: &user-service-env
   BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
 
 services:
+  order-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${ORDER_DB_NAME}
+      POSTGRES_USER: ${ORDER_DB_USERNAME}
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
+    ports:
+      - "${ORDER_DB_PORT:-5435}:5432"
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${ORDER_DB_USERNAME} -d ${ORDER_DB_NAME}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  order-service:
+    build: ./order-service
+    image: campuscouriers/order-service
+    environment:
+      DB_HOST: order-db
+      DB_PORT: 5432
+      DB_NAME: ${ORDER_DB_NAME}
+      DB_USERNAME: ${ORDER_DB_USERNAME}
+      DB_PASSWORD: ${ORDER_DB_PASSWORD}
+      USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
+      SUPPLIER_SERVICE_URL: ${SUPPLIER_SERVICE_DOCKER_URL:-http://supplier-service:8080}
+      JWT_ISSUER: ${JWT_ISSUER:-campuscouriers-user-service}
+    ports:
+      - "${ORDER_SERVICE_PORT:-8002}:8000"
+    depends_on:
+      order-db:
+        condition: service_healthy
+    restart: unless-stopped
+
   supplier-db:
     image: postgres:16-alpine
     environment:
@@ -120,5 +158,6 @@ networks:
   user-net:
 
 volumes:
+  order-db-data:
   supplier-db-data:
   user-db-data:

@@ -15,8 +15,6 @@ services:
   kafka:
     image: apache/kafka:4.3.1
     container_name: kafka
-    ports:
-      - "9092:9092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -35,7 +33,7 @@ services:
       KAFKA_NUM_PARTITIONS: 3
 
   kafka-ui:
-    image: ghcr.io/kafbat/kafka-ui:latest
+    image: ghcr.io/kafbat/kafka-ui:1.5.0
     container_name: kafka-ui
     ports:
       - "8085:8080"

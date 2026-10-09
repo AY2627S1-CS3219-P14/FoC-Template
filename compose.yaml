@@ -33,7 +33,7 @@ services:
       KAFKA_NUM_PARTITIONS: 3
 
   kafka-ui:
-    image: ghcr.io/kafbat/kafka-ui:1.5.0
+    image: ghcr.io/kafbat/kafka-ui:latest
     container_name: kafka-ui
     ports:
       - "8085:8080"

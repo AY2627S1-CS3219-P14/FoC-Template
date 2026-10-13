@@ -5,6 +5,8 @@ import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.Profile;
 import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.event.UserEventPublisher;
+import com.campuscouriers.user.event.UserRegisteredEvent;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InvalidCredentialsException;
 import com.campuscouriers.user.repository.AccountRepository;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +31,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,6 +54,12 @@ public class AuthServiceTest {
     @Mock private JwtService jwtService;
     @Mock private RefreshTokenService refreshTokenService;
 
+    @Mock private UserEventPublisher userEventPublisher;
+    @Captor private ArgumentCaptor<UserRegisteredEvent> eventCaptor;
+
+    private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
+    private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+
     private AuthService authService;
 
     // Real AccountCreationService over the mocks, so registration is tested through the shared creation path
@@ -55,7 +67,8 @@ public class AuthServiceTest {
     void setUp() {
         AccountCreationService accountCreationService =
                 new AccountCreationService(accountRepository, profileRepository, passwordEncoder);
-        authService = new AuthService(accountRepository, accountCreationService, passwordEncoder, jwtService, refreshTokenService);
+        authService = new AuthService(accountRepository, accountCreationService, passwordEncoder,
+                jwtService, refreshTokenService, userEventPublisher, clock);
     }
 
     private final RegisterRequest request =
@@ -73,7 +86,7 @@ public class AuthServiceTest {
                     .isInstanceOf(EmailAlreadyRegisteredException.class);
 
             verify(accountRepository, never()).save(any());
-            verifyNoInteractions(profileRepository, passwordEncoder);
+            verifyNoInteractions(profileRepository, passwordEncoder, userEventPublisher);
         }
 
         @Test
@@ -147,6 +160,49 @@ public class AuthServiceTest {
         assertThat(profile.getName()).isEqualTo(VALID_NAME);
         assertThat(profile.getAccount()).isSameAs(accountCaptor.getValue());
 
+    }
+
+    @DisplayName("Registration publishes a UserRegisteredEvent for other services")
+    @Nested
+    class RegistrationEventTests {
+
+        @Test
+        void register_publishesEventWithAccountAndProfileDetails() {
+
+            authService.register(new RegisterRequest(VALID_NAME, DUPLICATE_EMAIL, VALID_PASSWORD));
+
+            verify(accountRepository).save(accountCaptor.capture());
+            verify(userEventPublisher).publishUserRegistered(eventCaptor.capture());
+
+            UserRegisteredEvent event = eventCaptor.getValue();
+            assertThat(event.userId()).isEqualTo(accountCaptor.getValue().getId());
+            assertThat(event.type()).isEqualTo(AccountType.Student);
+            assertThat(event.name()).isEqualTo(VALID_NAME);
+            assertThat(event.email()).isEqualTo(VALID_EMAIL);  // normalised, as persisted
+            assertThat(event.registeredAt()).isEqualTo(NOW);
+
+        }
+
+        @Test
+        void register_publishesOnlyAfterAccountAndProfileAreSaved() {
+
+            authService.register(request);
+
+            InOrder inOrder = inOrder(accountRepository, profileRepository, userEventPublisher);
+            inOrder.verify(accountRepository).save(any());
+            inOrder.verify(profileRepository).save(any());
+            inOrder.verify(userEventPublisher).publishUserRegistered(any());
+
+        }
+
+        @Test
+        void register_whenProfileSaveFails_publishesNothing() {
+            when(profileRepository.save(any())).thenThrow(new RuntimeException("database down"));
+
+            assertThatThrownBy(() -> authService.register(request)).isInstanceOf(RuntimeException.class);
+
+            verifyNoInteractions(userEventPublisher);
+        }
     }
 
     @DisplayName("F2.1 - the user service should verify that the user for the email exists")

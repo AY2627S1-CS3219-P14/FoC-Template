@@ -134,7 +134,7 @@ class UserEventKafkaIntegrationTest {
     // Returns the first record on the topic with the given key, failing if none arrives in time
     private ConsumerRecord<String, String> awaitRecord(String topic, String key) {
         List<ConsumerRecord<String, String>> records = recordsFor(topic, key, RECEIVE_TIMEOUT, true);
-        assertThat(records).as("record on %s with key %s", topic, key).isNotEmpty();
+        assertThat(records).as("record on %s with key %s", topic, key).hasSize(1);
         return records.get(0);
     }
 

@@ -7,6 +7,7 @@ This folder contains one FastAPI order service:
 - `main/cancel_errand.py`: `POST /errand/cancel` lets the requester cancel an open, unexpired errand and calls a credit-release placeholder.
 - `main/complete_errand.py`: `POST /errand/complete` lets the requester confirm completion of an accepted, unexpired errand and calls a credit-transfer placeholder.
 - `main/fail_errand.py`: `POST /errand/fail` lets the requester report failure of an accepted, unexpired errand with a required reason and calls the credit-release placeholder.
+- `main/get_errands.py`: `GET /errands` lists available open errands and the caller's own/assigned errands, or all errands for administrators.
 - `main/app.py`: registers the route modules in one FastAPI application.
 
 ## Install dependencies
@@ -162,5 +163,66 @@ Repeated or competing completion/failure requests cannot both commit successfull
 
 No schema migration is needed. Run `python -m pytest -q test` for the service suite.
 Set `TEST_ORDER_DATABASE_URL` to also run PostgreSQL terminal-state concurrency tests.
-The separate sibling integration-test suite has not been changed. Courier visibility
-of completion confirmation and automatic expiry remain separate features.
+The separate sibling integration-test suite has not been changed. Automatic expiry
+remains a separate feature.
+
+## List errands and view details
+
+`GET /errands` requires a verified bearer token. Regular users can see available
+OPEN errands, plus errands in any status where they are the requester or assigned
+courier. Available means unexpired, unassigned OPEN with no leftover lifecycle
+timestamps or failure reason. Administrators (`type: Administrator` in the verified
+JWT) can see all errands, including overdue ones. Request parameters never grant
+administrator access.
+
+Omitting `status` selects all statuses within the caller's authorized visibility.
+Optional filters are `errand_id`, `supplier_id`, `requester_id`, `courier_id`,
+`delivery_building_id`, `min_credit_value`, `max_credit_value`, `expires_after`, and
+`expires_before`. Filters use AND; repeated `status` values use OR. Credit and expiry
+ranges are inclusive and expiry filters require timezones. Delivery floor is returned
+but is not a filter. `available_only=true` restricts everyone, including participants
+and administrators, to marketplace availability.
+
+Sorting defaults to `sort=created_at,desc` (newest first). `created_at`, `credit_value`,
+and `expires_at` each allow `asc` or `desc`; UUID provides a deterministic tie-breaker.
+Use zero-based `page` (default 0) and `size` (default 20, maximum 100).
+
+The response contains `total` and `items`. Total counts only authorized matching
+records and is independent of pagination. Items include all existing errand fields,
+including requester/courier UUIDs, lifecycle timestamps and failure reason. An
+unknown or inaccessible `errand_id` returns `total: 0, items: []` without distinguishing
+private from nonexistent errands. Invalid parameters return 422.
+
+Couriers view completion confirmation using `GET /errands?errand_id=<uuid>`:
+the returned item's COMPLETED status and `completed_at` show the requester's
+confirmation, including after the deadline. Before confirmation an ACCEPTED errand
+has `completed_at: null`. This replaces the separate completion-confirmation route.
+It reads the recorded decision, not independently verified credit settlement while
+Credit Service calls are placeholders.
+
+Examples:
+
+```text
+GET /errands
+GET /errands?available_only=true&sort=credit_value,desc
+GET /errands?requester_id=<your-uuid>&status=ACCEPTED&status=COMPLETED
+GET /errands?courier_id=<your-uuid>
+GET /errands?errand_id=<uuid>
+GET /errands?supplier_id=<uuid>&status=OPEN&status=ACCEPTED&size=1
+```
+
+The final example provides a supplier-wide active count only with an administrator
+token; ordinary users' total is visibility-restricted. Supplier Service may forward
+an admin token for this check; independent service authentication is not implemented.
+There is no count-only or service-only mode. Participants and administrators can view
+private errand details, so this is not strictly a requester-only details endpoint.
+
+GET is read-only: it checks deadlines for availability but does not update expired
+states, invoke credit operations, or trigger background expiry processing. Supplier
+active counts include overdue records still stored as OPEN/ACCEPTED. Count and page
+are separate reads and may briefly differ during concurrent changes; a count is not
+an atomic safeguard against supplier deactivation racing with creation.
+
+No schema migration is needed. Run `python -m pytest -q test/test_get_errands.py`.
+The expiry worker/background trigger and Supplier Service integration remain future
+work. The separate sibling integration-test suite has not been changed.

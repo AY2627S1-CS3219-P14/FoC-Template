@@ -2,6 +2,7 @@ import type {
   SupplierListResponse,
   SupplierReferenceListResponse,
 } from './supplier.types'
+import { authenticatedFetch } from '../auth/auth.fetch'
 
 const supplierApiBaseUrl = (import.meta.env.VITE_SUPPLIER_API_URL ?? '').trim().replace(/\/+$/, '')
 
@@ -35,7 +36,7 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   let response: Response
 
   try {
-    response = await fetch(`${supplierApiBaseUrl}${path}`, {
+    response = await authenticatedFetch(`${supplierApiBaseUrl}${path}`, {
       headers: { Accept: 'application/json' },
       signal,
     })

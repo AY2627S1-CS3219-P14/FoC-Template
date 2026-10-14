@@ -1,14 +1,22 @@
 import type { ComponentPropsWithoutRef } from 'react'
+import searchIcon from '../../assets/search.svg'
 
 type SearchInputProps = ComponentPropsWithoutRef<'input'> & { label?: string }
 
 export function SearchInput({ label = 'Search', className = '', ...props }: SearchInputProps) {
   return (
-    <label className="block">
+    <label className="relative block">
       <span className="sr-only">{label}</span>
+      <img
+        src={searchIcon}
+        alt=""
+        width="18"
+        height="18"
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2"
+      />
       <input
         type="search"
-        className={`w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500 ${className}`}
+        className={`h-12 w-full rounded-xl border border-[#dde3de] bg-white py-3 pl-11 pr-4 text-sm text-[#17211d] outline-none transition placeholder:text-[#7e8982] focus:border-[#175c45] focus:ring-4 focus:ring-[#175c45]/10 ${className}`}
         {...props}
       />
     </label>

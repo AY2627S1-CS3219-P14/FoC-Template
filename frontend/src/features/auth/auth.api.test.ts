@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { login, logout, refreshSession } from './auth.api'
+import { login, logout, refreshSession, register } from './auth.api'
 
 const fetchMock = vi.fn<typeof fetch>()
 
@@ -28,6 +28,31 @@ describe('authentication API', () => {
         method: 'POST',
         credentials: 'include',
         body: JSON.stringify({ email: 'student@u.nus.edu', password: 'password' }),
+      }),
+    )
+  })
+
+  it('registers an account with the backlog fields', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 201 }))
+
+    await expect(
+      register({
+        name: 'Alex Tan',
+        email: 'alex@u.nus.edu',
+        password: 'CampusCouriers123!',
+      }),
+    ).resolves.toBeUndefined()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/auth/register',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify({
+          name: 'Alex Tan',
+          email: 'alex@u.nus.edu',
+          password: 'CampusCouriers123!',
+        }),
       }),
     )
   })

@@ -1,8 +1,23 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
 import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'
+import { useAuth } from '../../features/auth/useAuth'
 
 export function AppHeader() {
+  const { signOut } = useAuth()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setIsSigningOut(true)
+
+    try {
+      await signOut()
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
+
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[#dde3de] bg-white px-4 lg:h-[76px] lg:px-8">
       <Link
@@ -23,10 +38,11 @@ export function AppHeader() {
         </span>
         <button
           type="button"
-          className="grid size-9 cursor-pointer place-items-center rounded-full bg-[#ddf3e7] text-xs font-semibold text-[#175c45] transition hover:bg-[#caead9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] lg:size-10"
-          aria-label="Open profile"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="h-9 cursor-pointer rounded-lg border border-[#cfd8d1] bg-white px-3 text-xs font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-wait disabled:opacity-60 lg:h-10 lg:px-4 lg:text-sm"
         >
-          EY
+          {isSigningOut ? 'Signing out…' : 'Log out'}
         </button>
       </div>
     </header>

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import routeIcon from '../assets/route.svg'
 import { login } from '../features/auth/auth.api'
-import { saveSession } from '../features/auth/auth.storage'
+import { setAccessToken } from '../features/auth/auth.token'
 
 const BENEFITS = [
   'Help fellow students with campus errands',
@@ -24,7 +24,7 @@ export function LoginPage() {
 
     try {
       const session = await login({ email: email.trim(), password })
-      saveSession(session)
+      setAccessToken(session.accessToken)
       navigate('/', { replace: true })
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to sign in right now.')

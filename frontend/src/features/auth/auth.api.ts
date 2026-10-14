@@ -17,17 +17,21 @@ export class AuthApiError extends Error {
   }
 }
 
-export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
+async function authRequest(
+  path: string,
+  init: RequestInit,
+  fallbackMessage: string,
+): Promise<Response> {
   let response: Response
 
   try {
-    response = await fetch(`${userApiBaseUrl}/auth/login`, {
-      method: 'POST',
+    response = await fetch(`${userApiBaseUrl}${path}`, {
+      ...init,
+      credentials: 'include',
       headers: {
         Accept: 'application/json',
-        'Content-Type': 'application/json',
+        ...init.headers,
       },
-      body: JSON.stringify(credentials),
     })
   } catch {
     throw new AuthApiError('Could not connect to the User Service.', 0)
@@ -35,13 +39,43 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
 
   if (!response.ok) {
     const problem = (await response.json().catch(() => null)) as ProblemDetails | null
-    const fallbackMessage =
-      response.status === 401
-        ? 'The email or password is incorrect.'
-        : 'Unable to sign in right now. Please try again.'
-
     throw new AuthApiError(problem?.detail ?? problem?.title ?? fallbackMessage, response.status)
   }
 
+  return response
+}
+
+export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
+  const response = await authRequest(
+    '/auth/login',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    },
+    'The email or password is incorrect.',
+  )
+
   return (await response.json()) as LoginResponse
+}
+
+export async function refreshSession(): Promise<LoginResponse> {
+  const response = await authRequest(
+    '/auth/refresh',
+    { method: 'POST' },
+    'Your session has expired. Please sign in again.',
+  )
+
+  return (await response.json()) as LoginResponse
+}
+
+export async function logout(accessToken: string): Promise<void> {
+  await authRequest(
+    '/auth/logout',
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+    'Unable to sign out from the User Service.',
+  )
 }

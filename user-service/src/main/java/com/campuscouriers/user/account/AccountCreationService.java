@@ -32,7 +32,7 @@ public class AccountCreationService {
     }
 
     @Transactional
-    public Account create(AccountType type, String email, String rawPassword, String name) {
+    public CreatedAccount create(AccountType type, String email, String rawPassword, String name) {
 
         String normalizedEmail = email.toLowerCase(Locale.ROOT);
 
@@ -61,7 +61,7 @@ public class AccountCreationService {
         }
         profileRepository.save(profile);
 
-        return account;
+        return new CreatedAccount(account, profile);
     }
 
 }

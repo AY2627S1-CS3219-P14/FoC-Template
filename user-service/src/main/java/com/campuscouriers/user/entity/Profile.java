@@ -18,6 +18,7 @@ public class Profile {
     @JoinColumn(name = "account_id", nullable = false, unique = true)
     private Account account;
 
+    @Column(nullable=false)
     private String name;
 
     protected Profile() {}  // required by JPA

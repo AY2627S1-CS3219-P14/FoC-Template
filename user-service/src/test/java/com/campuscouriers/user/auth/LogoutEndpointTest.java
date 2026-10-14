@@ -2,11 +2,13 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.event.UserEventPublisher;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.RefreshTokenRepository;
 import com.campuscouriers.user.security.access.JwtService;
 import com.campuscouriers.user.security.refresh.RefreshTokenService;
 import com.campuscouriers.user.security.refresh.TokenHasher;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,10 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -30,6 +32,7 @@ import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,7 +51,11 @@ class LogoutEndpointTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.kafka.admin.auto-create", () -> false);
     }
+
+    // No broker here; event publishing is covered by UserEventKafkaIntegrationTest
+    @MockitoBean private UserEventPublisher userEventPublisher;
 
     @Autowired private MockMvc mockMvc;
     @Autowired private AccountRepository accountRepository;
@@ -92,6 +99,31 @@ class LogoutEndpointTest {
                     .andExpect(header().doesNotExist(HttpHeaders.LOCATION));
 
             assertThat(refreshTokenExists(aliceRefreshToken)).isFalse();
+        }
+
+        @DisplayName("F3.2 - Valid logout clears the refresh token cookie")
+        @Test
+        void logout_withValidTokens_clearsTheRefreshTokenCookie() throws Exception {
+            mockMvc.perform(postLogout(aliceRefreshToken)
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceAccessToken))
+                    .andExpect(status().isNoContent())
+                    .andExpect(cookie().value("refreshToken", ""))
+                    .andExpect(cookie().maxAge("refreshToken", 0))
+                    .andExpect(cookie().path("refreshToken", "/auth"))
+                    .andExpect(cookie().httpOnly("refreshToken", true))
+                    .andExpect(cookie().secure("refreshToken", true))
+                    .andExpect(cookie().sameSite("refreshToken", "Strict"));
+        }
+
+        @DisplayName("F3.3 - Logout without a refresh token cookie shall return 204 and still clear the cookie")
+        @Test
+        void logout_withoutRefreshTokenCookie_returns204AndClearsTheCookie() throws Exception {
+            mockMvc.perform(post("/auth/logout")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceAccessToken))
+                    .andExpect(status().isNoContent())
+                    .andExpect(cookie().maxAge("refreshToken", 0));
+
+            assertThat(refreshTokenExists(aliceRefreshToken)).isTrue();
         }
 
         @DisplayName("F3.3 - Logout shall be safe to repeat")
@@ -139,10 +171,7 @@ class LogoutEndpointTest {
     // ---- Helpers ----
     private MockHttpServletRequestBuilder postLogout(String refreshToken) {
         return post("/auth/logout")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(String.format("""
-                        {"refreshToken":"%s"}
-                        """, refreshToken));
+                .cookie(new Cookie("refreshToken", refreshToken));
     }
 
     private boolean refreshTokenExists(String rawToken) {

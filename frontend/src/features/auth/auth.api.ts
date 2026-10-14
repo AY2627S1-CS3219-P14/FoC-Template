@@ -1,4 +1,4 @@
-import type { LoginCredentials, LoginResponse } from './auth.types'
+import type { LoginCredentials, LoginResponse, RegisterCredentials } from './auth.types'
 
 const userApiBaseUrl = (import.meta.env.VITE_USER_API_URL ?? '').trim().replace(/\/+$/, '')
 
@@ -57,6 +57,18 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
   )
 
   return (await response.json()) as LoginResponse
+}
+
+export async function register(credentials: RegisterCredentials): Promise<void> {
+  await authRequest(
+    '/auth/register',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    },
+    'Unable to create your account right now. Please try again.',
+  )
 }
 
 export async function refreshSession(): Promise<LoginResponse> {

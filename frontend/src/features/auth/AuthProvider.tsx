@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
-import { login, logout } from './auth.api'
+import { AuthApiError, login, logout } from './auth.api'
 import { AuthContext, type AuthContextValue, type AuthStatus } from './auth.context'
 import {
   clearAccessToken,
   getAccessToken,
   refreshAccessToken,
   setAccessToken,
+  subscribeToSessionExpiry,
 } from './auth.token'
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -13,6 +14,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true
+    const unsubscribe = subscribeToSessionExpiry(() => {
+      if (active) setStatus('unauthenticated')
+    })
 
     refreshAccessToken()
       .then(() => {
@@ -24,6 +28,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     return () => {
       active = false
+      unsubscribe()
     }
   }, [])
 
@@ -36,10 +41,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setStatus('authenticated')
       },
       async signOut() {
-        const token = getAccessToken()
+        let token = getAccessToken()
 
         try {
-          if (token) await logout(token)
+          if (token) {
+            try {
+              await logout(token)
+            } catch (error) {
+              if (!(error instanceof AuthApiError) || error.status !== 401) throw error
+
+              token = await refreshAccessToken()
+              await logout(token)
+            }
+          }
+        } catch {
+          // Local authentication is still cleared when the API is unavailable.
         } finally {
           clearAccessToken()
           setStatus('unauthenticated')

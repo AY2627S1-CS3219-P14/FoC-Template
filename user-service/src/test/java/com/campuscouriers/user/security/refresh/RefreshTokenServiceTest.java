@@ -45,12 +45,12 @@ public class RefreshTokenServiceTest {
 
     @BeforeEach
     void createService() {
-        refreshTokenService = new RefreshTokenService(refreshTokenRepository, tokenHasher, clock, "30d");
+        refreshTokenService = new RefreshTokenService(refreshTokenRepository, tokenHasher, clock, "7d");
     }
 
-    @DisplayName("F2.3.2 - the user service should issue longer-lived refresh tokens with a lifetime of 30 days")
+    @DisplayName("F2.3.2 - the user service should issue refresh tokens with a lifetime of 7 days")
     @Test
-    void issue_savesAHashedTokenLinkedToTheAccountWithA30DayExpiry() {
+    void issue_savesAHashedTokenLinkedToTheAccountWithA7DayExpiry() {
         when(clock.instant()).thenReturn(now);
         when(tokenHasher.hash(anyString())).thenReturn("hashed-value");
 
@@ -60,7 +60,7 @@ public class RefreshTokenServiceTest {
         RefreshToken saved = tokenCaptor.getValue();
         assertThat(saved.getTokenHash()).isEqualTo("hashed-value");
         assertThat(saved.getAccount()).isSameAs(account);
-        assertThat(saved.getExpiresAt()).isEqualTo(now.plus(Duration.ofDays(30)));
+        assertThat(saved.getExpiresAt()).isEqualTo(now.plus(Duration.ofDays(7)));
         assertThat(rawToken).isNotBlank();
     }
 

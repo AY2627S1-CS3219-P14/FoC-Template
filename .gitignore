@@ -3,6 +3,11 @@ dist/
 build/
 out/
 
+# Python-generated files
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
 # Environment / secrets
 .env
 .env.local

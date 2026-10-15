@@ -50,7 +50,7 @@ class AuthControllerTest {
 
     ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final int REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;    // app.jwt.refresh-token-ttl=30d
+    private static final int REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;    // app.jwt.refresh-token-ttl=7d
 
     // F1 - Register Profile: /auth/register
     @Nested

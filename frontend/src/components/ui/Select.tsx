@@ -12,7 +12,7 @@ export function Select({ label, options, className = '', ...props }: SelectProps
     <label className="block">
       <span className="sr-only">{label}</span>
       <select
-        className={`w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500 ${className}`}
+        className={`h-12 w-full cursor-pointer rounded-xl border border-[#dde3de] bg-white px-3.5 text-sm text-[#17211d] outline-none transition focus:border-[#175c45] focus:ring-4 focus:ring-[#175c45]/10 ${className}`}
         {...props}
       >
         {options.map((option) => (

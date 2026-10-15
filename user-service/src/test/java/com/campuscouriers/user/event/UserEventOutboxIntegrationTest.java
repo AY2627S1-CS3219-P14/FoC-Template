@@ -3,7 +3,6 @@ package com.campuscouriers.user.event;
 import com.campuscouriers.user.auth.AuthService;
 import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.entity.Account;
-import com.campuscouriers.user.entity.OutboxEvent;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.OutboxEventRepository;

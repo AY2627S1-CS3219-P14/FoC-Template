@@ -1,4 +1,4 @@
-package com.campuscouriers.user.entity;
+package com.campuscouriers.user.event;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -1,6 +1,5 @@
 package com.campuscouriers.user.event;
 
-import com.campuscouriers.user.entity.OutboxEvent;
 import com.campuscouriers.user.repository.OutboxEventRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;

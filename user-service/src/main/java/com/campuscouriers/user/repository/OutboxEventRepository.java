@@ -1,6 +1,6 @@
 package com.campuscouriers.user.repository;
 
-import com.campuscouriers.user.entity.OutboxEvent;
+import com.campuscouriers.user.event.OutboxEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

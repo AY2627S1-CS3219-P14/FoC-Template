@@ -2,22 +2,24 @@ from logging.config import fileConfig
 import os
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import URL, engine_from_config, pool
 
 from main.database import Base
 from main import models  # noqa: F401
 
 
 config = context.config
+database_url = URL.create(
+    "postgresql+psycopg",
+    username=os.getenv("DB_USERNAME", "order_service"),
+    password=os.getenv("DB_PASSWORD", "password"),
+    host=os.getenv("DB_HOST", "localhost"),
+    port=int(os.getenv("DB_PORT", "5432")),
+    database=os.getenv("DB_NAME", "campuscouriers_order"),
+)
 config.set_main_option(
     "sqlalchemy.url",
-    "postgresql+psycopg://{user}:{password}@{host}:{port}/{name}".format(
-        user=os.getenv("DB_USERNAME", "order_service"),
-        password=os.getenv("DB_PASSWORD", "password"),
-        host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5432"),
-        name=os.getenv("DB_NAME", "campuscouriers_order"),
-    ),
+    database_url.render_as_string(hide_password=False).replace("%", "%%"),
 )
 
 if config.config_file_name is not None:

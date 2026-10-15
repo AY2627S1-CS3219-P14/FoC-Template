@@ -46,7 +46,7 @@ class CreateErrandRequest(BaseModel):
 
     supplier_id: UUID
     required_item: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-    credit_value: int = Field(gt=0, strict=True)
+    credit_value: int = Field(gt=0, le=2_147_483_647, strict=True)
     delivery_building_id: UUID
     delivery_floor: str | None = Field(default=None, max_length=20)
     delivery_description: str | None = Field(default=None, max_length=500)

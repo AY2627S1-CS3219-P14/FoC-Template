@@ -12,7 +12,7 @@
   "publication.autocreate.mode": "filtered",
   "table.include.list": "public.outbox",
   "tombstones.on.delete": "false",
-  "snapshot.mode": "no_data",
+  "snapshot.mode": "initial",
   "topic.creation.default.partitions": "3",
   "topic.creation.default.replication.factor": "1",
   "transforms": "outbox",

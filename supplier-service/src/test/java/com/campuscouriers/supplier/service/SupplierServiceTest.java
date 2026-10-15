@@ -6,6 +6,7 @@ import com.campuscouriers.supplier.entity.Building;
 import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.Supplier;
 import com.campuscouriers.supplier.entity.SupplierStatus;
+import com.campuscouriers.supplier.event.SupplierEventPublisher;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
 import com.campuscouriers.supplier.exception.ReferenceNotFoundException;
 import com.campuscouriers.supplier.repository.BuildingRepository;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +47,8 @@ class SupplierServiceTest {
     private CategoryRepository categoryRepository;
     @Mock
     private BuildingRepository buildingRepository;
+    @Mock
+    private SupplierEventPublisher supplierEventPublisher;
 
     @InjectMocks
     private SupplierService supplierService;
@@ -116,6 +120,7 @@ class SupplierServiceTest {
         assertThat(saved.getStatus()).isEqualTo(SupplierStatus.ACTIVE);
         assertThat(response.category().id()).isEqualTo(categoryId);
         assertThat(response.building().id()).isEqualTo(buildingId);
+        verify(supplierEventPublisher).publishSupplierCreated(saved);
     }
 
     @Test
@@ -127,6 +132,7 @@ class SupplierServiceTest {
 
         verify(buildingRepository, never()).findById(any());
         verify(supplierRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(supplierEventPublisher);
     }
 
     @Test
@@ -140,6 +146,7 @@ class SupplierServiceTest {
                 .isInstanceOf(DuplicateSupplierException.class);
 
         verify(supplierRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(supplierEventPublisher);
     }
 
     @Test
@@ -194,6 +201,7 @@ class SupplierServiceTest {
         assertThat(supplier.getCategory()).isSameAs(newCategory);
         assertThat(supplier.getBuilding()).isSameAs(newBuilding);
         assertThat(supplier.getStatus()).isEqualTo(SupplierStatus.ACTIVE);
+        verify(supplierEventPublisher).publishSupplierUpdated(supplier);
     }
 
     @Test
@@ -210,6 +218,7 @@ class SupplierServiceTest {
                 .isInstanceOf(DuplicateSupplierException.class);
 
         verify(supplierRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(supplierEventPublisher);
     }
 
     private Supplier supplier(String name, Category supplierCategory, Building supplierBuilding) {

@@ -14,6 +14,7 @@ from main import complete_errand, fail_errand
 from main.app import app
 from main.database import Base
 from main.models import Errand, ErrandStatus
+from test.outbox_support import outbox_events
 from test.test_accept_errand import seed
 
 
@@ -70,3 +71,4 @@ def assert_accepted(factory, errand_id):
         assert stored.completed_at is None
         assert stored.failed_at is None
         assert stored.failure_reason is None
+    assert outbox_events(factory) == []

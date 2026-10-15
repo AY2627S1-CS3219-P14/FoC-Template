@@ -15,6 +15,7 @@ from main import accept_errand
 from main.app import app
 from main.database import Base
 from main.models import Errand, ErrandStatus
+from test.outbox_support import assert_single_event, outbox_events
 
 
 @pytest.fixture
@@ -93,6 +94,11 @@ def test_accept_updates_status_courier_and_timestamp(endpoint):
         assert stored.status == ErrandStatus.ACCEPTED
         assert stored.accepted_at is not None
         assert stored.requester_id == errand["requester_id"]
+    event = assert_single_event(factory, "errand.accepted", errand["id"])
+    assert event["courierId"] == claims["sub"]
+    assert event["requesterId"] == str(errand["requester_id"])
+    assert event["creditValue"] == errand["credit_value"]
+    assert event["acceptedAt"] is not None
 
 
 @pytest.mark.parametrize("state", [state for state in ErrandStatus if state != ErrandStatus.OPEN])
@@ -107,6 +113,7 @@ def test_non_open_errand_is_unchanged(endpoint, state):
         stored = db.get(Errand, errand["id"])
         assert stored.status == state
         assert stored.courier_id == original_courier
+    assert outbox_events(factory) == []
 
 
 def test_requester_cannot_accept_own_errand(endpoint):
@@ -219,3 +226,5 @@ def test_concurrent_postgres_acceptance_has_one_winner(postgres_database):
         assert stored.status == ErrandStatus.ACCEPTED
         assert stored.courier_id == winner
         assert stored.accepted_at is not None
+    event = assert_single_event(factory, "errand.accepted", errand["id"])
+    assert event["courierId"] == str(winner)

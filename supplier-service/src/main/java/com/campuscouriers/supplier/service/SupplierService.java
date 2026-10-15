@@ -11,6 +11,7 @@ import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.CategoryStatus;
 import com.campuscouriers.supplier.entity.Supplier;
 import com.campuscouriers.supplier.entity.SupplierStatus;
+import com.campuscouriers.supplier.event.SupplierEventPublisher;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
 import com.campuscouriers.supplier.exception.ReferenceNotActiveException;
 import com.campuscouriers.supplier.exception.ReferenceNotFoundException;
@@ -37,15 +38,18 @@ public class SupplierService {
     private final SupplierRepository supplierRepository;
     private final CategoryRepository categoryRepository;
     private final BuildingRepository buildingRepository;
+    private final SupplierEventPublisher supplierEventPublisher;
 
     public SupplierService(
             SupplierRepository supplierRepository,
             CategoryRepository categoryRepository,
-            BuildingRepository buildingRepository
+            BuildingRepository buildingRepository,
+            SupplierEventPublisher supplierEventPublisher
     ) {
         this.supplierRepository = supplierRepository;
         this.categoryRepository = categoryRepository;
         this.buildingRepository = buildingRepository;
+        this.supplierEventPublisher = supplierEventPublisher;
     }
 
     @Transactional
@@ -85,11 +89,14 @@ public class SupplierService {
                 optionalDisplayValue(request.imageUrl())
         );
 
+        Supplier saved;
         try {
-            return SupplierResponse.from(supplierRepository.saveAndFlush(supplier));
+            saved = supplierRepository.saveAndFlush(supplier);
         } catch (DataIntegrityViolationException exception) {
             throw new DuplicateSupplierException(displayName);
         }
+        supplierEventPublisher.publishSupplierCreated(saved);
+        return SupplierResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
@@ -158,11 +165,14 @@ public class SupplierService {
                 optionalDisplayValue(request.imageUrl())
         );
 
+        Supplier saved;
         try {
-            return SupplierResponse.from(supplierRepository.saveAndFlush(supplier));
+            saved = supplierRepository.saveAndFlush(supplier);
         } catch (DataIntegrityViolationException exception) {
             throw new DuplicateSupplierException(displayName);
         }
+        supplierEventPublisher.publishSupplierUpdated(saved);
+        return SupplierResponse.from(saved);
     }
 
     private Category activeCategory(UUID id) {

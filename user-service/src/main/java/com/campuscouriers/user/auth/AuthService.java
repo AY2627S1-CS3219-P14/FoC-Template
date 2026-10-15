@@ -53,7 +53,8 @@ public class AuthService {
     }
 
     // Registration always creates a Student; administrators come from the bootstrap or a promotion.
-    // Deliberately not @Transactional: create() commits on return, so the event is only published for persisted users
+    // One transaction, so the UserRegisteredEvent is recorded in the outbox if and only if the user is persisted
+    @Transactional
     public void register(RegisterRequest request) {
         CreatedAccount created =
                 accountCreationService.create(AccountType.Student, request.email(), request.password(), request.name());

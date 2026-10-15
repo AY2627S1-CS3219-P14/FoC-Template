@@ -15,6 +15,7 @@ from main import accept_errand, cancel_errand
 from main.app import app
 from main.database import Base
 from main.models import Errand, ErrandStatus
+from test.outbox_support import assert_single_event, outbox_events
 from test.test_accept_errand import postgres_database, seed
 
 
@@ -72,6 +73,7 @@ def assert_open(factory, errand_id):
         stored = db.get(Errand, errand_id)
         assert stored.status == ErrandStatus.OPEN
         assert stored.cancelled_at is None
+    assert outbox_events(factory) == []
 
 
 def test_cancel_records_timestamp_and_releases_credits(endpoint):
@@ -89,6 +91,10 @@ def test_cancel_records_timestamp_and_releases_credits(endpoint):
         assert stored.status == ErrandStatus.CANCELLED
         assert stored.cancelled_at is not None
         assert stored.courier_id is None
+    event = assert_single_event(factory, "errand.cancelled", errand["id"])
+    assert event["requesterId"] == claims["sub"]
+    assert event["creditValue"] == errand["credit_value"]
+    assert event["cancelledAt"] is not None
 
 
 def test_non_requester_cannot_cancel(endpoint):
@@ -230,6 +236,8 @@ def test_concurrent_postgres_transition_has_one_winner(postgres_database, monkey
     assert sorted(code for code, _ in results) == [200, 409]
     winner_status = next(state for code, state in results if code == 200)
     assert release.call_count == (1 if winner_status == ErrandStatus.CANCELLED else 0)
+    expected_event = "errand.cancelled" if winner_status == ErrandStatus.CANCELLED else "errand.accepted"
+    assert_single_event(factory, expected_event, errand["id"])
     with factory() as db:
         stored = db.get(Errand, errand["id"])
         assert stored.status == winner_status

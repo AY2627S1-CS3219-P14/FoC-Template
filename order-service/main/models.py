@@ -2,8 +2,8 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, Integer, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, CheckConstraint, DateTime, Enum, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from main.database import Base
@@ -41,3 +41,21 @@ class Errand(Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failure_reason: Mapped[str | None] = mapped_column(String(500))
+
+
+class OutboxEvent(Base):
+    """A domain event waiting to be relayed to Kafka.
+
+    Rows are written in the same transaction as the change they describe. Debezium reads
+    inserts from the WAL and its Outbox Event Router publishes each one to the topic named
+    by ``type``, keyed by ``aggregateid``. Column names are the router's defaults.
+    """
+
+    __tablename__ = "outbox"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    aggregatetype: Mapped[str] = mapped_column(String(255), nullable=False)
+    aggregateid: Mapped[str] = mapped_column(String(255), nullable=False)
+    type: Mapped[str] = mapped_column(String(255), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

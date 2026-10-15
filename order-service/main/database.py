@@ -1,14 +1,16 @@
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
-DATABASE_URL = (
-    f"postgresql+psycopg://{os.getenv('DB_USERNAME', 'order_service')}"
-    f":{os.getenv('DB_PASSWORD', 'password')}"
-    f"@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}"
-    f"/{os.getenv('DB_NAME', 'campuscouriers_order')}"
+DATABASE_URL = URL.create(
+    "postgresql+psycopg",
+    username=os.getenv("DB_USERNAME", "order_service"),
+    password=os.getenv("DB_PASSWORD", "password"),
+    host=os.getenv("DB_HOST", "localhost"),
+    port=int(os.getenv("DB_PORT", "5432")),
+    database=os.getenv("DB_NAME", "campuscouriers_order"),
 )
 
 engine = create_engine(DATABASE_URL)

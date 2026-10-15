@@ -8,6 +8,7 @@ from sqlalchemy import func, update
 from main.create_errand import verified_claims
 from main.database import SessionLocal
 from main.models import Errand, ErrandStatus
+from main.outbox import ErrandAcceptedEvent, append_errand_event
 
 
 router = APIRouter()
@@ -55,7 +56,10 @@ def accept_errand_request(
                 courier_id=courier_id,
                 accepted_at=func.clock_timestamp(),
             )
-            .returning(Errand.id, Errand.status, Errand.courier_id, Errand.accepted_at)
+            .returning(
+                Errand.id, Errand.status, Errand.courier_id, Errand.accepted_at,
+                Errand.requester_id, Errand.credit_value,
+            )
         )
         accepted = db.execute(statement).mappings().one_or_none()
 
@@ -71,6 +75,13 @@ def accept_errand_request(
                 detail="Errand is not available: it is no longer OPEN, has expired, or already has a courier",
             )
 
+        append_errand_event(db, ErrandAcceptedEvent(
+            errand_id=accepted["id"],
+            requester_id=accepted["requester_id"],
+            credit_value=accepted["credit_value"],
+            courier_id=accepted["courier_id"],
+            accepted_at=accepted["accepted_at"],
+        ))
         response = AcceptErrandResponse.model_validate(dict(accepted))
 
     # Successful context exit commits before the HTTP response is returned.

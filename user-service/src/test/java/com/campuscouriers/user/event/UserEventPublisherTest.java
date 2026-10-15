@@ -1,33 +1,36 @@
 package com.campuscouriers.user.event;
 
 import com.campuscouriers.user.entity.AccountType;
+import com.campuscouriers.user.repository.OutboxEventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.kafka.KafkaException;
-import org.springframework.kafka.core.KafkaTemplate;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static com.campuscouriers.user.TestConstants.VALID_NAME;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserEventPublisherTest {
 
-    private static final String TOPIC = "user.registered";
+    private static final Instant NOW = Instant.parse("2026-01-01T00:00:05Z");
 
-    @Mock private KafkaTemplate<String, Object> kafkaTemplate;
+    @Mock private OutboxEventRepository outboxEventRepository;
+    @Captor private ArgumentCaptor<OutboxEvent> outboxCaptor;
 
+    private final JsonMapper jsonMapper = JsonMapper.builder().build();
     private UserEventPublisher publisher;
 
     private final UserRegisteredEvent event = new UserRegisteredEvent(
@@ -35,32 +38,34 @@ class UserEventPublisherTest {
 
     @BeforeEach
     void setUp() {
-        publisher = new UserEventPublisher(kafkaTemplate, TOPIC);
+        publisher = new UserEventPublisher(outboxEventRepository, jsonMapper, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
-    void publishUserRegistered_sendsToTopicKeyedByUserId() {
-        when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(new CompletableFuture<>());
-
+    void publishUserRegistered_storesOutboxEventRoutedToTopicAndKeyedByUserId() {
         publisher.publishUserRegistered(event);
 
-        verify(kafkaTemplate).send(TOPIC, event.userId().toString(), event);
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+        OutboxEvent stored = outboxCaptor.getValue();
+        assertThat(stored.getId()).isNotNull();
+        assertThat(stored.getAggregateType()).isEqualTo("user");
+        assertThat(stored.getAggregateId()).isEqualTo(event.userId().toString());
+        assertThat(stored.getType()).isEqualTo("user.registered");
+        assertThat(stored.getCreatedAt()).isEqualTo(NOW);
     }
 
     @Test
-    void publishUserRegistered_whenSendFailsAsynchronously_doesNotThrow() {
-        when(kafkaTemplate.send(anyString(), anyString(), any()))
-                .thenReturn(CompletableFuture.failedFuture(new KafkaException("broker unavailable")));
+    void publishUserRegistered_storesPlainJsonPayloadWithContractFieldNames() {
+        publisher.publishUserRegistered(event);
 
-        assertThatCode(() -> publisher.publishUserRegistered(event)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void publishUserRegistered_whenSendFailsSynchronously_doesNotThrow() {
-        when(kafkaTemplate.send(anyString(), anyString(), any()))
-                .thenThrow(new KafkaException("metadata timeout"));
-
-        assertThatCode(() -> publisher.publishUserRegistered(event)).doesNotThrowAnyException();
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+        JsonNode payload = jsonMapper.readTree(outboxCaptor.getValue().getPayload());
+        assertThat(payload.propertyNames()).containsExactlyInAnyOrder("userId", "type", "name", "email", "registeredAt");
+        assertThat(payload.get("userId").asString()).isEqualTo(event.userId().toString());
+        assertThat(payload.get("type").asString()).isEqualTo("Student");
+        assertThat(payload.get("name").asString()).isEqualTo(VALID_NAME);
+        assertThat(payload.get("email").asString()).isEqualTo(VALID_EMAIL);
+        assertThat(payload.get("registeredAt").asString()).isEqualTo("2026-01-01T00:00:00Z");
     }
 
 }

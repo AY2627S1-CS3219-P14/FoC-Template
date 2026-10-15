@@ -10,6 +10,7 @@ from main.cancel_errand import release_reserved_credits
 from main.create_errand import verified_claims
 from main.database import SessionLocal
 from main.models import Errand, ErrandStatus
+from main.outbox import ErrandFailedEvent, append_errand_event
 
 
 router = APIRouter()
@@ -58,7 +59,7 @@ def fail_errand_request(
             )
             .returning(
                 Errand.id, Errand.status, Errand.failed_at,
-                Errand.credit_value, Errand.failure_reason,
+                Errand.credit_value, Errand.failure_reason, Errand.courier_id,
             )
         )
         transitioned = db.execute(statement).mappings().one_or_none()
@@ -84,6 +85,14 @@ def fail_errand_request(
                 status_code=503, detail="Could not release reserved credits"
             )
 
+        append_errand_event(db, ErrandFailedEvent(
+            errand_id=transitioned["id"],
+            requester_id=requester_id,
+            credit_value=transitioned["credit_value"],
+            courier_id=transitioned["courier_id"],
+            failure_reason=transitioned["failure_reason"],
+            failed_at=transitioned["failed_at"],
+        ))
         response = FailErrandResponse(
             id=transitioned["id"],
             status=transitioned["status"],

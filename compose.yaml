@@ -42,9 +42,60 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
     depends_on:
       - kafka
-      
+
+  # Debezium on Kafka Connect: streams each service's outbox table to Kafka (one topic per event type)
+  kafka-connect:
+    image: quay.io/debezium/connect:3.6.3.Final
+    container_name: kafka-connect
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:19092
+      GROUP_ID: debezium-connect
+      CONFIG_STORAGE_TOPIC: connect-configs
+      OFFSET_STORAGE_TOPIC: connect-offsets
+      STATUS_STORAGE_TOPIC: connect-status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      # Connector configs read DB credentials as ${env:...} instead of hard-coding them
+      CONNECT_CONFIG_PROVIDERS: env
+      CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
+      USER_DB_NAME: ${USER_DB_NAME}
+      USER_DB_USERNAME: ${USER_DB_USERNAME}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      ORDER_DB_NAME: ${ORDER_DB_NAME}
+      ORDER_DB_USERNAME: ${ORDER_DB_USERNAME}
+      ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD}
+      SUPPLIER_DB_NAME: ${SUPPLIER_DB_NAME}
+      SUPPLIER_DB_USERNAME: ${SUPPLIER_DB_USERNAME}
+      SUPPLIER_DB_PASSWORD: ${SUPPLIER_DB_PASSWORD}
+    depends_on:
+      - kafka
+      - user-db
+      - order-db
+      - supplier-db
+    networks:
+      - default
+      - user-net
+    restart: unless-stopped
+
+  # One-off job: registers the connectors in ./debezium/connectors (idempotent), then exits
+  connect-init:
+    image: curlimages/curl:8.11.1
+    entrypoint: ["sh", "/register-connectors.sh"]
+    environment:
+      CONNECT_URL: http://kafka-connect:8083
+    volumes:
+      - ./debezium/connectors:/connectors:ro
+      - ./debezium/register-connectors.sh:/register-connectors.sh:ro
+    depends_on:
+      - kafka-connect
+    restart: "no"
+
   order-db:
     image: postgres:16-alpine
+    command: ["postgres", "-c", "wal_level=logical"]  # Debezium reads the outbox from the WAL
     environment:
       POSTGRES_DB: ${ORDER_DB_NAME}
       POSTGRES_USER: ${ORDER_DB_USERNAME}
@@ -83,6 +134,7 @@ services:
 
   supplier-db:
     image: postgres:16-alpine
+    command: ["postgres", "-c", "wal_level=logical"]  # Debezium reads the outbox from the WAL
     environment:
       POSTGRES_DB: ${SUPPLIER_DB_NAME}
       POSTGRES_USER: ${SUPPLIER_DB_USERNAME}
@@ -120,6 +172,7 @@ services:
 
   user-db:
     image: postgres:16-alpine
+    command: ["postgres", "-c", "wal_level=logical"]  # Debezium reads the outbox from the WAL
     environment:
       POSTGRES_DB: ${USER_DB_NAME}
       POSTGRES_USER: ${USER_DB_USERNAME}
@@ -145,7 +198,6 @@ services:
     image: campuscouriers/user-service
     environment:
       <<: *user-service-env
-      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
     ports:
       - "${USER_SERVICE_PORT:-8081}:8080"
     volumes:
@@ -153,8 +205,6 @@ services:
     depends_on:
       user-db:
         condition: service_healthy
-      kafka:
-        condition: service_started
     networks:
       - default
       - user-net

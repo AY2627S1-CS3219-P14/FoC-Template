@@ -13,6 +13,7 @@ from main.app import app
 from main import create_errand
 from main.database import Base
 from main.models import Errand
+from test.outbox_support import assert_single_event, outbox_events
 
 
 REQUESTER_ID = uuid4()
@@ -205,7 +206,7 @@ def test_insert_errand_passes_supplier_and_lifecycle_fields_to_session(monkeypat
     request = create_errand.CreateErrandRequest(**payload)
     response = create_errand.insert_errand(request, REQUESTER_ID)
 
-    errand = session.add.call_args.args[0]
+    errand, outbox_event = (call.args[0] for call in session.add.call_args_list)
     assert errand.supplier_id == SUPPLIER_ID
     assert errand.requester_id == REQUESTER_ID
     assert errand.courier_id is None
@@ -213,6 +214,8 @@ def test_insert_errand_passes_supplier_and_lifecycle_fields_to_session(monkeypat
     assert errand.status == create_errand.ErrandStatus.OPEN
     assert errand.created_at.tzinfo is not None
     assert response.id == errand.id
+    assert outbox_event.type == "errand.created"
+    assert outbox_event.aggregateid == str(errand.id)
     session.flush.assert_called_once()
     transaction.__exit__.assert_called_once_with(None, None, None)
 
@@ -245,6 +248,17 @@ def test_insert_errand_persists_supplier_id(database_session_factory, payload):
         assert stored.courier_id is None
 
 
+def test_insert_errand_records_created_event(database_session_factory, payload):
+    response = create_errand.insert_errand(create_errand.CreateErrandRequest(**payload), REQUESTER_ID)
+
+    event = assert_single_event(database_session_factory, "errand.created", response.id)
+    assert event["errandId"] == str(response.id)
+    assert event["requesterId"] == str(REQUESTER_ID)
+    assert event["supplierId"] == str(SUPPLIER_ID)
+    assert event["creditValue"] == 10
+    assert event["expiresAt"] and event["createdAt"]
+
+
 def test_failed_commit_rolls_back_insert(database_session_factory, payload):
     def reject_commit(session):
         raise RuntimeError("Commit failed")
@@ -260,6 +274,7 @@ def test_failed_commit_rolls_back_insert(database_session_factory, payload):
 
     with database_session_factory() as session:
         assert session.scalars(select(Errand)).all() == []
+    assert outbox_events(database_session_factory) == []
 
 
 @pytest.fixture

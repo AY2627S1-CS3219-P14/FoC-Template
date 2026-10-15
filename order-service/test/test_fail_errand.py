@@ -7,6 +7,7 @@ from sqlalchemy import event
 from main import fail_errand
 from main.app import app
 from main.models import Errand, ErrandStatus
+from test.outbox_support import assert_single_event
 from test.terminal_support import terminal_endpoint, post, assert_accepted
 
 
@@ -56,6 +57,12 @@ def test_success_records_transition_and_calls_credit_operation(terminal_endpoint
         assert stored.failed_at is not None
         assert stored.courier_id == fields["courier_id"]
         assert stored.failure_reason == 'Missing items'
+    event = assert_single_event(factory, "errand.failed", fields["id"])
+    assert event["requesterId"] == claims["sub"]
+    assert event["courierId"] == str(fields["courier_id"])
+    assert event["creditValue"] == fields["credit_value"]
+    assert event["failureReason"] == "Missing items"
+    assert event["failedAt"] is not None
 
 
 @pytest.mark.parametrize("actor", ["courier", "other"])

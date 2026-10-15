@@ -35,8 +35,12 @@ microservice (`user-service/`, `supplier-service/`, `order-service/`,
 ├── order-service/
 ├── credit-service/
 ├── <n2h-service>/
+├── debezium/          # Kafka Connect connectors that relay each service's outbox to Kafka
 └── README.md
 ```
+
+Services publish events through a **transactional outbox** relayed to Kafka by Debezium; see
+[`debezium/README.md`](debezium/README.md) for the pipeline and the event catalogue.
 
 - Any **nice-to-have (N2H)** feature that warrants its own service should
   be added as an **additional folder** at the same level, following the

@@ -5,7 +5,6 @@ import com.campuscouriers.user.auth.dto.RegisterRequest;
 import com.campuscouriers.user.bootstrap.AdminBootstrapService.Outcome;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
-import com.campuscouriers.user.event.UserEventPublisher;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.ProfileRepository;
 import com.campuscouriers.user.repository.RefreshTokenRepository;
@@ -16,7 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -51,11 +49,7 @@ class AdminBootstrapIntegrationTest {
         registry.add("app.bootstrap-admin.name", () -> "Admin");
         registry.add("app.bootstrap-admin.email", () -> ADMIN_EMAIL);
         registry.add("app.bootstrap-admin.password", () -> VALID_PASSWORD);
-        registry.add("spring.kafka.admin.auto-create", () -> false);
     }
-
-    // No broker here; event publishing is covered by UserEventKafkaIntegrationTest
-    @MockitoBean private UserEventPublisher userEventPublisher;
 
     @Autowired private AdminBootstrapService adminBootstrapService;
     @Autowired private AuthService authService;

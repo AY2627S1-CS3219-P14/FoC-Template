@@ -8,6 +8,7 @@ from sqlalchemy import func, update
 from main.create_errand import verified_claims
 from main.database import SessionLocal
 from main.models import Errand, ErrandStatus
+from main.outbox import ErrandCancelledEvent, append_errand_event
 
 
 router = APIRouter()
@@ -79,6 +80,12 @@ def cancel_errand_request(
             # Roll back the state change on a reported release failure.
             raise HTTPException(status_code=503, detail="Could not release reserved credits")
 
+        append_errand_event(db, ErrandCancelledEvent(
+            errand_id=cancelled["id"],
+            requester_id=requester_id,
+            credit_value=cancelled["credit_value"],
+            cancelled_at=cancelled["cancelled_at"],
+        ))
         response = CancelErrandResponse(
             id=cancelled["id"],
             status=cancelled["status"],

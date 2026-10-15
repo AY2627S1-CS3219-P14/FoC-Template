@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from main import complete_errand, fail_errand
 from main.models import Errand, ErrandStatus
+from test.outbox_support import assert_single_event
 from test.test_accept_errand import postgres_database, seed
 
 
@@ -50,6 +51,8 @@ def test_postgres_terminal_transition_has_one_winner(postgres_database, monkeypa
     assert transfer.call_count + release.call_count == 1
     assert transfer.call_count == (1 if winner == ErrandStatus.COMPLETED else 0)
     assert release.call_count == (1 if winner == ErrandStatus.FAILED else 0)
+    expected_event = "errand.completed" if winner == ErrandStatus.COMPLETED else "errand.failed"
+    assert_single_event(factory, expected_event, fields["id"])
     with factory() as db:
         stored = db.get(Errand, fields["id"])
         assert stored.status == winner

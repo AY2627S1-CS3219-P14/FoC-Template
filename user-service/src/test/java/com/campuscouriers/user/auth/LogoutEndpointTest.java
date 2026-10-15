@@ -2,7 +2,6 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
-import com.campuscouriers.user.event.UserEventPublisher;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.repository.RefreshTokenRepository;
 import com.campuscouriers.user.security.access.JwtService;
@@ -21,7 +20,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -51,11 +49,7 @@ class LogoutEndpointTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.kafka.admin.auto-create", () -> false);
     }
-
-    // No broker here; event publishing is covered by UserEventKafkaIntegrationTest
-    @MockitoBean private UserEventPublisher userEventPublisher;
 
     @Autowired private MockMvc mockMvc;
     @Autowired private AccountRepository accountRepository;

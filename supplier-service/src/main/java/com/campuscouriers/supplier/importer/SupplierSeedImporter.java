@@ -5,6 +5,7 @@ import com.campuscouriers.supplier.entity.BuildingStatus;
 import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.CategoryStatus;
 import com.campuscouriers.supplier.entity.Supplier;
+import com.campuscouriers.supplier.event.SupplierEventPublisher;
 import com.campuscouriers.supplier.repository.BuildingRepository;
 import com.campuscouriers.supplier.repository.CategoryRepository;
 import com.campuscouriers.supplier.repository.SupplierRepository;
@@ -21,15 +22,18 @@ public class SupplierSeedImporter {
     private final SupplierRepository supplierRepository;
     private final CategoryRepository categoryRepository;
     private final BuildingRepository buildingRepository;
+    private final SupplierEventPublisher supplierEventPublisher;
 
     public SupplierSeedImporter(SupplierSeedCsvReader csvReader,
                                 SupplierRepository supplierRepository,
                                 CategoryRepository categoryRepository,
-                                BuildingRepository buildingRepository) {
+                                BuildingRepository buildingRepository,
+                                SupplierEventPublisher supplierEventPublisher) {
         this.csvReader = csvReader;
         this.supplierRepository = supplierRepository;
         this.categoryRepository = categoryRepository;
         this.buildingRepository = buildingRepository;
+        this.supplierEventPublisher = supplierEventPublisher;
     }
 
     @Transactional
@@ -55,10 +59,12 @@ public class SupplierSeedImporter {
 
             String normalizedFloor = row.floor() == null
                     ? "" : row.floor().toLowerCase(Locale.ROOT);
-            supplierRepository.save(new Supplier(
+            Supplier supplier = supplierRepository.save(new Supplier(
                     row.name(), normalizedSupplier, category.value(), building.value(),
                     row.floor(), normalizedFloor, row.description(), row.openingTime(),
                     row.closingTime(), row.imageUrl()));
+            // Seeded suppliers are announced like any other, so consumers' copies include them
+            supplierEventPublisher.publishSupplierCreated(supplier);
             suppliersCreated++;
         }
 

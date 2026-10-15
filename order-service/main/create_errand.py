@@ -13,6 +13,7 @@ from starlette.concurrency import run_in_threadpool
 
 from main.database import SessionLocal
 from main.models import Errand, ErrandStatus
+from main.outbox import ErrandCreatedEvent, append_errand_event
 
 
 router = APIRouter()
@@ -148,6 +149,14 @@ def insert_errand(request: CreateErrandRequest, requester_id: UUID) -> CreateErr
         db.add(errand)
         db.flush()
         response = CreateErrandResponse.model_validate(errand)
+        append_errand_event(db, ErrandCreatedEvent(
+            errand_id=response.id,
+            requester_id=response.requester_id,
+            credit_value=response.credit_value,
+            supplier_id=response.supplier_id,
+            expires_at=response.expires_at,
+            created_at=response.created_at,
+        ))
     return response
 
 

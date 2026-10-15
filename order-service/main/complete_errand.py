@@ -8,6 +8,7 @@ from sqlalchemy import func, update
 from main.create_errand import verified_claims
 from main.database import SessionLocal
 from main.models import Errand, ErrandStatus
+from main.outbox import ErrandCompletedEvent, append_errand_event
 
 
 router = APIRouter()
@@ -88,6 +89,13 @@ def complete_errand_request(
                 status_code=503, detail="Could not transfer reserved credits"
             )
 
+        append_errand_event(db, ErrandCompletedEvent(
+            errand_id=transitioned["id"],
+            requester_id=requester_id,
+            credit_value=transitioned["credit_value"],
+            courier_id=transitioned["courier_id"],
+            completed_at=transitioned["completed_at"],
+        ))
         response = CompleteErrandResponse(
             id=transitioned["id"],
             status=transitioned["status"],

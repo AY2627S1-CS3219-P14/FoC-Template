@@ -22,3 +22,35 @@ export type DeliveryBuildingOption = {
   id: string
   name: string
 }
+
+export type ErrandStatus =
+  | 'OPEN'
+  | 'ACCEPTED'
+  | 'COMPLETED'
+  | 'EXPIRED'
+  | 'CANCELLED'
+  | 'FAILED'
+
+export type CreateErrandRequest = {
+  supplier_id: string
+  required_item: string
+  credit_value: number
+  delivery_building_id: string
+  delivery_floor: string | null
+  delivery_description: string | null
+  expires_at: string
+}
+
+export type CreateErrandResponse = CreateErrandRequest & {
+  id: string
+  status: ErrandStatus
+  requester_id: string
+  courier_id: string | null
+  created_at: string
+}
+
+export type ErrandValidationIssue = {
+  loc: Array<string | number>
+  msg: string
+  type: string
+}

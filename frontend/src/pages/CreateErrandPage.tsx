@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState, type SubmitEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react'
 import { useSearchParams } from 'react-router'
 import { CreditOfferCard } from '../components/errands/CreditOfferCard'
 import { FormField } from '../components/ui/FormField'
+import { createErrand, ErrandApiError } from '../features/errands/errand.api'
 import { MOCK_AVAILABLE_CREDITS } from '../features/errands/errand.mock'
 import type {
+  CreateErrandRequest,
   ErrandDraft,
   ErrandDraftErrors,
   ErrandDraftField,
+  ErrandValidationIssue,
 } from '../features/errands/errand.types'
 import { listSupplierBuildings, listSuppliers } from '../features/suppliers/supplier.api'
 import type { Supplier, SupplierReference } from '../features/suppliers/supplier.types'
@@ -15,6 +18,16 @@ const inputClassName =
   'h-12 w-full rounded-xl border border-[#dde3de] bg-white px-3.5 text-sm text-[#17211d] outline-none transition placeholder:text-[#929c95] focus:border-[#175c45] focus:ring-4 focus:ring-[#175c45]/10 aria-invalid:border-[#d92d20] aria-invalid:ring-[#d92d20]/10'
 
 const textareaClassName = `${inputClassName} h-[82px] resize-y py-3.5 leading-5`
+
+const apiFieldToDraftField: Partial<Record<string, ErrandDraftField>> = {
+  supplier_id: 'supplierId',
+  required_item: 'requiredItem',
+  credit_value: 'creditValue',
+  delivery_building_id: 'deliveryBuildingId',
+  delivery_floor: 'deliveryFloor',
+  delivery_description: 'deliveryDescription',
+  expires_at: 'expiresAt',
+}
 
 function toLocalDateTimeValue(date: Date) {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
@@ -53,6 +66,28 @@ function validateDraft(draft: ErrandDraft, availableCredits: number) {
   return errors
 }
 
+function mapValidationIssues(issues: ErrandValidationIssue[]) {
+  return issues.reduce<ErrandDraftErrors>((errors, issue) => {
+    const apiField = [...issue.loc].reverse().find((part) => typeof part === 'string')
+    const draftField = apiField ? apiFieldToDraftField[apiField] : undefined
+
+    if (draftField && !errors[draftField]) errors[draftField] = issue.msg
+    return errors
+  }, {})
+}
+
+function toCreateRequest(draft: ErrandDraft): CreateErrandRequest {
+  return {
+    supplier_id: draft.supplierId,
+    required_item: draft.requiredItem.trim(),
+    credit_value: Number(draft.creditValue),
+    delivery_building_id: draft.deliveryBuildingId,
+    delivery_floor: draft.deliveryFloor.trim() || null,
+    delivery_description: draft.deliveryDescription.trim() || null,
+    expires_at: new Date(draft.expiresAt).toISOString(),
+  }
+}
+
 export function CreateErrandPage() {
   const [searchParams] = useSearchParams()
   const requestedSupplierId = searchParams.get('supplierId') ?? ''
@@ -71,7 +106,10 @@ export function CreateErrandPage() {
     creditValue: '5',
   })
   const [errors, setErrors] = useState<ErrandDraftErrors>({})
-  const [previewMessage, setPreviewMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [createdErrandId, setCreatedErrandId] = useState<string | null>(null)
+  const submitControllerRef = useRef<AbortController | null>(null)
 
   const selectedSupplier = suppliers.find((supplier) => supplier.id === draft.supplierId)
   const optionsReady = optionsStatus === 'ready'
@@ -124,10 +162,18 @@ export function CreateErrandPage() {
     }
   }, [retryCount])
 
+  useEffect(
+    () => () => {
+      submitControllerRef.current?.abort()
+    },
+    [],
+  )
+
   function updateDraft(field: ErrandDraftField, value: string) {
     setDraft((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
-    setPreviewMessage(null)
+    setSubmitError(null)
+    setCreatedErrandId(null)
   }
 
   function retryOptionsRequest() {
@@ -136,19 +182,50 @@ export function CreateErrandPage() {
     setRetryCount((current) => current + 1)
   }
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitting) return
+
+    setSubmitError(null)
+    setCreatedErrandId(null)
     const nextErrors = validateDraft(draft, MOCK_AVAILABLE_CREDITS)
     setErrors(nextErrors)
 
     if (Object.keys(nextErrors).length > 0) {
-      setPreviewMessage(null)
       const firstInvalidField = Object.keys(nextErrors)[0]
       document.querySelector<HTMLElement>(`[name="${firstInvalidField}"]`)?.focus()
       return
     }
 
-    setPreviewMessage('Frontend preview only — no errand was created.')
+    const controller = new AbortController()
+    submitControllerRef.current = controller
+    setIsSubmitting(true)
+
+    try {
+      const createdErrand = await createErrand(toCreateRequest(draft), controller.signal)
+      if (!controller.signal.aborted) setCreatedErrandId(createdErrand.id)
+    } catch (error) {
+      if (controller.signal.aborted) return
+
+      if (error instanceof ErrandApiError) {
+        const backendErrors = mapValidationIssues(error.issues)
+
+        if (Object.keys(backendErrors).length > 0) {
+          setErrors((current) => ({ ...current, ...backendErrors }))
+          const firstInvalidField = Object.keys(backendErrors)[0]
+          document.querySelector<HTMLElement>(`[name="${firstInvalidField}"]`)?.focus()
+        } else if (error.status === 401) {
+          setSubmitError('Your session has expired. Please sign in again.')
+        } else {
+          setSubmitError(error.message)
+        }
+      } else {
+        setSubmitError('Unable to create the errand right now. Please try again.')
+      }
+    } finally {
+      if (submitControllerRef.current === controller) submitControllerRef.current = null
+      if (!controller.signal.aborted) setIsSubmitting(false)
+    }
   }
 
   return (
@@ -376,15 +453,21 @@ export function CreateErrandPage() {
 
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={!canSubmit || isSubmitting || Boolean(createdErrandId)}
             className="flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:bg-[#e6eadf] disabled:text-[#929c95]"
           >
-            Create errand
+            {isSubmitting ? 'Creating errand…' : createdErrandId ? 'Errand created' : 'Create errand'}
           </button>
 
-          {previewMessage ? (
+          {createdErrandId ? (
             <p className="rounded-xl bg-[#ddf3e7] px-4 py-3 text-sm text-[#175c45]" role="status">
-              {previewMessage}
+              Errand created successfully. Reference: {createdErrandId}
+            </p>
+          ) : null}
+
+          {submitError ? (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              {submitError}
             </p>
           ) : null}
         </aside>

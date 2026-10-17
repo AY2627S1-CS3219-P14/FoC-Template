@@ -1,6 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createErrand, ErrandApiError } from '../features/errands/errand.api'
+import type { CreateErrandResponse } from '../features/errands/errand.types'
 import { listSupplierBuildings, listSuppliers } from '../features/suppliers/supplier.api'
 import type { Supplier, SupplierReference } from '../features/suppliers/supplier.types'
 import { CreateErrandPage } from './CreateErrandPage'
@@ -10,8 +12,28 @@ vi.mock('../features/suppliers/supplier.api', () => ({
   listSupplierBuildings: vi.fn(),
 }))
 
+vi.mock('../features/errands/errand.api', () => ({
+  createErrand: vi.fn(),
+  ErrandApiError: class ErrandApiError extends Error {
+    status: number
+    issues: Array<{ loc: Array<string | number>; msg: string; type: string }>
+
+    constructor(
+      message: string,
+      status: number,
+      issues: Array<{ loc: Array<string | number>; msg: string; type: string }> = [],
+    ) {
+      super(message)
+      this.name = 'ErrandApiError'
+      this.status = status
+      this.issues = issues
+    }
+  },
+}))
+
 const listSuppliersMock = vi.mocked(listSuppliers)
 const listSupplierBuildingsMock = vi.mocked(listSupplierBuildings)
+const createErrandMock = vi.mocked(createErrand)
 
 const suppliers: Supplier[] = [
   {
@@ -57,6 +79,21 @@ const supplierResponse = {
   },
 }
 
+const createdErrand: CreateErrandResponse = {
+  id: '66666666-6666-4666-8666-666666666666',
+  status: 'OPEN',
+  requester_id: '77777777-7777-4777-8777-777777777777',
+  courier_id: null,
+  supplier_id: '22222222-2222-4222-8222-222222222222',
+  required_item: 'Two sandwiches and one coffee',
+  credit_value: 5,
+  delivery_building_id: '11111111-1111-4111-8111-111111111111',
+  delivery_floor: '3',
+  delivery_description: 'Meet outside room 03-12',
+  expires_at: '2026-10-18T04:00:00.000Z',
+  created_at: '2026-10-17T04:00:00.000Z',
+}
+
 type TestLocation = {
   pathname: string
   search?: string
@@ -77,12 +114,38 @@ function futureLocalDateTime() {
   return localDate.toISOString().slice(0, 16)
 }
 
+async function fillValidForm() {
+  await screen.findByRole('option', { name: 'Central Library Print Centre' })
+  const expiresAt = futureLocalDateTime()
+
+  fireEvent.change(screen.getByLabelText(/pickup supplier/i), {
+    target: { value: '22222222-2222-4222-8222-222222222222' },
+  })
+  fireEvent.change(screen.getByLabelText(/requested items/i), {
+    target: { value: '  Two sandwiches and one coffee  ' },
+  })
+  fireEvent.change(screen.getByLabelText(/delivery building/i), {
+    target: { value: '11111111-1111-4111-8111-111111111111' },
+  })
+  fireEvent.change(screen.getByLabelText(/floor/i), { target: { value: '  3  ' } })
+  fireEvent.change(screen.getByLabelText(/collect before/i), {
+    target: { value: expiresAt },
+  })
+  fireEvent.change(screen.getByLabelText(/delivery instructions/i), {
+    target: { value: '  Meet outside room 03-12  ' },
+  })
+
+  return expiresAt
+}
+
 describe('CreateErrandPage', () => {
   beforeEach(() => {
     listSuppliersMock.mockReset()
     listSupplierBuildingsMock.mockReset()
+    createErrandMock.mockReset()
     listSuppliersMock.mockResolvedValue(supplierResponse)
     listSupplierBuildingsMock.mockResolvedValue({ items: buildings })
+    createErrandMock.mockResolvedValue(createdErrand)
   })
 
   it('loads suppliers and delivery buildings from the Supplier Service', async () => {
@@ -187,32 +250,114 @@ describe('CreateErrandPage', () => {
     expect(screen.getByText('Choose a pickup supplier.')).toBeInTheDocument()
     expect(screen.getByText('Describe the items you need.')).toBeInTheDocument()
     expect(screen.getByText('Choose a delivery building.')).toBeInTheDocument()
+    expect(createErrandMock).not.toHaveBeenCalled()
   })
 
-  it('accepts a complete local preview without creating an errand', async () => {
+  it('creates an errand with trimmed values and a UTC expiry', async () => {
     renderPage('/errands/new')
-    await screen.findByRole('option', { name: 'Central Library Print Centre' })
+    const expiresAt = await fillValidForm()
 
-    fireEvent.change(screen.getByLabelText(/pickup supplier/i), {
-      target: { value: '22222222-2222-4222-8222-222222222222' },
-    })
-    fireEvent.change(screen.getByLabelText(/requested items/i), {
-      target: { value: 'Two sandwiches and one coffee' },
-    })
-    fireEvent.change(screen.getByLabelText(/delivery building/i), {
-      target: { value: '11111111-1111-4111-8111-111111111111' },
-    })
-    fireEvent.change(screen.getByLabelText(/floor/i), { target: { value: '3' } })
-    fireEvent.change(screen.getByLabelText(/collect before/i), {
-      target: { value: futureLocalDateTime() },
-    })
-    fireEvent.change(screen.getByLabelText(/delivery instructions/i), {
-      target: { value: 'Meet outside room 03-12' },
-    })
+    fireEvent.click(screen.getByRole('button', { name: 'Create errand' }))
+
+    expect(await screen.findByText(/Errand created successfully/)).toHaveTextContent(
+      createdErrand.id,
+    )
+    expect(createErrandMock).toHaveBeenCalledWith(
+      {
+        supplier_id: '22222222-2222-4222-8222-222222222222',
+        required_item: 'Two sandwiches and one coffee',
+        credit_value: 5,
+        delivery_building_id: '11111111-1111-4111-8111-111111111111',
+        delivery_floor: '3',
+        delivery_description: 'Meet outside room 03-12',
+        expires_at: new Date(expiresAt).toISOString(),
+      },
+      expect.any(AbortSignal),
+    )
+    expect(screen.getByRole('button', { name: 'Errand created' })).toBeDisabled()
+  })
+
+  it('prevents duplicate submissions while creation is in progress', async () => {
+    let resolveRequest!: (value: CreateErrandResponse) => void
+    createErrandMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      }),
+    )
+    renderPage('/errands/new')
+    await fillValidForm()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create errand' }))
+
+    const submittingButton = await screen.findByRole('button', { name: 'Creating errand…' })
+    expect(submittingButton).toBeDisabled()
+    fireEvent.click(submittingButton)
+    expect(createErrandMock).toHaveBeenCalledTimes(1)
+
+    await act(async () => resolveRequest(createdErrand))
+    expect(await screen.findByText(/Errand created successfully/)).toBeInTheDocument()
+  })
+
+  it('maps backend validation issues to form fields', async () => {
+    createErrandMock.mockRejectedValue(
+      new ErrandApiError('Expiry is invalid.', 422, [
+        {
+          loc: ['body', 'expires_at'],
+          msg: 'The collection deadline is no longer in the future.',
+          type: 'value_error',
+        },
+      ]),
+    )
+    renderPage('/errands/new')
+    await fillValidForm()
+
     fireEvent.click(screen.getByRole('button', { name: 'Create errand' }))
 
     expect(
-      screen.getByText('Frontend preview only — no errand was created.'),
+      await screen.findByText('The collection deadline is no longer in the future.'),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText(/collect before/i)).toHaveFocus()
+  })
+
+  it('shows a service error that is not tied to a form field', async () => {
+    createErrandMock.mockRejectedValue(
+      new ErrandApiError('Supplier Service is unavailable', 503),
+    )
+    renderPage('/errands/new')
+    await fillValidForm()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create errand' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Supplier Service is unavailable',
+    )
+  })
+
+  it('shows a session-expired message after an unauthorized response', async () => {
+    createErrandMock.mockRejectedValue(new ErrandApiError('Unauthorized', 401))
+    renderPage('/errands/new')
+    await fillValidForm()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create errand' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your session has expired. Please sign in again.',
+    )
+  })
+
+  it('cancels an active creation request when leaving the page', async () => {
+    let requestSignal: AbortSignal | undefined
+    createErrandMock.mockImplementation((_request, signal) => {
+      requestSignal = signal
+      return new Promise(() => undefined)
+    })
+    const { unmount } = renderPage('/errands/new')
+    await fillValidForm()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create errand' }))
+    await waitFor(() => expect(requestSignal).toBeDefined())
+
+    unmount()
+    expect(requestSignal?.aborted).toBe(true)
   })
 })

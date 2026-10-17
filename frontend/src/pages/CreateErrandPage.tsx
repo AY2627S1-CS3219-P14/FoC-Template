@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type SubmitEvent } from 'react'
 import { useLocation, useSearchParams } from 'react-router'
 import { CreditOfferCard } from '../components/errands/CreditOfferCard'
 import { FormField } from '../components/ui/FormField'
@@ -88,7 +88,7 @@ export function CreateErrandPage() {
     deliveryFloor: '',
     deliveryDescription: '',
     expiresAt: '',
-    creditValue: '12',
+    creditValue: '5',
   })
   const [errors, setErrors] = useState<ErrandDraftErrors>({})
   const [previewMessage, setPreviewMessage] = useState<string | null>(null)
@@ -108,7 +108,7 @@ export function CreateErrandPage() {
     setPreviewMessage(null)
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextErrors = validateDraft(draft, MOCK_AVAILABLE_CREDITS)
     setErrors(nextErrors)

@@ -216,6 +216,7 @@ services:
     environment:
       VITE_SUPPLIER_API_URL: ${VITE_SUPPLIER_API_URL:-http://localhost:8080}
       VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8081}
+      VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"
     depends_on:

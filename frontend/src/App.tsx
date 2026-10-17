@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router'
 import { AppLayout } from './components/layout/AppLayout'
 import { PublicOnlyRoute, RequireAuth } from './features/auth/AuthRoutes'
+import { CreateErrandPage } from './pages/CreateErrandPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -19,6 +20,7 @@ function App() {
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="errands/new" element={<CreateErrandPage />} />
         </Route>
       </Route>
 

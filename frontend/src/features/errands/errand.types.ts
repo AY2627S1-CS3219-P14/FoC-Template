@@ -12,17 +12,6 @@ export type ErrandDraftField = keyof ErrandDraft
 
 export type ErrandDraftErrors = Partial<Record<ErrandDraftField, string>>
 
-export type ErrandSupplierOption = {
-  id: string
-  name: string
-  category: string
-}
-
-export type DeliveryBuildingOption = {
-  id: string
-  name: string
-}
-
 export type ErrandStatus =
   | 'OPEN'
   | 'ACCEPTED'

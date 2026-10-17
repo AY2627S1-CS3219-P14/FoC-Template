@@ -1,22 +1,15 @@
-import { useMemo, useState, type SubmitEvent } from 'react'
-import { useLocation, useSearchParams } from 'react-router'
+import { useEffect, useMemo, useState, type SubmitEvent } from 'react'
+import { useSearchParams } from 'react-router'
 import { CreditOfferCard } from '../components/errands/CreditOfferCard'
 import { FormField } from '../components/ui/FormField'
-import {
-  MOCK_AVAILABLE_CREDITS,
-  MOCK_DELIVERY_BUILDINGS,
-  MOCK_ERRAND_SUPPLIERS,
-} from '../features/errands/errand.mock'
+import { MOCK_AVAILABLE_CREDITS } from '../features/errands/errand.mock'
 import type {
   ErrandDraft,
   ErrandDraftErrors,
   ErrandDraftField,
-  ErrandSupplierOption,
 } from '../features/errands/errand.types'
-
-type SupplierNavigationState = {
-  supplier?: ErrandSupplierOption
-}
+import { listSupplierBuildings, listSuppliers } from '../features/suppliers/supplier.api'
+import type { Supplier, SupplierReference } from '../features/suppliers/supplier.types'
 
 const inputClassName =
   'h-12 w-full rounded-xl border border-[#dde3de] bg-white px-3.5 text-sm text-[#17211d] outline-none transition placeholder:text-[#929c95] focus:border-[#175c45] focus:ring-4 focus:ring-[#175c45]/10 aria-invalid:border-[#d92d20] aria-invalid:ring-[#d92d20]/10'
@@ -62,27 +55,14 @@ function validateDraft(draft: ErrandDraft, availableCredits: number) {
 
 export function CreateErrandPage() {
   const [searchParams] = useSearchParams()
-  const location = useLocation()
-  const navigationSupplier = (location.state as SupplierNavigationState | null)?.supplier
   const requestedSupplierId = searchParams.get('supplierId') ?? ''
-
-  const suppliers = useMemo(() => {
-    if (
-      !navigationSupplier ||
-      MOCK_ERRAND_SUPPLIERS.some((supplier) => supplier.id === navigationSupplier.id)
-    ) {
-      return MOCK_ERRAND_SUPPLIERS
-    }
-
-    return [navigationSupplier, ...MOCK_ERRAND_SUPPLIERS]
-  }, [navigationSupplier])
-
-  const initialSupplierId = suppliers.some((supplier) => supplier.id === requestedSupplierId)
-    ? requestedSupplierId
-    : ''
-
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [deliveryBuildings, setDeliveryBuildings] = useState<SupplierReference[]>([])
+  const [optionsStatus, setOptionsStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [optionsError, setOptionsError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const [draft, setDraft] = useState<ErrandDraft>({
-    supplierId: initialSupplierId,
+    supplierId: requestedSupplierId,
     requiredItem: '',
     deliveryBuildingId: '',
     deliveryFloor: '',
@@ -94,6 +74,8 @@ export function CreateErrandPage() {
   const [previewMessage, setPreviewMessage] = useState<string | null>(null)
 
   const selectedSupplier = suppliers.find((supplier) => supplier.id === draft.supplierId)
+  const optionsReady = optionsStatus === 'ready'
+  const canSubmit = optionsReady && suppliers.length > 0 && deliveryBuildings.length > 0
   const dateBounds = useMemo(() => {
     const now = new Date()
     return {
@@ -102,10 +84,56 @@ export function CreateErrandPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    let active = true
+
+    Promise.all([
+      listSuppliers({ size: 100 }, controller.signal),
+      listSupplierBuildings(controller.signal),
+    ])
+      .then(([supplierResponse, buildingResponse]) => {
+        if (!active) return
+
+        setSuppliers(supplierResponse.items)
+        setDeliveryBuildings(buildingResponse.items)
+        setDraft((current) => ({
+          ...current,
+          supplierId: supplierResponse.items.some(
+            (supplier) => supplier.id === current.supplierId,
+          )
+            ? current.supplierId
+            : '',
+        }))
+        setOptionsStatus('ready')
+      })
+      .catch((error: unknown) => {
+        if (!active || (error instanceof DOMException && error.name === 'AbortError')) return
+
+        setSuppliers([])
+        setDeliveryBuildings([])
+        setOptionsError(
+          error instanceof Error ? error.message : 'Unable to load suppliers and buildings.',
+        )
+        setOptionsStatus('error')
+      })
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [retryCount])
+
   function updateDraft(field: ErrandDraftField, value: string) {
     setDraft((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
     setPreviewMessage(null)
+  }
+
+  function retryOptionsRequest() {
+    setOptionsStatus('loading')
+    setOptionsError(null)
+    setRetryCount((current) => current + 1)
   }
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -147,6 +175,32 @@ export function CreateErrandPage() {
             What do you need?
           </h2>
 
+          {optionsError ? (
+            <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3" role="alert">
+              <p className="text-sm font-medium text-red-900">Could not load form options</p>
+              <p className="mt-1 text-sm text-red-700">{optionsError}</p>
+              <button
+                type="button"
+                onClick={retryOptionsRequest}
+                className="mt-3 cursor-pointer rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-800"
+              >
+                Try again
+              </button>
+            </div>
+          ) : null}
+
+          {optionsReady && suppliers.length === 0 ? (
+            <p className="mt-5 rounded-xl bg-[#f4f7f4] px-4 py-3 text-sm text-[#68736c]" role="status">
+              No active suppliers are currently available.
+            </p>
+          ) : null}
+
+          {optionsReady && deliveryBuildings.length === 0 ? (
+            <p className="mt-5 rounded-xl bg-[#f4f7f4] px-4 py-3 text-sm text-[#68736c]" role="status">
+              No delivery buildings are currently available.
+            </p>
+          ) : null}
+
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <FormField
               htmlFor="supplier-id"
@@ -161,9 +215,16 @@ export function CreateErrandPage() {
                 onChange={(event) => updateDraft('supplierId', event.target.value)}
                 aria-invalid={Boolean(errors.supplierId)}
                 aria-describedby={errors.supplierId ? 'supplier-id-error' : undefined}
-                className={`${inputClassName} cursor-pointer`}
+                disabled={!optionsReady || suppliers.length === 0}
+                className={`${inputClassName} cursor-pointer disabled:cursor-not-allowed disabled:bg-[#f4f7f4] disabled:text-[#929c95]`}
               >
-                <option value="">Select a supplier</option>
+                <option value="">
+                  {optionsStatus === 'loading'
+                    ? 'Loading suppliers…'
+                    : suppliers.length === 0
+                      ? 'No suppliers available'
+                      : 'Select a supplier'}
+                </option>
                 {suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>
                     {supplier.name}
@@ -176,7 +237,7 @@ export function CreateErrandPage() {
               <input
                 id="supplier-category"
                 type="text"
-                value={selectedSupplier?.category ?? ''}
+                value={selectedSupplier?.category.name ?? ''}
                 placeholder="Choose a supplier first"
                 readOnly
                 aria-readonly="true"
@@ -221,10 +282,17 @@ export function CreateErrandPage() {
                 aria-describedby={
                   errors.deliveryBuildingId ? 'delivery-building-error' : undefined
                 }
-                className={`${inputClassName} cursor-pointer`}
+                disabled={!optionsReady || deliveryBuildings.length === 0}
+                className={`${inputClassName} cursor-pointer disabled:cursor-not-allowed disabled:bg-[#f4f7f4] disabled:text-[#929c95]`}
               >
-                <option value="">Select a building</option>
-                {MOCK_DELIVERY_BUILDINGS.map((building) => (
+                <option value="">
+                  {optionsStatus === 'loading'
+                    ? 'Loading buildings…'
+                    : deliveryBuildings.length === 0
+                      ? 'No buildings available'
+                      : 'Select a building'}
+                </option>
+                {deliveryBuildings.map((building) => (
                   <option key={building.id} value={building.id}>
                     {building.name}
                   </option>
@@ -308,7 +376,8 @@ export function CreateErrandPage() {
 
           <button
             type="submit"
-            className="flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+            disabled={!canSubmit}
+            className="flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:bg-[#e6eadf] disabled:text-[#929c95]"
           >
             Create errand
           </button>

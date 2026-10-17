@@ -10,9 +10,15 @@ import {
 } from './auth.token'
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [status, setStatus] = useState<AuthStatus>('loading')
+  const mockAuthEnabled =
+    import.meta.env.DEV && import.meta.env.VITE_MOCK_AUTH === 'true'
+  const [status, setStatus] = useState<AuthStatus>(
+    mockAuthEnabled ? 'authenticated' : 'loading',
+  )
 
   useEffect(() => {
+    if (mockAuthEnabled) return
+
     let active = true
     const unsubscribe = subscribeToSessionExpiry(() => {
       if (active) setStatus('unauthenticated')
@@ -30,7 +36,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [mockAuthEnabled])
 
   const value = useMemo<AuthContextValue>(
     () => ({

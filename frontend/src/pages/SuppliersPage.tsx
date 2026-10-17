@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { SearchInput } from '../components/ui/SearchInput'
 import { Select } from '../components/ui/Select'
 import { SupplierCard } from '../components/ui/SupplierCard'
@@ -16,6 +17,7 @@ const SEARCH_DEBOUNCE_MS = 300
 const SUPPLIERS_PER_PAGE = 20
 
 export function SuppliersPage() {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -25,7 +27,6 @@ export function SuppliersPage() {
   const [areFiltersLoading, setAreFiltersLoading] = useState(true)
   const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null)
   const [filterRetryCount, setFilterRetryCount] = useState(0)
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
   const [pageNumber, setPageNumber] = useState(0)
   const [supplierResponse, setSupplierResponse] = useState<SupplierListResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -116,7 +117,6 @@ export function SuppliersPage() {
   function updateFilter(update: () => void) {
     setIsLoading(true)
     setErrorMessage(null)
-    setSelectedSupplierId(null)
     setPageNumber(0)
     update()
   }
@@ -132,18 +132,14 @@ export function SuppliersPage() {
       <div className="flex items-start justify-between gap-6">
         <div>
           <p className="text-xs font-medium tracking-[0.04em] text-[#175c45]">
-            NEW REQUEST / SUPPLIER
+            SUPPLIERS
           </p>
           <h1 className="mt-2 text-[2rem] font-medium leading-tight tracking-[-0.035em] text-[#17211d] sm:text-[2.375rem]">
             Choose a supplier
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-base">
-            Pick where your courier should collect from. You can add the items next.
+            Browse campus suppliers or choose one to start an errand.
           </p>
-        </div>
-        <div className="hidden shrink-0 items-center gap-2 rounded-xl bg-[#ddf3e7] px-3.5 py-2.5 text-xs sm:flex">
-          <span className="font-semibold text-[#175c45]">1 of 3</span>
-          <span className="text-[#68736c]">Supplier selection</span>
         </div>
       </div>
 
@@ -198,9 +194,6 @@ export function SuppliersPage() {
             ? 'Loading suppliers…'
             : `${page?.totalElements ?? 0} ${page?.totalElements === 1 ? 'supplier' : 'suppliers'} found`}
         </p>
-        <span className="rounded-full bg-[#ddf3e7] px-2.5 py-1 text-[10px] font-semibold text-[#175c45] sm:hidden">
-          1 of 3
-        </span>
       </div>
 
       {errorMessage ? (
@@ -229,8 +222,17 @@ export function SuppliersPage() {
               <SupplierCard
                 key={supplier.id}
                 supplier={supplier}
-                isSelected={selectedSupplierId === supplier.id}
-                onSelect={() => setSelectedSupplierId(supplier.id)}
+                onSelect={(selectedSupplier) =>
+                  navigate(`/errands/new?supplierId=${encodeURIComponent(selectedSupplier.id)}`, {
+                    state: {
+                      supplier: {
+                        id: selectedSupplier.id,
+                        name: selectedSupplier.name,
+                        category: selectedSupplier.category.name,
+                      },
+                    },
+                  })
+                }
               />
             ))}
           </div>

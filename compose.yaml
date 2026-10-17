@@ -125,6 +125,7 @@ services:
       USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
       SUPPLIER_SERVICE_URL: ${SUPPLIER_SERVICE_DOCKER_URL:-http://supplier-service:8080}
       JWT_ISSUER: ${JWT_ISSUER:-campuscouriers-user-service}
+      ORDER_CORS_ALLOWED_ORIGINS: ${ORDER_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
     ports:
       - "${ORDER_SERVICE_PORT:-8002}:8000"
     depends_on:
@@ -216,11 +217,14 @@ services:
     environment:
       VITE_SUPPLIER_API_URL: ${VITE_SUPPLIER_API_URL:-http://localhost:8080}
       VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8081}
+      VITE_ORDER_API_URL: ${VITE_ORDER_API_URL:-http://localhost:8002}
+      VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"
     depends_on:
       - supplier-service
       - user-service
+      - order-service
     restart: unless-stopped
 
   # One-off job: creates the first administrator if none exists, then exits (non-zero on failure).

@@ -44,6 +44,10 @@ export function MobileBottomNav() {
       <MobileNavItem to="/suppliers">
         Suppliers
       </MobileNavItem>
+
+      <MobileNavItem to="/errands/new">
+        Create
+      </MobileNavItem>
     </nav>
   )
 }

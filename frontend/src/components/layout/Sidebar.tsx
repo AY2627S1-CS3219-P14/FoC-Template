@@ -55,10 +55,10 @@ export function Sidebar() {
       <div className="mt-7 rounded-[18px] bg-[#0d3c2d] p-4 text-white">
         <p className="text-sm leading-5">Need something picked up on campus?</p>
         <NavLink
-          to="/suppliers"
+          to="/errands/new"
           className="mt-3 block rounded-lg bg-[#d8f06b] px-3 py-2.5 text-center text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b]"
         >
-          Choose a supplier
+          ＋ Create errand
         </NavLink>
       </div>
     </aside>

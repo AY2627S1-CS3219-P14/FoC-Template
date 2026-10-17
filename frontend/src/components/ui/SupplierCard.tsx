@@ -3,16 +3,13 @@ import type { Supplier } from '../../features/suppliers/supplier.types'
 type SupplierCardProps = {
   supplier: Supplier
   onSelect: (supplier: Supplier) => void
-  isSelected?: boolean
 }
 
-export function SupplierCard({ supplier, onSelect, isSelected = false }: SupplierCardProps) {
+export function SupplierCard({ supplier, onSelect }: SupplierCardProps) {
   return (
     <article className="flex h-full flex-col gap-2.5">
       <div
-        className={`overflow-hidden rounded-[18px] border bg-white shadow-[0_8px_24px_rgba(22,59,42,0.07)] transition ${
-          isSelected ? 'border-[#175c45] ring-2 ring-[#ddf3e7]' : 'border-[#dde3de]'
-        }`}
+        className="overflow-hidden rounded-[18px] border border-[#dde3de] bg-white shadow-[0_8px_24px_rgba(22,59,42,0.07)] transition"
       >
         {supplier.imageUrl ? (
           <img
@@ -57,7 +54,7 @@ export function SupplierCard({ supplier, onSelect, isSelected = false }: Supplie
         onClick={() => onSelect(supplier)}
         className="flex h-11 w-full cursor-pointer items-center justify-between rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
       >
-        <span>{isSelected ? 'Supplier selected' : 'Create errand here'}</span>
+        <span>Create errand here</span>
         <span aria-hidden="true">→</span>
       </button>
     </article>

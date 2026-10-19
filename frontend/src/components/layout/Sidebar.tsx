@@ -44,11 +44,11 @@ export function Sidebar() {
         className="space-y-2"
       >
         <SidebarNavItem to="/" end icon={compassIcon}>
-          Dashboard
+          Browse errands
         </SidebarNavItem>
 
         <SidebarNavItem to="/suppliers" icon={clipboardIcon}>
-          Choose a supplier
+          Suppliers
         </SidebarNavItem>
       </nav>
 

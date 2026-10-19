@@ -103,7 +103,7 @@ export function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-5 sm:mt-6">
         <ErrandFilters
           buildings={buildings}
           building={building}
@@ -117,7 +117,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="mt-7 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="mt-6 grid items-start gap-7 xl:mt-7 xl:grid-cols-[minmax(0,1fr)_18rem] xl:gap-6">
         <div>
           <div className="flex items-baseline justify-between gap-4" aria-live="polite">
             <h2 className="text-[1.375rem] font-medium tracking-[-0.02em] text-[#17211d] sm:text-2xl">

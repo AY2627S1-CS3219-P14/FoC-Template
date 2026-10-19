@@ -38,12 +38,12 @@ export function ErrandCard({ errand }: ErrandCardProps) {
     .join(' · ')
 
   return (
-    <article className="flex min-h-[242px] flex-col rounded-[18px] border border-[#dde3de] bg-white p-5 shadow-[0_8px_24px_rgba(22,59,42,0.07)]">
-      <h2 className="text-lg font-medium leading-tight tracking-[-0.015em] text-[#17211d]">
+    <article className="flex min-h-[210px] flex-col rounded-[18px] border border-[#dde3de] bg-white p-4 shadow-[0_8px_24px_rgba(22,59,42,0.07)] sm:min-h-[242px] sm:p-5">
+      <h2 className="text-base font-medium leading-tight tracking-[-0.015em] text-[#17211d] sm:text-lg">
         {errand.required_item}
       </h2>
 
-      <div className="mt-4 flex gap-3 text-sm leading-6 text-[#28332d]">
+      <div className="mt-3 flex gap-3 text-xs leading-5 text-[#28332d] sm:mt-4 sm:text-sm sm:leading-6">
         <img
           src={routeMarkers}
           alt=""
@@ -57,12 +57,12 @@ export function ErrandCard({ errand }: ErrandCardProps) {
         </div>
       </div>
 
-      <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+      <div className="mt-auto flex items-center justify-between gap-3 pt-4 sm:pt-5">
         <p className="flex min-w-0 items-center gap-2 text-xs text-[#68736c]">
           <img src={clockIcon} alt="" width="15" height="15" className="shrink-0" />
           <span className="truncate">By {formatExpiry(errand.expires_at)}</span>
         </p>
-        <p className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#ddf3e7] px-2.5 py-1.5 text-sm font-medium text-[#175c45]">
+        <p className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#ddf3e7] px-2.5 py-1 text-xs font-medium text-[#175c45] sm:py-1.5 sm:text-sm">
           <img src={creditIcon} alt="" width="14" height="14" />
           {errand.credit_value} credits
         </p>

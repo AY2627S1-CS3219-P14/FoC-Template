@@ -44,10 +44,24 @@ function AuthProbe() {
 
 describe('AuthProvider', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs()
     loginMock.mockReset()
     logoutMock.mockReset()
     refreshSessionMock.mockReset()
     clearAccessToken()
+  })
+
+  it('skips session restoration when mock authentication is enabled in development', () => {
+    vi.stubEnv('VITE_MOCK_AUTH', 'true')
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>,
+    )
+
+    expect(screen.getByText('authenticated')).toBeInTheDocument()
+    expect(refreshSessionMock).not.toHaveBeenCalled()
   })
 
   it('restores a browser session through the refresh cookie and logs out that session', async () => {

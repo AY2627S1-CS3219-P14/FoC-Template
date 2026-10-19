@@ -1,0 +1,1 @@
+export const MOCK_AVAILABLE_CREDITS = 24

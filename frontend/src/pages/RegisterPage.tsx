@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { AuthShell } from '../components/auth/AuthShell'
 import { register } from '../features/auth/auth.api'
@@ -14,7 +14,7 @@ export function RegisterPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage(null)
     setIsSubmitting(true)

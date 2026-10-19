@@ -38,6 +38,47 @@ export type CreateErrandResponse = CreateErrandRequest & {
   created_at: string
 }
 
+export type ErrandListItem = {
+  id: string
+  status: ErrandStatus
+  requester_id: string
+  courier_id: string | null
+  supplier_id: string
+  required_item: string
+  credit_value: number
+  delivery_building_id: string
+  delivery_floor: string | null
+  delivery_description: string | null
+  expires_at: string
+  created_at: string
+  accepted_at: string | null
+  completed_at: string | null
+  cancelled_at: string | null
+  failed_at: string | null
+  failure_reason: string | null
+}
+
+export type ErrandListResponse = {
+  total: number
+  items: ErrandListItem[]
+}
+
+export type ErrandDashboardItem = ErrandListItem & {
+  supplier_name: string
+  supplier_building_name: string
+  delivery_building_name: string
+}
+
+export type ErrandCreditFilter = 'all' | 'up-to-5' | '6-to-10' | '11-plus'
+
+export type ErrandExpiryFilter = 'all' | 'next-4-hours' | 'today' | 'next-7-days'
+
+export type ErrandSort =
+  | 'expires_at,asc'
+  | 'expires_at,desc'
+  | 'credit_value,asc'
+  | 'credit_value,desc'
+
 export type ErrandValidationIssue = {
   loc: Array<string | number>
   msg: string

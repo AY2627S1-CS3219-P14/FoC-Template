@@ -1,15 +1,21 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadOpenErrandDashboard } from '../features/errands/errand.dashboard'
+import {
+  loadErrandDashboardBuildings,
+  loadOpenErrandDashboard,
+} from '../features/errands/errand.dashboard'
 import type { OpenErrandDashboardData } from '../features/errands/errand.dashboard'
 import type { ErrandDashboardItem } from '../features/errands/errand.types'
 import { DashboardPage } from './DashboardPage'
 
 vi.mock('../features/errands/errand.dashboard', () => ({
+  applyDeliveryBuildingNames: (data: OpenErrandDashboardData) => data,
+  loadErrandDashboardBuildings: vi.fn(),
   loadOpenErrandDashboard: vi.fn(),
 }))
 
 const loadOpenErrandDashboardMock = vi.mocked(loadOpenErrandDashboard)
+const loadErrandDashboardBuildingsMock = vi.mocked(loadErrandDashboardBuildings)
 
 const openErrand: ErrandDashboardItem = {
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -49,14 +55,15 @@ const secondOpenErrand: ErrandDashboardItem = {
 const dashboardData: OpenErrandDashboardData = {
   total: 2,
   items: [openErrand, secondOpenErrand],
-  deliveryBuildings: [
-    { id: openErrand.delivery_building_id, name: openErrand.delivery_building_name },
-    {
-      id: secondOpenErrand.delivery_building_id,
-      name: secondOpenErrand.delivery_building_name,
-    },
-  ],
 }
+
+const deliveryBuildings = [
+  { id: openErrand.delivery_building_id, name: openErrand.delivery_building_name },
+  {
+    id: secondOpenErrand.delivery_building_id,
+    name: secondOpenErrand.delivery_building_name,
+  },
+]
 
 const defaultFilters = {
   deliveryBuildingId: '',
@@ -68,7 +75,9 @@ const defaultFilters = {
 describe('DashboardPage', () => {
   beforeEach(() => {
     loadOpenErrandDashboardMock.mockReset()
+    loadErrandDashboardBuildingsMock.mockReset()
     loadOpenErrandDashboardMock.mockResolvedValue(dashboardData)
+    loadErrandDashboardBuildingsMock.mockResolvedValue(deliveryBuildings)
   })
 
   it('shows a loading state before live open errands arrive', async () => {
@@ -110,6 +119,7 @@ describe('DashboardPage', () => {
   it('requests a new result set when the delivery location changes', async () => {
     render(<DashboardPage />)
     await screen.findByText('2 available')
+    await screen.findByRole('option', { name: 'COM3' })
 
     fireEvent.change(screen.getByLabelText('Filter by delivery location'), {
       target: { value: secondOpenErrand.delivery_building_id },
@@ -124,6 +134,7 @@ describe('DashboardPage', () => {
         expect.any(AbortSignal),
       ),
     )
+    expect(loadErrandDashboardBuildingsMock).toHaveBeenCalledTimes(1)
   })
 
   it('requests API-compatible credit and expiry filters', async () => {
@@ -171,10 +182,10 @@ describe('DashboardPage', () => {
     loadOpenErrandDashboardMock.mockResolvedValue({
       total: 0,
       items: [],
-      deliveryBuildings: dashboardData.deliveryBuildings,
     })
     render(<DashboardPage />)
     await screen.findByRole('heading', { name: 'No open errands match' })
+    await screen.findByRole('option', { name: 'COM3' })
 
     fireEvent.change(screen.getByLabelText('Filter by delivery location'), {
       target: { value: secondOpenErrand.delivery_building_id },
@@ -206,6 +217,25 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
     expect(loadOpenErrandDashboardMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps errands available when building references fail and retries them separately', async () => {
+    loadErrandDashboardBuildingsMock
+      .mockRejectedValueOnce(new Error('Could not connect to the Supplier Service.'))
+      .mockResolvedValueOnce(deliveryBuildings)
+    render(<DashboardPage />)
+
+    expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Delivery locations could not be loaded.',
+    )
+    expect(loadOpenErrandDashboardMock).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry locations' }))
+
+    expect(await screen.findByRole('option', { name: 'COM3' })).toBeInTheDocument()
+    expect(loadErrandDashboardBuildingsMock).toHaveBeenCalledTimes(2)
+    expect(loadOpenErrandDashboardMock).toHaveBeenCalledTimes(1)
   })
 
   it('cancels the previous request when filters change', async () => {

@@ -23,7 +23,6 @@ export type ErrandDashboardFilters = {
 export type OpenErrandDashboardData = {
   total: number
   items: ErrandDashboardItem[]
-  deliveryBuildings: SupplierReference[]
 }
 
 export function buildOpenErrandParams(
@@ -64,17 +63,39 @@ export function buildOpenErrandParams(
 function enrichErrand(
   errand: ErrandListItem,
   suppliersById: Map<string, Supplier>,
-  buildingsById: Map<string, SupplierReference>,
 ): ErrandDashboardItem {
   const supplier = suppliersById.get(errand.supplier_id)
-  const deliveryBuilding = buildingsById.get(errand.delivery_building_id)
 
   return {
     ...errand,
     supplier_name: supplier?.name ?? 'Supplier unavailable',
     supplier_building_name: supplier?.building.name ?? 'Pickup location unavailable',
-    delivery_building_name: deliveryBuilding?.name ?? 'Delivery location unavailable',
+    delivery_building_name: 'Delivery location unavailable',
   }
+}
+
+export function applyDeliveryBuildingNames(
+  data: OpenErrandDashboardData,
+  deliveryBuildings: SupplierReference[],
+): OpenErrandDashboardData {
+  const buildingsById = new Map(
+    deliveryBuildings.map((building) => [building.id, building]),
+  )
+
+  return {
+    ...data,
+    items: data.items.map((errand) => ({
+      ...errand,
+      delivery_building_name:
+        buildingsById.get(errand.delivery_building_id)?.name ??
+        'Delivery location unavailable',
+    })),
+  }
+}
+
+export async function loadErrandDashboardBuildings(signal?: AbortSignal) {
+  const response = await listSupplierBuildings(signal)
+  return response.items
 }
 
 export async function loadOpenErrandDashboard(
@@ -82,24 +103,15 @@ export async function loadOpenErrandDashboard(
   signal?: AbortSignal,
   now = new Date(),
 ): Promise<OpenErrandDashboardData> {
-  const [errandResponse, buildingResponse] = await Promise.all([
-    listErrands(buildOpenErrandParams(filters, now), signal),
-    listSupplierBuildings(signal),
-  ])
+  const errandResponse = await listErrands(buildOpenErrandParams(filters, now), signal)
   const supplierIds = [...new Set(errandResponse.items.map((errand) => errand.supplier_id))]
   const suppliers = await Promise.all(
     supplierIds.map((supplierId) => getSupplier(supplierId, signal)),
   )
   const suppliersById = new Map(suppliers.map((supplier) => [supplier.id, supplier]))
-  const buildingsById = new Map(
-    buildingResponse.items.map((building) => [building.id, building]),
-  )
 
   return {
     total: errandResponse.total,
-    items: errandResponse.items.map((errand) =>
-      enrichErrand(errand, suppliersById, buildingsById),
-    ),
-    deliveryBuildings: buildingResponse.items,
+    items: errandResponse.items.map((errand) => enrichErrand(errand, suppliersById)),
   }
 }

@@ -3,7 +3,9 @@ import { getSupplier, listSupplierBuildings } from '../suppliers/supplier.api'
 import type { Supplier } from '../suppliers/supplier.types'
 import { listErrands } from './errand.api'
 import {
+  applyDeliveryBuildingNames,
   buildOpenErrandParams,
+  loadErrandDashboardBuildings,
   loadOpenErrandDashboard,
   type ErrandDashboardFilters,
 } from './errand.dashboard'
@@ -118,9 +120,6 @@ describe('loadOpenErrandDashboard', () => {
 
     listErrandsMock.mockResolvedValue({ total: 1, items: [errand] })
     getSupplierMock.mockResolvedValue(supplier)
-    listSupplierBuildingsMock.mockResolvedValue({
-      items: [{ id: errand.delivery_building_id, name: 'COM3' }],
-    })
   })
 
   it('loads open errands and enriches their service identifiers for dashboard cards', async () => {
@@ -135,18 +134,17 @@ describe('loadOpenErrandDashboard', () => {
           ...errand,
           supplier_name: 'Techno Edge',
           supplier_building_name: 'Engineering E2',
-          delivery_building_name: 'COM3',
+          delivery_building_name: 'Delivery location unavailable',
         },
       ],
-      deliveryBuildings: [{ id: errand.delivery_building_id, name: 'COM3' }],
     })
 
     expect(listErrandsMock).toHaveBeenCalledWith(
       buildOpenErrandParams(defaultFilters, new Date('2026-10-20T02:30:00.000Z')),
       signal,
     )
-    expect(listSupplierBuildingsMock).toHaveBeenCalledWith(signal)
     expect(getSupplierMock).toHaveBeenCalledWith(errand.supplier_id, signal)
+    expect(listSupplierBuildingsMock).not.toHaveBeenCalled()
   })
 
   it('loads each supplier only once when multiple errands use it', async () => {
@@ -160,11 +158,58 @@ describe('loadOpenErrandDashboard', () => {
     expect(getSupplierMock).toHaveBeenCalledTimes(1)
   })
 
-  it('uses explicit fallback labels when reference data has no delivery building', async () => {
-    listSupplierBuildingsMock.mockResolvedValue({ items: [] })
+})
 
-    const result = await loadOpenErrandDashboard(defaultFilters)
+describe('dashboard building references', () => {
+  beforeEach(() => {
+    listSupplierBuildingsMock.mockReset()
+  })
 
-    expect(result.items[0].delivery_building_name).toBe('Delivery location unavailable')
+  it('loads delivery buildings independently from errand results', async () => {
+    const buildings = [{ id: errand.delivery_building_id, name: 'COM3' }]
+    const signal = new AbortController().signal
+    listSupplierBuildingsMock.mockResolvedValue({ items: buildings })
+
+    await expect(loadErrandDashboardBuildings(signal)).resolves.toEqual(buildings)
+    expect(listSupplierBuildingsMock).toHaveBeenCalledWith(signal)
+  })
+
+  it('applies delivery building names without making another service request', () => {
+    const data = {
+      total: 1,
+      items: [
+        {
+          ...errand,
+          supplier_name: supplier.name,
+          supplier_building_name: supplier.building.name,
+          delivery_building_name: 'Delivery location unavailable',
+        },
+      ],
+    }
+
+    expect(
+      applyDeliveryBuildingNames(data, [
+        { id: errand.delivery_building_id, name: 'COM3' },
+      ]).items[0].delivery_building_name,
+    ).toBe('COM3')
+    expect(listSupplierBuildingsMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps an explicit fallback when a delivery building cannot be resolved', () => {
+    const data = {
+      total: 1,
+      items: [
+        {
+          ...errand,
+          supplier_name: supplier.name,
+          supplier_building_name: supplier.building.name,
+          delivery_building_name: 'Delivery location unavailable',
+        },
+      ],
+    }
+
+    expect(applyDeliveryBuildingNames(data, []).items[0].delivery_building_name).toBe(
+      'Delivery location unavailable',
+    )
   })
 })

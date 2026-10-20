@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ActiveErrandsPanel } from '../components/errands/ActiveErrandsPanel'
 import { ErrandCard } from '../components/errands/ErrandCard'
 import { ErrandFilters } from '../components/errands/ErrandFilters'
 import {
+  applyDeliveryBuildingNames,
+  loadErrandDashboardBuildings,
   loadOpenErrandDashboard,
   type OpenErrandDashboardData,
 } from '../features/errands/errand.dashboard'
@@ -11,6 +13,7 @@ import type {
   ErrandExpiryFilter,
   ErrandSort,
 } from '../features/errands/errand.types'
+import type { SupplierReference } from '../features/suppliers/supplier.types'
 
 export function DashboardPage() {
   const [deliveryBuildingId, setDeliveryBuildingId] = useState('')
@@ -18,9 +21,30 @@ export function DashboardPage() {
   const [expiry, setExpiry] = useState<ErrandExpiryFilter>('all')
   const [sort, setSort] = useState<ErrandSort>('expires_at,asc')
   const [dashboardData, setDashboardData] = useState<OpenErrandDashboardData | null>(null)
+  const [deliveryBuildings, setDeliveryBuildings] = useState<SupplierReference[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [buildingErrorMessage, setBuildingErrorMessage] = useState<string | null>(null)
+  const [buildingRetryCount, setBuildingRetryCount] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    loadErrandDashboardBuildings(controller.signal)
+      .then((buildings) => {
+        setDeliveryBuildings(buildings)
+        setBuildingErrorMessage(null)
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setBuildingErrorMessage(
+          error instanceof Error ? error.message : 'Unable to load delivery locations.',
+        )
+      })
+
+    return () => controller.abort()
+  }, [buildingRetryCount])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -43,8 +67,15 @@ export function DashboardPage() {
     return () => controller.abort()
   }, [credit, deliveryBuildingId, expiry, retryCount, sort])
 
-  const visibleErrands = dashboardData?.items ?? []
-  const availableCount = dashboardData?.total ?? 0
+  const displayData = useMemo(
+    () =>
+      dashboardData
+        ? applyDeliveryBuildingNames(dashboardData, deliveryBuildings)
+        : null,
+    [dashboardData, deliveryBuildings],
+  )
+  const visibleErrands = displayData?.items ?? []
+  const availableCount = displayData?.total ?? 0
 
   function prepareRequest() {
     setIsLoading(true)
@@ -84,6 +115,11 @@ export function DashboardPage() {
     setRetryCount((count) => count + 1)
   }
 
+  function retryBuildings() {
+    setBuildingErrorMessage(null)
+    setBuildingRetryCount((count) => count + 1)
+  }
+
   return (
     <section>
       <div>
@@ -100,7 +136,7 @@ export function DashboardPage() {
 
       <div className="mt-5 sm:mt-6">
         <ErrandFilters
-          deliveryBuildings={dashboardData?.deliveryBuildings ?? []}
+          deliveryBuildings={deliveryBuildings}
           deliveryBuildingId={deliveryBuildingId}
           credit={credit}
           expiry={expiry}
@@ -110,6 +146,21 @@ export function DashboardPage() {
           onExpiryChange={updateExpiry}
           onSortChange={updateSort}
         />
+        {buildingErrorMessage ? (
+          <div
+            role="status"
+            className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            <span>Delivery locations could not be loaded. {buildingErrorMessage}</span>
+            <button
+              type="button"
+              onClick={retryBuildings}
+              className="cursor-pointer font-semibold text-[#175c45] underline decoration-[#175c45]/40 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+            >
+              Retry locations
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-6 grid items-start gap-7 xl:mt-7 xl:grid-cols-[minmax(0,1fr)_18rem] xl:gap-6">

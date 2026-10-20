@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { authenticatedFetch } from '../auth/auth.fetch'
-import { createErrand, ErrandApiError } from './errand.api'
-import type { CreateErrandRequest, CreateErrandResponse } from './errand.types'
+import { createErrand, ErrandApiError, listErrands } from './errand.api'
+import type {
+  CreateErrandRequest,
+  CreateErrandResponse,
+  ErrandListResponse,
+} from './errand.types'
 
 vi.mock('../auth/auth.fetch', () => ({
   authenticatedFetch: vi.fn(),
@@ -27,6 +31,165 @@ const createdErrand: CreateErrandResponse = {
   courier_id: null,
   created_at: '2026-10-17T04:00:00.000Z',
 }
+
+const listedErrands: ErrandListResponse = {
+  total: 1,
+  items: [
+    {
+      ...createdErrand,
+      accepted_at: null,
+      completed_at: null,
+      cancelled_at: null,
+      failed_at: null,
+      failure_reason: null,
+    },
+  ],
+}
+
+describe('listErrands', () => {
+  beforeEach(() => {
+    authenticatedFetchMock.mockReset()
+  })
+
+  it('serializes every supported filter, repeated status, sort, and page parameter', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify(listedErrands), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    const signal = new AbortController().signal
+    await expect(
+      listErrands(
+        {
+          errandId: '550e8400-e29b-41d4-a716-446655440000',
+          supplierId: '22222222-2222-4222-8222-222222222222',
+          requesterId: '33333333-3333-4333-8333-333333333333',
+          courierId: '44444444-4444-4444-8444-444444444444',
+          statuses: ['OPEN', 'ACCEPTED'],
+          deliveryBuildingId: '11111111-1111-4111-8111-111111111111',
+          minCreditValue: 6,
+          maxCreditValue: 10,
+          expiresAfter: '2026-10-20T00:00:00.000Z',
+          expiresBefore: '2026-10-27T00:00:00.000Z',
+          availableOnly: true,
+          sort: 'credit_value,desc',
+          page: 2,
+          size: 20,
+        },
+        signal,
+      ),
+    ).resolves.toEqual(listedErrands)
+
+    const expectedBaseUrl = (import.meta.env.VITE_ORDER_API_URL ?? '').trim().replace(/\/+$/, '')
+    const expectedQuery = new URLSearchParams([
+      ['errand_id', '550e8400-e29b-41d4-a716-446655440000'],
+      ['supplier_id', '22222222-2222-4222-8222-222222222222'],
+      ['requester_id', '33333333-3333-4333-8333-333333333333'],
+      ['courier_id', '44444444-4444-4444-8444-444444444444'],
+      ['status', 'OPEN'],
+      ['status', 'ACCEPTED'],
+      ['delivery_building_id', '11111111-1111-4111-8111-111111111111'],
+      ['min_credit_value', '6'],
+      ['max_credit_value', '10'],
+      ['expires_after', '2026-10-20T00:00:00.000Z'],
+      ['expires_before', '2026-10-27T00:00:00.000Z'],
+      ['available_only', 'true'],
+      ['sort', 'credit_value,desc'],
+      ['page', '2'],
+      ['size', '20'],
+    ])
+
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      `${expectedBaseUrl}/errands?${expectedQuery}`,
+      {
+        headers: { Accept: 'application/json' },
+        signal,
+      },
+    )
+  })
+
+  it('omits the query string when no parameters are supplied', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify(listedErrands), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await listErrands()
+
+    const expectedBaseUrl = (import.meta.env.VITE_ORDER_API_URL ?? '').trim().replace(/\/+$/, '')
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(`${expectedBaseUrl}/errands`, {
+      headers: { Accept: 'application/json' },
+      signal: undefined,
+    })
+  })
+
+  it('preserves FastAPI query validation issues', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          detail: [
+            {
+              loc: ['query', 'min_credit_value'],
+              msg: 'Input should be greater than or equal to 1',
+              type: 'greater_than_equal',
+            },
+          ],
+        }),
+        { status: 422, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    await expect(listErrands({ minCreditValue: 0 })).rejects.toMatchObject({
+      status: 422,
+      message: 'Input should be greater than or equal to 1',
+      issues: [
+        {
+          loc: ['query', 'min_credit_value'],
+          msg: 'Input should be greater than or equal to 1',
+          type: 'greater_than_equal',
+        },
+      ],
+    })
+  })
+
+  it('uses a string problem detail returned by the service', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ detail: 'min_credit_value must not exceed max_credit_value' }), {
+        status: 422,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await expect(
+      listErrands({ minCreditValue: 10, maxCreditValue: 5 }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'min_credit_value must not exceed max_credit_value',
+      issues: [],
+    })
+  })
+
+  it('reports a connection error when the request fails', async () => {
+    authenticatedFetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await expect(listErrands()).rejects.toMatchObject({
+      status: 0,
+      message: 'Could not connect to the Order Service.',
+    })
+  })
+
+  it('preserves request cancellation', async () => {
+    const controller = new AbortController()
+    const abortError = new DOMException('The operation was aborted.', 'AbortError')
+    authenticatedFetchMock.mockRejectedValue(abortError)
+
+    await expect(listErrands({}, controller.signal)).rejects.toBe(abortError)
+  })
+})
 
 describe('createErrand', () => {
   beforeEach(() => {

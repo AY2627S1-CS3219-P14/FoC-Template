@@ -63,6 +63,31 @@ export type ErrandListResponse = {
   items: ErrandListItem[]
 }
 
+export type ErrandListSort =
+  | 'created_at,asc'
+  | 'created_at,desc'
+  | 'credit_value,asc'
+  | 'credit_value,desc'
+  | 'expires_at,asc'
+  | 'expires_at,desc'
+
+export type ListErrandsParams = {
+  errandId?: string
+  supplierId?: string
+  requesterId?: string
+  courierId?: string
+  statuses?: ErrandStatus[]
+  deliveryBuildingId?: string
+  minCreditValue?: number
+  maxCreditValue?: number
+  expiresAfter?: string
+  expiresBefore?: string
+  availableOnly?: boolean
+  sort?: ErrandListSort
+  page?: number
+  size?: number
+}
+
 export type ErrandDashboardItem = ErrandListItem & {
   supplier_name: string
   supplier_building_name: string
@@ -74,10 +99,7 @@ export type ErrandCreditFilter = 'all' | 'up-to-5' | '6-to-10' | '11-plus'
 export type ErrandExpiryFilter = 'all' | 'next-4-hours' | 'today' | 'next-7-days'
 
 export type ErrandSort =
-  | 'expires_at,asc'
-  | 'expires_at,desc'
-  | 'credit_value,asc'
-  | 'credit_value,desc'
+  Exclude<ErrandListSort, 'created_at,asc' | 'created_at,desc'>
 
 export type ErrandValidationIssue = {
   loc: Array<string | number>

@@ -1,92 +1,87 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ActiveErrandsPanel } from '../components/errands/ActiveErrandsPanel'
 import { ErrandCard } from '../components/errands/ErrandCard'
 import { ErrandFilters } from '../components/errands/ErrandFilters'
 import {
-  MOCK_ACTIVE_ERRANDS,
-  MOCK_OPEN_ERRANDS,
-} from '../features/errands/errand.mock'
+  loadOpenErrandDashboard,
+  type OpenErrandDashboardData,
+} from '../features/errands/errand.dashboard'
 import type {
   ErrandCreditFilter,
-  ErrandDashboardItem,
   ErrandExpiryFilter,
   ErrandSort,
 } from '../features/errands/errand.types'
 
-const HOUR_IN_MS = 60 * 60 * 1000
-const DAY_IN_MS = 24 * HOUR_IN_MS
-
-function matchesCreditFilter(errand: ErrandDashboardItem, filter: ErrandCreditFilter) {
-  if (filter === 'up-to-5') return errand.credit_value <= 5
-  if (filter === '6-to-10') return errand.credit_value >= 6 && errand.credit_value <= 10
-  if (filter === '11-plus') return errand.credit_value >= 11
-  return true
-}
-
-function matchesExpiryFilter(
-  errand: ErrandDashboardItem,
-  filter: ErrandExpiryFilter,
-  now: Date,
-) {
-  if (filter === 'all') return true
-
-  const expiry = new Date(errand.expires_at)
-  if (filter === 'next-4-hours') return expiry.getTime() <= now.getTime() + 4 * HOUR_IN_MS
-  if (filter === 'next-7-days') return expiry.getTime() <= now.getTime() + 7 * DAY_IN_MS
-
-  const endOfToday = new Date(now)
-  endOfToday.setHours(23, 59, 59, 999)
-  return expiry.getTime() <= endOfToday.getTime()
-}
-
-function sortErrands(errands: ErrandDashboardItem[], sort: ErrandSort) {
-  const [field, direction] = sort.split(',') as [
-    'expires_at' | 'credit_value',
-    'asc' | 'desc',
-  ]
-
-  return [...errands].sort((left, right) => {
-    const leftValue =
-      field === 'credit_value' ? left.credit_value : new Date(left.expires_at).getTime()
-    const rightValue =
-      field === 'credit_value' ? right.credit_value : new Date(right.expires_at).getTime()
-    const difference = leftValue - rightValue
-
-    if (difference !== 0) return direction === 'asc' ? difference : -difference
-    return left.id.localeCompare(right.id)
-  })
-}
-
 export function DashboardPage() {
-  const [building, setBuilding] = useState('')
+  const [deliveryBuildingId, setDeliveryBuildingId] = useState('')
   const [credit, setCredit] = useState<ErrandCreditFilter>('all')
   const [expiry, setExpiry] = useState<ErrandExpiryFilter>('all')
   const [sort, setSort] = useState<ErrandSort>('expires_at,asc')
+  const [dashboardData, setDashboardData] = useState<OpenErrandDashboardData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
-  const openErrands = useMemo(
-    () => MOCK_OPEN_ERRANDS.filter((errand) => errand.status === 'OPEN'),
-    [],
-  )
-  const buildings = useMemo(
-    () => [...new Set(openErrands.map((errand) => errand.delivery_building_name))].sort(),
-    [openErrands],
-  )
-  const visibleErrands = useMemo(() => {
-    const now = new Date()
-    const filtered = openErrands.filter(
-      (errand) =>
-        (!building || errand.delivery_building_name === building) &&
-        matchesCreditFilter(errand, credit) &&
-        matchesExpiryFilter(errand, expiry, now),
+  useEffect(() => {
+    const controller = new AbortController()
+
+    loadOpenErrandDashboard(
+      { deliveryBuildingId, credit, expiry, sort },
+      controller.signal,
     )
+      .then(setDashboardData)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setErrorMessage(
+          error instanceof Error ? error.message : 'Unable to load open errands.',
+        )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false)
+      })
 
-    return sortErrands(filtered, sort)
-  }, [building, credit, expiry, openErrands, sort])
+    return () => controller.abort()
+  }, [credit, deliveryBuildingId, expiry, retryCount, sort])
+
+  const visibleErrands = dashboardData?.items ?? []
+  const availableCount = dashboardData?.total ?? 0
+
+  function prepareRequest() {
+    setIsLoading(true)
+    setErrorMessage(null)
+  }
+
+  function updateDeliveryBuilding(buildingId: string) {
+    prepareRequest()
+    setDeliveryBuildingId(buildingId)
+  }
+
+  function updateCredit(nextCredit: ErrandCreditFilter) {
+    prepareRequest()
+    setCredit(nextCredit)
+  }
+
+  function updateExpiry(nextExpiry: ErrandExpiryFilter) {
+    prepareRequest()
+    setExpiry(nextExpiry)
+  }
+
+  function updateSort(nextSort: ErrandSort) {
+    prepareRequest()
+    setSort(nextSort)
+  }
 
   function resetFilters() {
-    setBuilding('')
+    prepareRequest()
+    setDeliveryBuildingId('')
     setCredit('all')
     setExpiry('all')
+    setRetryCount((count) => count + 1)
+  }
+
+  function retryRequest() {
+    prepareRequest()
+    setRetryCount((count) => count + 1)
   }
 
   return (
@@ -105,15 +100,15 @@ export function DashboardPage() {
 
       <div className="mt-5 sm:mt-6">
         <ErrandFilters
-          buildings={buildings}
-          building={building}
+          deliveryBuildings={dashboardData?.deliveryBuildings ?? []}
+          deliveryBuildingId={deliveryBuildingId}
           credit={credit}
           expiry={expiry}
           sort={sort}
-          onBuildingChange={setBuilding}
-          onCreditChange={setCredit}
-          onExpiryChange={setExpiry}
-          onSortChange={setSort}
+          onDeliveryBuildingChange={updateDeliveryBuilding}
+          onCreditChange={updateCredit}
+          onExpiryChange={updateExpiry}
+          onSortChange={updateSort}
         />
       </div>
 
@@ -124,11 +119,37 @@ export function DashboardPage() {
               Open errands
             </h2>
             <p className="text-sm text-[#68736c]">
-              {visibleErrands.length} available
+              {isLoading
+                ? 'Loading…'
+                : errorMessage
+                  ? 'Unavailable'
+                  : `${availableCount} available`}
             </p>
           </div>
 
-          {visibleErrands.length > 0 ? (
+          {errorMessage ? (
+            <div
+              role="alert"
+              className="mt-4 rounded-[18px] border border-red-200 bg-red-50 px-6 py-10 text-center"
+            >
+              <h3 className="text-lg font-medium text-red-900">Could not load errands</h3>
+              <p className="mt-2 text-sm text-red-700">{errorMessage}</p>
+              <button
+                type="button"
+                onClick={retryRequest}
+                className="mt-5 cursor-pointer rounded-lg bg-[#175c45] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0d3c2d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+              >
+                Try again
+              </button>
+            </div>
+          ) : isLoading ? (
+            <div
+              role="status"
+              className="mt-4 rounded-[18px] border border-[#dde3de] bg-white px-6 py-12 text-center text-sm text-[#68736c]"
+            >
+              Loading open errands…
+            </div>
+          ) : visibleErrands.length > 0 ? (
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               {visibleErrands.map((errand) => (
                 <ErrandCard key={errand.id} errand={errand} />
@@ -151,7 +172,7 @@ export function DashboardPage() {
           )}
         </div>
 
-        <ActiveErrandsPanel count={MOCK_ACTIVE_ERRANDS.length} />
+        <ActiveErrandsPanel count={0} />
       </div>
     </section>
   )

@@ -4,26 +4,27 @@ import type {
   ErrandExpiryFilter,
   ErrandSort,
 } from '../../features/errands/errand.types'
+import type { SupplierReference } from '../../features/suppliers/supplier.types'
 
 type ErrandFiltersProps = {
-  buildings: string[]
-  building: string
+  deliveryBuildings: SupplierReference[]
+  deliveryBuildingId: string
   credit: ErrandCreditFilter
   expiry: ErrandExpiryFilter
   sort: ErrandSort
-  onBuildingChange: (building: string) => void
+  onDeliveryBuildingChange: (buildingId: string) => void
   onCreditChange: (credit: ErrandCreditFilter) => void
   onExpiryChange: (expiry: ErrandExpiryFilter) => void
   onSortChange: (sort: ErrandSort) => void
 }
 
 export function ErrandFilters({
-  buildings,
-  building,
+  deliveryBuildings,
+  deliveryBuildingId,
   credit,
   expiry,
   sort,
-  onBuildingChange,
+  onDeliveryBuildingChange,
   onCreditChange,
   onExpiryChange,
   onSortChange,
@@ -32,11 +33,14 @@ export function ErrandFilters({
     <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-[minmax(11rem,1fr)_minmax(10rem,0.8fr)_minmax(11rem,0.9fr)_minmax(12rem,1fr)]">
       <Select
         label="Filter by delivery location"
-        value={building}
-        onChange={(event) => onBuildingChange(event.target.value)}
+        value={deliveryBuildingId}
+        onChange={(event) => onDeliveryBuildingChange(event.target.value)}
         options={[
           { label: 'All delivery locations', value: '' },
-          ...buildings.map((name) => ({ label: name, value: name })),
+          ...deliveryBuildings.map((building) => ({
+            label: building.name,
+            value: building.id,
+          })),
         ]}
       />
       <Select

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   loadErrandDashboardBuildings,
@@ -72,6 +73,14 @@ const defaultFilters = {
   sort: 'expires_at,asc',
 } as const
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <DashboardPage />
+    </MemoryRouter>,
+  )
+}
+
 describe('DashboardPage', () => {
   beforeEach(() => {
     loadOpenErrandDashboardMock.mockReset()
@@ -89,16 +98,18 @@ describe('DashboardPage', () => {
         }),
     )
 
-    render(<DashboardPage />)
+    renderPage()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Loading open errands…')
+    expect(screen.getByText('Loading open errands…')).toBeInTheDocument()
 
     await act(async () => resolveRequest(dashboardData))
-    expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 }),
+    ).toBeInTheDocument()
   })
 
   it('renders API-backed card information and friendly status text', async () => {
-    render(<DashboardPage />)
+    renderPage()
 
     expect(await screen.findByText('2 available')).toBeInTheDocument()
     const nasiLemakCard = screen
@@ -117,7 +128,7 @@ describe('DashboardPage', () => {
   })
 
   it('requests a new result set when the delivery location changes', async () => {
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByText('2 available')
     await screen.findByRole('option', { name: 'COM3' })
 
@@ -138,7 +149,7 @@ describe('DashboardPage', () => {
   })
 
   it('requests API-compatible credit and expiry filters', async () => {
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByText('2 available')
 
     fireEvent.change(screen.getByLabelText('Filter by credit value'), {
@@ -163,7 +174,7 @@ describe('DashboardPage', () => {
   })
 
   it('requests a new server ordering when the sort changes', async () => {
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByText('2 available')
 
     fireEvent.change(screen.getByLabelText('Sort errands'), {
@@ -183,7 +194,7 @@ describe('DashboardPage', () => {
       total: 0,
       items: [],
     })
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByRole('heading', { name: 'No open errands match' })
     await screen.findByRole('option', { name: 'COM3' })
 
@@ -208,7 +219,7 @@ describe('DashboardPage', () => {
     loadOpenErrandDashboardMock
       .mockRejectedValueOnce(new Error('Could not connect to the Order Service.'))
       .mockResolvedValueOnce(dashboardData)
-    render(<DashboardPage />)
+    renderPage()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Could not connect to the Order Service.',
@@ -223,12 +234,12 @@ describe('DashboardPage', () => {
     loadErrandDashboardBuildingsMock
       .mockRejectedValueOnce(new Error('Could not connect to the Supplier Service.'))
       .mockResolvedValueOnce(deliveryBuildings)
-    render(<DashboardPage />)
+    renderPage()
 
     expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Delivery locations could not be loaded.',
-    )
+    expect(
+      await screen.findByText(/Delivery locations could not be loaded\./),
+    ).toBeInTheDocument()
     expect(loadOpenErrandDashboardMock).toHaveBeenCalledTimes(1)
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry locations' }))
@@ -240,7 +251,7 @@ describe('DashboardPage', () => {
 
   it('cancels the previous request when filters change', async () => {
     loadOpenErrandDashboardMock.mockImplementation(() => new Promise(() => undefined))
-    render(<DashboardPage />)
+    renderPage()
     const firstSignal = loadOpenErrandDashboardMock.mock.calls[0][1]
 
     fireEvent.change(screen.getByLabelText('Filter by credit value'), {
@@ -250,15 +261,66 @@ describe('DashboardPage', () => {
     await waitFor(() => expect(firstSignal?.aborted).toBe(true))
   })
 
-  it('keeps the active-errands panel as an empty reserved area', async () => {
-    render(<DashboardPage />)
+  it('shows fixture-backed active errands and links to the full list', async () => {
+    renderPage()
     await screen.findByText('2 available')
 
     const panel = screen.getByRole('complementary')
     expect(within(panel).getByRole('heading', { name: 'Active errands' })).toBeInTheDocument()
-    expect(within(panel).getByText('No active errands')).toBeInTheDocument()
+    expect(within(panel).getByText('4')).toBeInTheDocument()
+    expect(within(panel).getByRole('link', { name: 'View all active errands' })).toHaveAttribute(
+      'href',
+      '/my-errands',
+    )
+    expect(screen.getByText('4 errands in progress')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View my errands' })).toHaveAttribute(
+      'href',
+      '/my-errands',
+    )
+  })
+
+  it('confirms an errand before moving it from open to active', async () => {
+    renderPage()
+    await screen.findByText('2 available')
+
+    const openCard = screen
+      .getAllByRole('article')
+      .find((card) => within(card).queryByText('Nasi Lemak + Iced Milo'))
+    expect(openCard).toBeDefined()
+
+    fireEvent.click(within(openCard!).getByRole('button', { name: 'Accept errand' }))
+    const dialog = screen.getByRole('dialog', { name: 'Ready to make this delivery?' })
+    expect(dialog).toHaveTextContent('The Deck')
+    expect(dialog).toHaveTextContent('UTown Residence')
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Accept errand' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByText('1 available')).toBeInTheDocument()
+    const panel = screen.getByRole('complementary')
+    expect(within(panel).getByText('5')).toBeInTheDocument()
     expect(
-      within(panel).getByText('Errands you request or accept will appear here.'),
-    ).toBeInTheDocument()
+      within(panel)
+        .getAllByRole('link', { name: 'View details →' })
+        .some((link) => link.getAttribute('href') === `/errands/${openErrand.id}`),
+    ).toBe(true)
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
+      'Nasi Lemak + Iced Milo was added to your active errands preview.',
+    )
+  })
+
+  it('lets the user leave the acceptance dialog without changing the lists', async () => {
+    renderPage()
+    await screen.findByText('2 available')
+
+    const openCard = screen
+      .getAllByRole('article')
+      .find((card) => within(card).queryByText('Print and bind project report'))
+    fireEvent.click(within(openCard!).getByRole('button', { name: 'Accept errand' }))
+    const dialog = screen.getByRole('dialog', { name: 'Ready to make this delivery?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Go back' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByText('2 available')).toBeInTheDocument()
   })
 })

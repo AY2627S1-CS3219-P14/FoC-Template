@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import creditIcon from '../assets/errand-credit.svg'
 import routeMarkers from '../assets/errand-route.svg'
@@ -6,9 +6,16 @@ import {
   ErrandActionDialog,
   type ErrandAction,
 } from '../components/errands/ErrandActionDialog'
-import { getMockErrandDetails } from '../features/errands/errand-details.mock'
 import type { ErrandDetails } from '../features/errands/errand-details.types'
+import {
+  cancelErrand,
+  completeErrand,
+  ErrandApiError,
+  failErrand,
+} from '../features/errands/errand.api'
+import { loadErrandDetails } from '../features/errands/errand.view'
 import type { ErrandStatus } from '../features/errands/errand.types'
+import { useAuth } from '../features/auth/useAuth'
 
 const statusPresentation: Record<
   ErrandStatus,
@@ -91,39 +98,141 @@ function getOutcomeTime(errand: ErrandDetails) {
 
 export function ErrandDetailsPage() {
   const { errandId = '' } = useParams()
-  const fixtureErrand = getMockErrandDetails(errandId)
+  const { currentUserId } = useAuth()
+  const [errand, setErrand] = useState<ErrandDetails | null>(null)
+  const [isLoading, setIsLoading] = useState(Boolean(currentUserId && errandId))
+  const [loadError, setLoadError] = useState<Error | null>(null)
+  const [refreshCount, setRefreshCount] = useState(0)
+  const [refreshMessage, setRefreshMessage] = useState('')
 
-  if (!fixtureErrand) {
+  useEffect(() => {
+    if (!currentUserId || !errandId) return
+
+    const controller = new AbortController()
+    loadErrandDetails(errandId, currentUserId, controller.signal)
+      .then((details) => {
+        setErrand(details)
+        setLoadError(null)
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setLoadError(error instanceof Error ? error : new Error('Unable to load this errand.'))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [currentUserId, errandId, refreshCount])
+
+  function refreshErrand(message = 'Refreshing errand details…') {
+    if (!currentUserId || !errandId) return
+    setIsLoading(true)
+    setLoadError(null)
+    setRefreshMessage(message)
+    setRefreshCount((count) => count + 1)
+  }
+
+  if (!currentUserId) {
     return (
-      <section className="mx-auto max-w-2xl py-12 text-center">
-        <p className="text-xs font-medium tracking-[0.08em] text-[#175c45]">ERRAND DETAILS</p>
-        <h1 className="mt-3 text-3xl font-medium tracking-[-0.035em] text-[#17211d]">
-          Errand not found
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-[#68736c]">
-          This errand may no longer be available, or the link may be incorrect.
-        </p>
-        <Link
-          to="/my-errands"
-          className="mt-6 inline-block rounded-lg bg-[#175c45] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0d3c2d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
-        >
-          Back to My errands
-        </Link>
+      <ErrandLoadError
+        title="Could not identify your account"
+        message="Your access token does not contain a user ID. Please sign in again."
+      />
+    )
+  }
+
+  if (isLoading && !errand) {
+    return (
+      <section className="rounded-[18px] border border-[#dde3de] bg-white px-6 py-14 text-center text-sm text-[#68736c]" role="status">
+        Loading errand details…
       </section>
     )
   }
 
-  return <ErrandDetailsContent key={errandId} fixtureErrand={fixtureErrand} />
+  if (loadError && !errand) {
+    const notFound = loadError instanceof ErrandApiError && loadError.status === 404
+    return (
+      <ErrandLoadError
+        title={notFound ? 'Errand not found' : 'Could not load this errand'}
+        message={loadError.message}
+        onRetry={notFound ? undefined : () => refreshErrand()}
+      />
+    )
+  }
+
+  if (!errand) return null
+
+  return (
+    <ErrandDetailsContent
+      key={errand.id}
+      errand={errand}
+      isRefreshing={isLoading}
+      refreshMessage={refreshMessage}
+      loadError={loadError?.message ?? null}
+      onRefresh={refreshErrand}
+    />
+  )
+}
+
+type ErrandLoadErrorProps = {
+  title: string
+  message: string
+  onRetry?: () => void
+}
+
+function ErrandLoadError({ title, message, onRetry }: ErrandLoadErrorProps) {
+  return (
+    <section className="mx-auto max-w-2xl py-12 text-center" role={onRetry ? 'alert' : undefined}>
+      <p className="text-xs font-medium tracking-[0.08em] text-[#175c45]">ERRAND DETAILS</p>
+      <h1 className="mt-3 text-3xl font-medium tracking-[-0.035em] text-[#17211d]">{title}</h1>
+      <p className="mt-3 text-sm leading-6 text-[#68736c]">{message}</p>
+      {onRetry ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-6 rounded-lg bg-[#175c45] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0d3c2d]"
+        >
+          Try again
+        </button>
+      ) : (
+        <Link
+          to="/my-errands"
+          className="mt-6 inline-block rounded-lg bg-[#175c45] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0d3c2d]"
+        >
+          Back to My errands
+        </Link>
+      )}
+    </section>
+  )
 }
 
 type ErrandDetailsContentProps = {
-  fixtureErrand: ErrandDetails
+  errand: ErrandDetails
+  isRefreshing: boolean
+  refreshMessage: string
+  loadError: string | null
+  onRefresh: (message?: string) => void
 }
 
-function ErrandDetailsContent({ fixtureErrand }: ErrandDetailsContentProps) {
-  const [errand, setErrand] = useState(fixtureErrand)
-  const [refreshMessage, setRefreshMessage] = useState('')
+function ErrandDetailsContent({
+  errand,
+  isRefreshing,
+  refreshMessage,
+  loadError,
+  onRefresh,
+}: ErrandDetailsContentProps) {
   const [activeAction, setActiveAction] = useState<ErrandAction | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const actionControllerRef = useRef<AbortController | null>(null)
+
+  useEffect(
+    () => () => {
+      actionControllerRef.current?.abort()
+    },
+    [],
+  )
 
   const status = statusPresentation[errand.status]
   const statusCopy = getStatusCopy(errand)
@@ -135,30 +244,33 @@ function ErrandDetailsContent({ fixtureErrand }: ErrandDetailsContentProps) {
     .filter(Boolean)
     .join(', ')
 
-  function refreshPreview() {
-    setErrand(fixtureErrand)
-    setRefreshMessage('Details refreshed from the local preview.')
-  }
-
-  function confirmAction(failureReason?: string) {
+  async function confirmAction(failureReason?: string) {
     if (!activeAction) return
 
-    const changedAt = new Date().toISOString()
-    setErrand({
-      ...errand,
-      status:
-        activeAction === 'cancel'
-          ? 'CANCELLED'
-          : activeAction === 'complete'
-            ? 'COMPLETED'
-            : 'FAILED',
-      cancelledAt: activeAction === 'cancel' ? changedAt : errand.cancelledAt,
-      completedAt: activeAction === 'complete' ? changedAt : errand.completedAt,
-      failedAt: activeAction === 'fail' ? changedAt : errand.failedAt,
-      failureReason: activeAction === 'fail' ? (failureReason ?? null) : errand.failureReason,
-    })
-    setRefreshMessage('Preview updated locally. No backend request was sent.')
-    setActiveAction(null)
+    const controller = new AbortController()
+    actionControllerRef.current = controller
+    setIsSubmitting(true)
+    setActionError(null)
+
+    try {
+      if (activeAction === 'cancel') await cancelErrand(errand.id, controller.signal)
+      if (activeAction === 'complete') await completeErrand(errand.id, controller.signal)
+      if (activeAction === 'fail') {
+        await failErrand(errand.id, failureReason ?? '', controller.signal)
+      }
+      if (controller.signal.aborted) return
+
+      setActiveAction(null)
+      onRefresh('Errand updated. Refreshing details…')
+    } catch (error) {
+      if (controller.signal.aborted) return
+      setActionError(
+        error instanceof Error ? error.message : 'Unable to update this errand.',
+      )
+    } finally {
+      if (actionControllerRef.current === controller) actionControllerRef.current = null
+      if (!controller.signal.aborted) setIsSubmitting(false)
+    }
   }
 
   return (
@@ -183,16 +295,23 @@ function ErrandDetailsContent({ fixtureErrand }: ErrandDetailsContentProps) {
 
         <button
           type="button"
-          onClick={refreshPreview}
-          className="inline-flex h-10 w-fit shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+          onClick={() => onRefresh()}
+          disabled={isRefreshing}
+          className="inline-flex h-10 w-fit shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          ↻ Refresh
+          {isRefreshing ? 'Refreshing…' : '↻ Refresh'}
         </button>
       </div>
 
       <p className="sr-only" role="status" aria-live="polite">
         {refreshMessage}
       </p>
+
+      {loadError ? (
+        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          The latest details could not be loaded. {loadError}
+        </p>
+      ) : null}
 
       <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
         <div className="space-y-5">
@@ -304,7 +423,12 @@ function ErrandDetailsContent({ fixtureErrand }: ErrandDetailsContentProps) {
         <ErrandActionDialog
           action={activeAction}
           errandName={errand.requiredItem}
-          onClose={() => setActiveAction(null)}
+          isSubmitting={isSubmitting}
+          errorMessage={actionError}
+          onClose={() => {
+            setActionError(null)
+            setActiveAction(null)
+          }}
           onConfirm={confirmAction}
         />
       ) : null}

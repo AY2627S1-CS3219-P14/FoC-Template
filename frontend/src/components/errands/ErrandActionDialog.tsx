@@ -5,6 +5,8 @@ export type ErrandAction = 'cancel' | 'complete' | 'fail'
 type ErrandActionDialogProps = {
   action: ErrandAction
   errandName: string
+  isSubmitting: boolean
+  errorMessage: string | null
   onClose: () => void
   onConfirm: (failureReason?: string) => void
 }
@@ -36,6 +38,8 @@ const actionContent: Record<
 export function ErrandActionDialog({
   action,
   errandName,
+  isSubmitting,
+  errorMessage,
   onClose,
   onConfirm,
 }: ErrandActionDialogProps) {
@@ -70,7 +74,7 @@ export function ErrandActionDialog({
         aria-describedby="errand-action-description"
         tabIndex={-1}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') onClose()
+          if (event.key === 'Escape' && !isSubmitting) onClose()
         }}
         className="w-full max-w-md rounded-[18px] border border-[#dde3de] bg-white p-5 shadow-[0_24px_64px_rgba(13,60,45,0.22)] sm:p-6"
       >
@@ -94,6 +98,7 @@ export function ErrandActionDialog({
                 id="failure-reason"
                 value={failureReason}
                 maxLength={280}
+                disabled={isSubmitting}
                 onChange={(event) => {
                   setFailureReason(event.target.value)
                   setError('')
@@ -122,17 +127,25 @@ export function ErrandActionDialog({
             <button
               type="button"
               onClick={onClose}
-              className="h-11 cursor-pointer rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#28332d] transition hover:bg-[#f5f7f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+              disabled={isSubmitting}
+              className="h-11 cursor-pointer rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#28332d] transition hover:bg-[#f5f7f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Go back
             </button>
             <button
               type="submit"
-              className={`h-11 cursor-pointer rounded-lg px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] ${content.confirmClassName}`}
+              disabled={isSubmitting}
+              className={`h-11 cursor-pointer rounded-lg px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:opacity-60 ${content.confirmClassName}`}
             >
-              {content.confirmLabel}
+              {isSubmitting ? 'Updating…' : content.confirmLabel}
             </button>
           </div>
+
+          {errorMessage ? (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
         </form>
       </section>
     </div>

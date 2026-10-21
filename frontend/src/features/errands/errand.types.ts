@@ -38,6 +38,29 @@ export type CreateErrandResponse = CreateErrandRequest & {
   created_at: string
 }
 
+export type ErrandActionResponse = {
+  id: string
+  status: ErrandStatus
+}
+
+export type AcceptErrandResponse = ErrandActionResponse & {
+  courier_id: string
+  accepted_at: string
+}
+
+export type CancelErrandResponse = ErrandActionResponse & {
+  cancelled_at: string
+}
+
+export type CompleteErrandResponse = ErrandActionResponse & {
+  completed_at: string
+}
+
+export type FailErrandResponse = ErrandActionResponse & {
+  failed_at: string
+  failure_reason: string
+}
+
 export type ErrandListItem = {
   id: string
   status: ErrandStatus

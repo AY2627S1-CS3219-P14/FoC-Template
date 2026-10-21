@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import creditIcon from '../assets/errand-credit.svg'
 import routeMarkers from '../assets/errand-route.svg'
@@ -92,17 +92,8 @@ function getOutcomeTime(errand: ErrandDetails) {
 export function ErrandDetailsPage() {
   const { errandId = '' } = useParams()
   const fixtureErrand = getMockErrandDetails(errandId)
-  const [errand, setErrand] = useState(fixtureErrand)
-  const [refreshMessage, setRefreshMessage] = useState('')
-  const [activeAction, setActiveAction] = useState<ErrandAction | null>(null)
 
-  useEffect(() => {
-    setErrand(fixtureErrand)
-    setRefreshMessage('')
-    setActiveAction(null)
-  }, [errandId, fixtureErrand])
-
-  if (!errand) {
+  if (!fixtureErrand) {
     return (
       <section className="mx-auto max-w-2xl py-12 text-center">
         <p className="text-xs font-medium tracking-[0.08em] text-[#175c45]">ERRAND DETAILS</p>
@@ -122,6 +113,18 @@ export function ErrandDetailsPage() {
     )
   }
 
+  return <ErrandDetailsContent key={errandId} fixtureErrand={fixtureErrand} />
+}
+
+type ErrandDetailsContentProps = {
+  fixtureErrand: ErrandDetails
+}
+
+function ErrandDetailsContent({ fixtureErrand }: ErrandDetailsContentProps) {
+  const [errand, setErrand] = useState(fixtureErrand)
+  const [refreshMessage, setRefreshMessage] = useState('')
+  const [activeAction, setActiveAction] = useState<ErrandAction | null>(null)
+
   const status = statusPresentation[errand.status]
   const statusCopy = getStatusCopy(errand)
   const outcomeTime = getOutcomeTime(errand)
@@ -138,7 +141,7 @@ export function ErrandDetailsPage() {
   }
 
   function confirmAction(failureReason?: string) {
-    if (!errand || !activeAction) return
+    if (!activeAction) return
 
     const changedAt = new Date().toISOString()
     setErrand({

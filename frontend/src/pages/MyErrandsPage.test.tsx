@@ -55,4 +55,13 @@ describe('MyErrandsPage', () => {
     expect(all).toHaveAttribute('aria-pressed', 'false')
     expect(requesting).toHaveAttribute('aria-pressed', 'true')
   })
+
+  it('links each errand to its details route', () => {
+    renderPage()
+
+    expect(screen.getAllByRole('link', { name: 'View details →' })[0]).toHaveAttribute(
+      'href',
+      '/errands/2fdf7658-f477-4a52-94ed-cbbf2447e005',
+    )
+  })
 })

@@ -5,6 +5,9 @@ import {
   loadErrandDashboardBuildings,
   loadOpenErrandDashboard,
 } from '../features/errands/errand.dashboard'
+import { acceptErrand } from '../features/errands/errand.api'
+import { loadMyErrands } from '../features/errands/errand.view'
+import { MOCK_MY_ERRANDS } from '../features/errands/my-errands.mock'
 import type { OpenErrandDashboardData } from '../features/errands/errand.dashboard'
 import type { ErrandDashboardItem } from '../features/errands/errand.types'
 import { DashboardPage } from './DashboardPage'
@@ -15,8 +18,28 @@ vi.mock('../features/errands/errand.dashboard', () => ({
   loadOpenErrandDashboard: vi.fn(),
 }))
 
+vi.mock('../features/errands/errand.api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../features/errands/errand.api')>()),
+  acceptErrand: vi.fn(),
+}))
+
+vi.mock('../features/errands/errand.view', () => ({
+  loadMyErrands: vi.fn(),
+}))
+
+vi.mock('../features/auth/useAuth', () => ({
+  useAuth: () => ({
+    status: 'authenticated',
+    currentUserId: '11111111-1111-4111-8111-111111111111',
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}))
+
 const loadOpenErrandDashboardMock = vi.mocked(loadOpenErrandDashboard)
 const loadErrandDashboardBuildingsMock = vi.mocked(loadErrandDashboardBuildings)
+const acceptErrandMock = vi.mocked(acceptErrand)
+const loadMyErrandsMock = vi.mocked(loadMyErrands)
 
 const openErrand: ErrandDashboardItem = {
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -87,6 +110,15 @@ describe('DashboardPage', () => {
     loadErrandDashboardBuildingsMock.mockReset()
     loadOpenErrandDashboardMock.mockResolvedValue(dashboardData)
     loadErrandDashboardBuildingsMock.mockResolvedValue(deliveryBuildings)
+    acceptErrandMock.mockReset()
+    acceptErrandMock.mockResolvedValue({
+      id: openErrand.id,
+      status: 'ACCEPTED',
+      courier_id: '11111111-1111-4111-8111-111111111111',
+      accepted_at: '2026-10-22T04:00:00.000Z',
+    })
+    loadMyErrandsMock.mockReset()
+    loadMyErrandsMock.mockResolvedValue(MOCK_MY_ERRANDS)
   })
 
   it('shows a loading state before live open errands arrive', async () => {
@@ -226,7 +258,9 @@ describe('DashboardPage', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
-    expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 }),
+    ).toBeInTheDocument()
     expect(loadOpenErrandDashboardMock).toHaveBeenCalledTimes(2)
   })
 
@@ -236,7 +270,9 @@ describe('DashboardPage', () => {
       .mockResolvedValueOnce(deliveryBuildings)
     renderPage()
 
-    expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 }),
+    ).toBeInTheDocument()
     expect(
       await screen.findByText(/Delivery locations could not be loaded\./),
     ).toBeInTheDocument()
@@ -280,6 +316,19 @@ describe('DashboardPage', () => {
   })
 
   it('confirms an errand before moving it from open to active', async () => {
+    const acceptedActiveErrand = {
+      ...MOCK_MY_ERRANDS[0],
+      id: openErrand.id,
+      requiredItem: openErrand.required_item,
+      role: 'courier' as const,
+      progress: 'accepted' as const,
+    }
+    loadOpenErrandDashboardMock
+      .mockResolvedValueOnce(dashboardData)
+      .mockResolvedValue({ total: 1, items: [secondOpenErrand] })
+    loadMyErrandsMock
+      .mockResolvedValueOnce(MOCK_MY_ERRANDS)
+      .mockResolvedValue([acceptedActiveErrand, ...MOCK_MY_ERRANDS])
     renderPage()
     await screen.findByText('2 available')
 
@@ -295,8 +344,9 @@ describe('DashboardPage', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Accept errand' }))
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByText('1 available')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(acceptErrandMock).toHaveBeenCalledWith(openErrand.id, expect.any(AbortSignal))
+    expect(await screen.findByText('1 available')).toBeInTheDocument()
     const panel = screen.getByRole('complementary')
     expect(within(panel).getByText('5')).toBeInTheDocument()
     expect(
@@ -305,7 +355,7 @@ describe('DashboardPage', () => {
         .some((link) => link.getAttribute('href') === `/errands/${openErrand.id}`),
     ).toBe(true)
     expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
-      'Nasi Lemak + Iced Milo was added to your active errands preview.',
+      'Nasi Lemak + Iced Milo was added to your active errands.',
     )
   })
 

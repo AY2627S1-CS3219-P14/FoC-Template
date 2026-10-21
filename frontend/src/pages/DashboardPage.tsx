@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActiveErrandsPanel,
   ActiveErrandsSummary,
@@ -12,8 +12,10 @@ import {
   loadOpenErrandDashboard,
   type OpenErrandDashboardData,
 } from '../features/errands/errand.dashboard'
-import { MOCK_MY_ERRANDS } from '../features/errands/my-errands.mock'
 import type { MyErrandItem } from '../features/errands/my-errands.types'
+import { acceptErrand, ErrandApiError } from '../features/errands/errand.api'
+import { loadMyErrands } from '../features/errands/errand.view'
+import { useAuth } from '../features/auth/useAuth'
 import type {
   ErrandCreditFilter,
   ErrandDashboardItem,
@@ -23,6 +25,7 @@ import type {
 import type { SupplierReference } from '../features/suppliers/supplier.types'
 
 export function DashboardPage() {
+  const { currentUserId } = useAuth()
   const [deliveryBuildingId, setDeliveryBuildingId] = useState('')
   const [credit, setCredit] = useState<ErrandCreditFilter>('all')
   const [expiry, setExpiry] = useState<ErrandExpiryFilter>('all')
@@ -35,8 +38,14 @@ export function DashboardPage() {
   const [buildingErrorMessage, setBuildingErrorMessage] = useState<string | null>(null)
   const [buildingRetryCount, setBuildingRetryCount] = useState(0)
   const [pendingErrand, setPendingErrand] = useState<ErrandDashboardItem | null>(null)
-  const [locallyAcceptedErrands, setLocallyAcceptedErrands] = useState<ErrandDashboardItem[]>([])
+  const [activeErrands, setActiveErrands] = useState<MyErrandItem[]>([])
+  const [activeErrandsLoading, setActiveErrandsLoading] = useState(Boolean(currentUserId))
+  const [activeErrandsError, setActiveErrandsError] = useState<string | null>(null)
+  const [activeRetryCount, setActiveRetryCount] = useState(0)
   const [acceptMessage, setAcceptMessage] = useState('')
+  const [acceptError, setAcceptError] = useState<string | null>(null)
+  const [isAccepting, setIsAccepting] = useState(false)
+  const acceptControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -77,6 +86,35 @@ export function DashboardPage() {
     return () => controller.abort()
   }, [credit, deliveryBuildingId, expiry, retryCount, sort])
 
+  useEffect(() => {
+    if (!currentUserId) return
+
+    const controller = new AbortController()
+    loadMyErrands(currentUserId, controller.signal)
+      .then((errands) => {
+        setActiveErrands(errands)
+        setActiveErrandsError(null)
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setActiveErrandsError(
+          error instanceof Error ? error.message : 'Unable to load your active errands.',
+        )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setActiveErrandsLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [activeRetryCount, currentUserId])
+
+  useEffect(
+    () => () => {
+      acceptControllerRef.current?.abort()
+    },
+    [],
+  )
+
   const displayData = useMemo(
     () =>
       dashboardData
@@ -84,40 +122,8 @@ export function DashboardPage() {
         : null,
     [dashboardData, deliveryBuildings],
   )
-  const acceptedIds = useMemo(
-    () => new Set(locallyAcceptedErrands.map((errand) => errand.id)),
-    [locallyAcceptedErrands],
-  )
-  const visibleErrands = useMemo(
-    () => displayData?.items.filter((errand) => !acceptedIds.has(errand.id)) ?? [],
-    [acceptedIds, displayData],
-  )
-  const availableCount = Math.max(
-    0,
-    (displayData?.total ?? 0) -
-      (displayData?.items.filter((errand) => acceptedIds.has(errand.id)).length ?? 0),
-  )
-  const activeErrands = useMemo<MyErrandItem[]>(
-    () => [
-      ...locallyAcceptedErrands.map((errand) => ({
-        id: errand.id,
-        requiredItem: errand.required_item,
-        pickupLocation: errand.supplier_name,
-        deliveryLocation: [
-          errand.delivery_building_name,
-          errand.delivery_floor ? `Level ${errand.delivery_floor}` : null,
-        ]
-          .filter(Boolean)
-          .join(', '),
-        creditValue: errand.credit_value,
-        role: 'courier' as const,
-        progress: 'accepted' as const,
-        expiresAt: errand.expires_at,
-      })),
-      ...MOCK_MY_ERRANDS,
-    ],
-    [locallyAcceptedErrands],
-  )
+  const visibleErrands = displayData?.items ?? []
+  const availableCount = displayData?.total ?? 0
 
   function prepareRequest() {
     setIsLoading(true)
@@ -162,21 +168,52 @@ export function DashboardPage() {
     setBuildingRetryCount((count) => count + 1)
   }
 
-  function acceptErrandPreview() {
+  function refreshActiveErrands() {
+    if (!currentUserId) return
+    setActiveErrandsLoading(true)
+    setActiveErrandsError(null)
+    setActiveRetryCount((count) => count + 1)
+  }
+
+  function refreshDashboard() {
+    retryRequest()
+    refreshActiveErrands()
+  }
+
+  async function submitAcceptErrand() {
     if (!pendingErrand) return
 
-    setLocallyAcceptedErrands((current) =>
-      current.some((errand) => errand.id === pendingErrand.id)
-        ? current
-        : [...current, pendingErrand],
-    )
-    setAcceptMessage(`${pendingErrand.required_item} was added to your active errands preview.`)
-    setPendingErrand(null)
+    const controller = new AbortController()
+    acceptControllerRef.current = controller
+    setIsAccepting(true)
+    setAcceptError(null)
+
+    try {
+      await acceptErrand(pendingErrand.id, controller.signal)
+      if (controller.signal.aborted) return
+      setAcceptMessage(`${pendingErrand.required_item} was added to your active errands.`)
+      setPendingErrand(null)
+      refreshDashboard()
+    } catch (error) {
+      if (controller.signal.aborted) return
+      if (error instanceof ErrandApiError && error.status === 409) {
+        setAcceptError('This errand is no longer available. Refreshing the open errands list.')
+        retryRequest()
+      } else {
+        setAcceptError(
+          error instanceof Error ? error.message : 'Unable to accept this errand.',
+        )
+      }
+    } finally {
+      if (acceptControllerRef.current === controller) acceptControllerRef.current = null
+      if (!controller.signal.aborted) setIsAccepting(false)
+    }
   }
 
   return (
     <section>
-      <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
         <p className="text-xs font-medium tracking-[0.08em] text-[#175c45] sm:text-sm">
           CAMPUS ERRANDS
         </p>
@@ -186,9 +223,24 @@ export function DashboardPage() {
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-base">
           Help a student, earn credits, and make your next walk count.
         </p>
+        </div>
+        <button
+          type="button"
+          onClick={refreshDashboard}
+          disabled={isLoading || activeErrandsLoading || !currentUserId}
+          className="inline-flex h-10 w-fit shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          ↻ Refresh
+        </button>
       </div>
 
-      <ActiveErrandsSummary errands={activeErrands} />
+      <ActiveErrandsSummary
+        errands={activeErrands}
+        isLoading={activeErrandsLoading}
+        errorMessage={
+          currentUserId ? activeErrandsError : 'Your access token does not contain a user ID.'
+        }
+      />
 
       <div className="mt-5 sm:mt-6">
         <ErrandFilters
@@ -279,7 +331,14 @@ export function DashboardPage() {
           )}
         </div>
 
-        <ActiveErrandsPanel errands={activeErrands} />
+        <ActiveErrandsPanel
+          errands={activeErrands}
+          isLoading={activeErrandsLoading}
+          errorMessage={
+            currentUserId ? activeErrandsError : 'Your access token does not contain a user ID.'
+          }
+          onRetry={refreshActiveErrands}
+        />
       </div>
 
       <p className="sr-only" role="status" aria-live="polite">
@@ -289,8 +348,13 @@ export function DashboardPage() {
       {pendingErrand ? (
         <AcceptErrandDialog
           errand={pendingErrand}
-          onClose={() => setPendingErrand(null)}
-          onConfirm={acceptErrandPreview}
+          isSubmitting={isAccepting}
+          errorMessage={acceptError}
+          onClose={() => {
+            setAcceptError(null)
+            setPendingErrand(null)
+          }}
+          onConfirm={submitAcceptErrand}
         />
       ) : null}
     </section>

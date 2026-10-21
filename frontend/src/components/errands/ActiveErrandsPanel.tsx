@@ -8,6 +8,9 @@ import type {
 
 type ActiveErrandsPanelProps = {
   errands: MyErrandItem[]
+  isLoading?: boolean
+  errorMessage?: string | null
+  onRetry?: () => void
 }
 
 const progressLabels: Record<MyErrandProgress, string> = {
@@ -17,7 +20,11 @@ const progressLabels: Record<MyErrandProgress, string> = {
   'awaiting-confirmation': 'Awaiting confirmation',
 }
 
-export function ActiveErrandsSummary({ errands }: ActiveErrandsPanelProps) {
+export function ActiveErrandsSummary({
+  errands,
+  isLoading = false,
+  errorMessage,
+}: ActiveErrandsPanelProps) {
   return (
     <section
       aria-labelledby="mobile-active-errands-heading"
@@ -32,7 +39,11 @@ export function ActiveErrandsSummary({ errands }: ActiveErrandsPanelProps) {
             ACTIVE ERRANDS
           </p>
           <p className="mt-1 text-sm text-[#28332d]">
-            {errands.length === 0
+            {isLoading
+              ? 'Loading your errands…'
+              : errorMessage
+                ? 'Active errands unavailable'
+                : errands.length === 0
               ? 'You have no active errands.'
               : `${errands.length} ${errands.length === 1 ? 'errand' : 'errands'} in progress`}
           </p>
@@ -48,7 +59,12 @@ export function ActiveErrandsSummary({ errands }: ActiveErrandsPanelProps) {
   )
 }
 
-export function ActiveErrandsPanel({ errands }: ActiveErrandsPanelProps) {
+export function ActiveErrandsPanel({
+  errands,
+  isLoading = false,
+  errorMessage,
+  onRetry,
+}: ActiveErrandsPanelProps) {
   const visibleErrands = errands.slice(0, 3)
 
   return (
@@ -62,7 +78,25 @@ export function ActiveErrandsPanel({ errands }: ActiveErrandsPanelProps) {
         ) : null}
       </div>
 
-      {visibleErrands.length > 0 ? (
+      {isLoading ? (
+        <div className="mt-3 rounded-[18px] border border-[#dde3de] bg-white px-5 py-8 text-center text-sm text-[#68736c]" role="status">
+          Loading active errands…
+        </div>
+      ) : errorMessage ? (
+        <div className="mt-3 rounded-[18px] border border-red-200 bg-red-50 px-5 py-6 text-center" role="alert">
+          <p className="text-sm font-medium text-red-900">Could not load active errands</p>
+          <p className="mt-1.5 text-xs leading-5 text-red-700">{errorMessage}</p>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-3 cursor-pointer text-xs font-semibold text-red-800 underline underline-offset-4"
+            >
+              Try again
+            </button>
+          ) : null}
+        </div>
+      ) : visibleErrands.length > 0 ? (
         <div className="mt-3 space-y-3">
           {visibleErrands.map((errand) => (
             <article

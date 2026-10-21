@@ -5,12 +5,16 @@ import type { ErrandDashboardItem } from '../../features/errands/errand.types'
 
 type AcceptErrandDialogProps = {
   errand: ErrandDashboardItem
+  isSubmitting: boolean
+  errorMessage: string | null
   onClose: () => void
   onConfirm: () => void
 }
 
 export function AcceptErrandDialog({
   errand,
+  isSubmitting,
+  errorMessage,
   onClose,
   onConfirm,
 }: AcceptErrandDialogProps) {
@@ -67,18 +71,26 @@ export function AcceptErrandDialog({
           <button
             type="button"
             onClick={onClose}
-            className="h-11 cursor-pointer rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#28332d] transition hover:bg-[#f5f7f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+            disabled={isSubmitting}
+            className="h-11 cursor-pointer rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#28332d] transition hover:bg-[#f5f7f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Go back
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="h-11 cursor-pointer rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+            disabled={isSubmitting}
+            className="h-11 cursor-pointer rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:bg-[#e6eadf] disabled:text-[#929c95]"
           >
-            Accept errand
+            {isSubmitting ? 'Accepting…' : 'Accept errand'}
           </button>
         </div>
+
+        {errorMessage ? (
+          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
       </section>
     </div>
   )

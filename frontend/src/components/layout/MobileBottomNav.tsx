@@ -46,6 +46,10 @@ export function MobileBottomNav() {
         Browse
       </MobileNavItem>
 
+      <MobileNavItem to="/my-errands" icon={clipboardIcon}>
+        My errands
+      </MobileNavItem>
+
       <MobileNavItem to="/suppliers" icon={clipboardIcon}>
         Suppliers
       </MobileNavItem>

@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { MyErrandCard } from '../components/errands/MyErrandCard'
-import { MOCK_MY_ERRANDS } from '../features/errands/my-errands.mock'
-import type { MyErrandFilter } from '../features/errands/my-errands.types'
+import type { MyErrandFilter, MyErrandItem } from '../features/errands/my-errands.types'
+import { loadMyErrands } from '../features/errands/errand.view'
+import { useAuth } from '../features/auth/useAuth'
 
 const filterOptions: Array<{ value: MyErrandFilter; label: string }> = [
   { value: 'all', label: 'All' },
@@ -11,15 +12,53 @@ const filterOptions: Array<{ value: MyErrandFilter; label: string }> = [
 ]
 
 export function MyErrandsPage() {
+  const { currentUserId } = useAuth()
   const [filter, setFilter] = useState<MyErrandFilter>('all')
+  const [errands, setErrands] = useState<MyErrandItem[]>([])
+  const [isLoading, setIsLoading] = useState(Boolean(currentUserId))
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [refreshCount, setRefreshCount] = useState(0)
+
+  useEffect(() => {
+    if (!currentUserId) return
+
+    const controller = new AbortController()
+    loadMyErrands(currentUserId, controller.signal)
+      .then((items) => {
+        setErrands(items)
+        setErrorMessage(null)
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setErrorMessage(
+          error instanceof Error ? error.message : 'Unable to load your errands.',
+        )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [currentUserId, refreshCount])
+
+  const displayedError = currentUserId
+    ? errorMessage
+    : 'Your access token does not contain a user ID.'
 
   const visibleErrands = useMemo(
     () =>
       filter === 'all'
-        ? MOCK_MY_ERRANDS
-        : MOCK_MY_ERRANDS.filter((errand) => errand.role === filter),
-    [filter],
+        ? errands
+        : errands.filter((errand) => errand.role === filter),
+    [errands, filter],
   )
+
+  function refreshErrands() {
+    if (!currentUserId) return
+    setIsLoading(true)
+    setErrorMessage(null)
+    setRefreshCount((count) => count + 1)
+  }
 
   const emptyCopy =
     filter === 'requester'
@@ -42,9 +81,19 @@ export function MyErrandsPage() {
             Keep track of errands you requested and deliveries you accepted.
           </p>
         </div>
-        <p className="text-sm text-[#68736c]" aria-live="polite">
-          {visibleErrands.length} active
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-[#68736c]" aria-live="polite">
+            {isLoading ? 'Loading…' : displayedError ? 'Unavailable' : `${visibleErrands.length} active`}
+          </p>
+          <button
+            type="button"
+            onClick={refreshErrands}
+            disabled={isLoading || !currentUserId}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[#bdc8c0] bg-white px-4 text-sm font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            ↻ Refresh
+          </button>
+        </div>
       </div>
 
       <div
@@ -71,7 +120,25 @@ export function MyErrandsPage() {
         ))}
       </div>
 
-      {visibleErrands.length > 0 ? (
+      {displayedError ? (
+        <div className="mt-6 rounded-[18px] border border-red-200 bg-red-50 px-6 py-10 text-center" role="alert">
+          <h2 className="text-lg font-medium text-red-900">Could not load your errands</h2>
+          <p className="mt-2 text-sm text-red-700">{displayedError}</p>
+          {currentUserId ? (
+            <button
+              type="button"
+              onClick={refreshErrands}
+              className="mt-5 cursor-pointer rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-800"
+            >
+              Try again
+            </button>
+          ) : null}
+        </div>
+      ) : isLoading ? (
+        <div className="mt-6 rounded-[18px] border border-[#dde3de] bg-white px-6 py-12 text-center text-sm text-[#68736c]" role="status">
+          Loading your active errands…
+        </div>
+      ) : visibleErrands.length > 0 ? (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleErrands.map((errand) => (
             <MyErrandCard key={errand.id} errand={errand} />

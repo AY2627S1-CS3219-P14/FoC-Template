@@ -89,6 +89,13 @@ export function MyErrandCard({ errand }: MyErrandCardProps) {
           {errand.creditValue} credits
         </p>
       </div>
+      <Link
+        to={`/errands/${errand.id}`}
+        className="mt-4 inline-flex w-fit items-center text-sm font-semibold text-[#175c45] underline decoration-[#175c45]/30 underline-offset-4 transition hover:decoration-[#175c45] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+      >
+        View details →
+      </Link>
     </article>
   )
 }
+import { Link } from 'react-router'

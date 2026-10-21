@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import creditIcon from '../assets/errand-credit.svg'
 import routeMarkers from '../assets/errand-route.svg'
+import {
+  ErrandActionDialog,
+  type ErrandAction,
+} from '../components/errands/ErrandActionDialog'
 import { getMockErrandDetails } from '../features/errands/errand-details.mock'
 import type { ErrandDetails } from '../features/errands/errand-details.types'
 import type { ErrandStatus } from '../features/errands/errand.types'
@@ -87,8 +91,16 @@ function getOutcomeTime(errand: ErrandDetails) {
 
 export function ErrandDetailsPage() {
   const { errandId = '' } = useParams()
-  const errand = getMockErrandDetails(errandId)
+  const fixtureErrand = getMockErrandDetails(errandId)
+  const [errand, setErrand] = useState(fixtureErrand)
   const [refreshMessage, setRefreshMessage] = useState('')
+  const [activeAction, setActiveAction] = useState<ErrandAction | null>(null)
+
+  useEffect(() => {
+    setErrand(fixtureErrand)
+    setRefreshMessage('')
+    setActiveAction(null)
+  }, [errandId, fixtureErrand])
 
   if (!errand) {
     return (
@@ -121,7 +133,29 @@ export function ErrandDetailsPage() {
     .join(', ')
 
   function refreshPreview() {
+    setErrand(fixtureErrand)
     setRefreshMessage('Details refreshed from the local preview.')
+  }
+
+  function confirmAction(failureReason?: string) {
+    if (!errand || !activeAction) return
+
+    const changedAt = new Date().toISOString()
+    setErrand({
+      ...errand,
+      status:
+        activeAction === 'cancel'
+          ? 'CANCELLED'
+          : activeAction === 'complete'
+            ? 'COMPLETED'
+            : 'FAILED',
+      cancelledAt: activeAction === 'cancel' ? changedAt : errand.cancelledAt,
+      completedAt: activeAction === 'complete' ? changedAt : errand.completedAt,
+      failedAt: activeAction === 'fail' ? changedAt : errand.failedAt,
+      failureReason: activeAction === 'fail' ? (failureReason ?? null) : errand.failureReason,
+    })
+    setRefreshMessage('Preview updated locally. No backend request was sent.')
+    setActiveAction(null)
   }
 
   return (
@@ -231,8 +265,46 @@ export function ErrandDetailsPage() {
               />
             ) : null}
           </dl>
+
+          {errand.viewerRole === 'requester' && errand.status === 'OPEN' ? (
+            <button
+              type="button"
+              onClick={() => setActiveAction('cancel')}
+              className="mt-6 h-11 w-full cursor-pointer rounded-lg border border-[#d49a95] bg-white px-4 text-sm font-semibold text-[#a33a32] transition hover:bg-[#fff5f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a33a32]"
+            >
+              Cancel errand
+            </button>
+          ) : null}
+
+          {errand.viewerRole === 'requester' && errand.status === 'ACCEPTED' ? (
+            <div className="mt-6 space-y-2">
+              <button
+                type="button"
+                onClick={() => setActiveAction('complete')}
+                className="h-11 w-full cursor-pointer rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+              >
+                Confirm delivery
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveAction('fail')}
+                className="h-11 w-full cursor-pointer rounded-lg border border-[#d49a95] bg-white px-4 text-sm font-semibold text-[#a33a32] transition hover:bg-[#fff5f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a33a32]"
+              >
+                Report problem
+              </button>
+            </div>
+          ) : null}
         </aside>
       </div>
+
+      {activeAction ? (
+        <ErrandActionDialog
+          action={activeAction}
+          errandName={errand.requiredItem}
+          onClose={() => setActiveAction(null)}
+          onConfirm={confirmAction}
+        />
+      ) : null}
     </section>
   )
 }

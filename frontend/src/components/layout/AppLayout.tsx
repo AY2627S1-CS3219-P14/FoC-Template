@@ -9,7 +9,7 @@ export function AppLayout() {
       <AppHeader />
       <div className="lg:grid lg:grid-cols-[236px_1fr]">
         <Sidebar />
-        <main className="min-w-0 px-4 py-5 pb-24 sm:px-6 lg:px-9 lg:py-[30px] lg:pb-9">
+        <main className="min-w-0 px-4 py-5 pb-24 sm:px-6 lg:px-9 lg:py-[34px] lg:pb-12">
           <Outlet />
         </main>
       </div>

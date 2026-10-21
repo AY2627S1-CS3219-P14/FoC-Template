@@ -48,7 +48,7 @@ export function Sidebar() {
         </SidebarNavItem>
 
         <SidebarNavItem to="/suppliers" icon={clipboardIcon}>
-          Choose a supplier
+          Suppliers
         </SidebarNavItem>
       </nav>
 

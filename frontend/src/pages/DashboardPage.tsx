@@ -9,6 +9,8 @@ import {
   loadOpenErrandDashboard,
   type OpenErrandDashboardData,
 } from '../features/errands/errand.dashboard'
+import { MOCK_MY_ERRANDS } from '../features/errands/my-errands.mock'
+import type { MyErrandItem } from '../features/errands/my-errands.types'
 import type {
   ErrandCreditFilter,
   ErrandDashboardItem,
@@ -91,6 +93,27 @@ export function DashboardPage() {
     0,
     (displayData?.total ?? 0) -
       (displayData?.items.filter((errand) => acceptedIds.has(errand.id)).length ?? 0),
+  )
+  const activeErrands = useMemo<MyErrandItem[]>(
+    () => [
+      ...locallyAcceptedErrands.map((errand) => ({
+        id: errand.id,
+        requiredItem: errand.required_item,
+        pickupLocation: errand.supplier_name,
+        deliveryLocation: [
+          errand.delivery_building_name,
+          errand.delivery_floor ? `Level ${errand.delivery_floor}` : null,
+        ]
+          .filter(Boolean)
+          .join(', '),
+        creditValue: errand.credit_value,
+        role: 'courier' as const,
+        progress: 'accepted' as const,
+        expiresAt: errand.expires_at,
+      })),
+      ...MOCK_MY_ERRANDS,
+    ],
+    [locallyAcceptedErrands],
   )
 
   function prepareRequest() {
@@ -251,7 +274,7 @@ export function DashboardPage() {
           )}
         </div>
 
-        <ActiveErrandsPanel count={0} />
+        <ActiveErrandsPanel errands={activeErrands} />
       </div>
 
       <p className="sr-only" role="status" aria-live="polite">

@@ -17,6 +17,37 @@ const progressLabels: Record<MyErrandProgress, string> = {
   'awaiting-confirmation': 'Awaiting confirmation',
 }
 
+export function ActiveErrandsSummary({ errands }: ActiveErrandsPanelProps) {
+  return (
+    <section
+      aria-labelledby="mobile-active-errands-heading"
+      className="mt-5 rounded-[16px] border border-[#cfe0d4] bg-[#edf8f1] p-4 xl:hidden"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p
+            id="mobile-active-errands-heading"
+            className="text-xs font-medium tracking-[0.06em] text-[#175c45]"
+          >
+            ACTIVE ERRANDS
+          </p>
+          <p className="mt-1 text-sm text-[#28332d]">
+            {errands.length === 0
+              ? 'You have no active errands.'
+              : `${errands.length} ${errands.length === 1 ? 'errand' : 'errands'} in progress`}
+          </p>
+        </div>
+        <Link
+          to="/my-errands"
+          className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-[#175c45] shadow-sm transition hover:bg-[#f8fbf9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+        >
+          View my errands
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 export function ActiveErrandsPanel({ errands }: ActiveErrandsPanelProps) {
   const visibleErrands = errands.slice(0, 3)
 

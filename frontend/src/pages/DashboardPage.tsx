@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ActiveErrandsPanel } from '../components/errands/ActiveErrandsPanel'
+import {
+  ActiveErrandsPanel,
+  ActiveErrandsSummary,
+} from '../components/errands/ActiveErrandsPanel'
 import { AcceptErrandDialog } from '../components/errands/AcceptErrandDialog'
 import { ErrandCard } from '../components/errands/ErrandCard'
 import { ErrandFilters } from '../components/errands/ErrandFilters'
@@ -184,6 +187,8 @@ export function DashboardPage() {
           Help a student, earn credits, and make your next walk count.
         </p>
       </div>
+
+      <ActiveErrandsSummary errands={activeErrands} />
 
       <div className="mt-5 sm:mt-6">
         <ErrandFilters

@@ -105,8 +105,20 @@ export async function loadOpenErrandDashboard(
 ): Promise<OpenErrandDashboardData> {
   const errandResponse = await listErrands(buildOpenErrandParams(filters, now), signal)
   const supplierIds = [...new Set(errandResponse.items.map((errand) => errand.supplier_id))]
-  const suppliers = await Promise.all(
+  const supplierResults = await Promise.allSettled(
     supplierIds.map((supplierId) => getSupplier(supplierId, signal)),
+  )
+  const abortedRequest = supplierResults.find(
+    (result) =>
+      result.status === 'rejected' &&
+      result.reason instanceof DOMException &&
+      result.reason.name === 'AbortError',
+  )
+
+  if (abortedRequest?.status === 'rejected') throw abortedRequest.reason
+
+  const suppliers = supplierResults.flatMap((result) =>
+    result.status === 'fulfilled' ? [result.value] : [],
   )
   const suppliersById = new Map(suppliers.map((supplier) => [supplier.id, supplier]))
 

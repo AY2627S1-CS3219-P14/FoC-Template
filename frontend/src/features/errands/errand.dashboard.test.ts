@@ -158,6 +158,44 @@ describe('loadOpenErrandDashboard', () => {
     expect(getSupplierMock).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps errands usable when an individual supplier lookup fails', async () => {
+    const unavailableSupplierId = '33333333-3333-4333-8333-333333333333'
+    listErrandsMock.mockResolvedValue({
+      total: 2,
+      items: [
+        errand,
+        {
+          ...errand,
+          id: '660e8400-e29b-41d4-a716-446655440000',
+          supplier_id: unavailableSupplierId,
+        },
+      ],
+    })
+    getSupplierMock.mockImplementation((supplierId) =>
+      supplierId === unavailableSupplierId
+        ? Promise.reject(new Error('Supplier not found'))
+        : Promise.resolve(supplier),
+    )
+
+    const result = await loadOpenErrandDashboard(defaultFilters)
+
+    expect(result.items[0]).toMatchObject({
+      supplier_name: 'Techno Edge',
+      supplier_building_name: 'Engineering E2',
+    })
+    expect(result.items[1]).toMatchObject({
+      supplier_name: 'Supplier unavailable',
+      supplier_building_name: 'Pickup location unavailable',
+    })
+  })
+
+  it('still propagates cancellation from a supplier lookup', async () => {
+    const abortError = new DOMException('The operation was aborted.', 'AbortError')
+    getSupplierMock.mockRejectedValue(abortError)
+
+    await expect(loadOpenErrandDashboard(defaultFilters)).rejects.toBe(abortError)
+  })
+
 })
 
 describe('dashboard building references', () => {

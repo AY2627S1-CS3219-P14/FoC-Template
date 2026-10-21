@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { login, logout, refreshSession, register } from './auth.api'
 
 const fetchMock = vi.fn<typeof fetch>()
+const expectedBaseUrl = (import.meta.env.VITE_USER_API_URL ?? '').trim().replace(/\/+$/, '')
 
 function tokenResponse(accessToken: string) {
   return new Response(
@@ -23,7 +24,7 @@ describe('authentication API', () => {
 
     expect(response).toEqual({ accessToken: 'access-token', tokenType: 'Bearer', expiresIn: 900 })
     expect(fetchMock).toHaveBeenCalledWith(
-      '/auth/login',
+      `${expectedBaseUrl}/auth/login`,
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
@@ -44,7 +45,7 @@ describe('authentication API', () => {
     ).resolves.toBeUndefined()
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/auth/register',
+      `${expectedBaseUrl}/auth/register`,
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
@@ -66,12 +67,12 @@ describe('authentication API', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      '/auth/refresh',
+      `${expectedBaseUrl}/auth/refresh`,
       expect.objectContaining({ method: 'POST', credentials: 'include' }),
     )
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      '/auth/logout',
+      `${expectedBaseUrl}/auth/logout`,
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import creditIcon from '../assets/errand-credit.svg'
 import routeMarkers from '../assets/errand-route.svg'
 import { getMockErrandDetails } from '../features/errands/errand-details.mock'
+import type { ErrandDetails } from '../features/errands/errand-details.types'
 import type { ErrandStatus } from '../features/errands/errand.types'
 
 const statusPresentation: Record<
@@ -41,6 +42,49 @@ function DetailRow({ label, value }: DetailRowProps) {
   )
 }
 
+function getStatusCopy(errand: ErrandDetails) {
+  if (errand.status === 'OPEN') {
+    return {
+      title: 'Waiting for a courier',
+      description: 'Your request is visible to couriers until the collection deadline.',
+    }
+  }
+
+  if (errand.status === 'ACCEPTED' && errand.viewerRole === 'requester') {
+    return {
+      title: 'Courier assigned',
+      description: `${errand.courierName ?? 'A courier'} accepted your errand. Confirm only after you receive the items.`,
+    }
+  }
+
+  if (errand.status === 'ACCEPTED') {
+    return {
+      title: 'Delivery in progress',
+      description: 'You accepted this errand. Follow the pickup and delivery instructions shown here.',
+    }
+  }
+
+  const terminalCopy: Record<Exclude<ErrandStatus, 'OPEN' | 'ACCEPTED'>, string> = {
+    COMPLETED: 'The requester confirmed this delivery as completed.',
+    CANCELLED: 'The requester cancelled this errand before it was accepted.',
+    FAILED: 'This errand was reported as unsuccessful and is now closed.',
+    EXPIRED: 'No courier accepted this errand before its collection deadline.',
+  }
+
+  return {
+    title: statusPresentation[errand.status].label,
+    description: terminalCopy[errand.status],
+  }
+}
+
+function getOutcomeTime(errand: ErrandDetails) {
+  if (errand.status === 'COMPLETED') return errand.completedAt
+  if (errand.status === 'CANCELLED') return errand.cancelledAt
+  if (errand.status === 'FAILED') return errand.failedAt
+  if (errand.status === 'EXPIRED') return errand.expiresAt
+  return null
+}
+
 export function ErrandDetailsPage() {
   const { errandId = '' } = useParams()
   const errand = getMockErrandDetails(errandId)
@@ -67,6 +111,8 @@ export function ErrandDetailsPage() {
   }
 
   const status = statusPresentation[errand.status]
+  const statusCopy = getStatusCopy(errand)
+  const outcomeTime = getOutcomeTime(errand)
   const deliveryLocation = [
     errand.deliveryBuilding,
     errand.deliveryFloor ? `Level ${errand.deliveryFloor}` : null,
@@ -166,12 +212,24 @@ export function ErrandDetailsPage() {
           <span className={`inline-flex rounded-full px-3 py-1.5 text-sm font-medium ${status.className}`}>
             {status.label}
           </span>
-          <h2 className="mt-4 text-lg font-medium text-[#17211d]">Current status</h2>
-          <p className="mt-2 text-sm leading-6 text-[#68736c]">
-            This panel will show the actions available for this errand.
+          <p className="mt-4 text-xs font-medium tracking-[0.06em] text-[#7b867f]">
+            {errand.viewerRole === 'requester' ? 'YOU REQUESTED THIS' : 'YOU ARE DELIVERING'}
           </p>
-          <dl className="mt-5 border-t border-[#e6eae7] pt-5">
+          <h2 className="mt-2 text-lg font-medium text-[#17211d]">{statusCopy.title}</h2>
+          <p className="mt-2 text-sm leading-6 text-[#68736c]">
+            {statusCopy.description}
+          </p>
+          <dl className="mt-5 space-y-4 border-t border-[#e6eae7] pt-5">
             <DetailRow label="CREATED" value={formatDateTime(errand.createdAt)} />
+            {errand.acceptedAt ? (
+              <DetailRow label="ACCEPTED" value={formatDateTime(errand.acceptedAt)} />
+            ) : null}
+            {outcomeTime ? (
+              <DetailRow
+                label={errand.status === 'EXPIRED' ? 'EXPIRED' : errand.status}
+                value={formatDateTime(outcomeTime)}
+              />
+            ) : null}
           </dl>
         </aside>
       </div>

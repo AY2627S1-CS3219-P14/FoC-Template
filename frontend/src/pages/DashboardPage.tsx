@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ActiveErrandsPanel } from '../components/errands/ActiveErrandsPanel'
+import { AcceptErrandDialog } from '../components/errands/AcceptErrandDialog'
 import { ErrandCard } from '../components/errands/ErrandCard'
 import { ErrandFilters } from '../components/errands/ErrandFilters'
 import {
@@ -10,6 +11,7 @@ import {
 } from '../features/errands/errand.dashboard'
 import type {
   ErrandCreditFilter,
+  ErrandDashboardItem,
   ErrandExpiryFilter,
   ErrandSort,
 } from '../features/errands/errand.types'
@@ -27,6 +29,9 @@ export function DashboardPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [buildingErrorMessage, setBuildingErrorMessage] = useState<string | null>(null)
   const [buildingRetryCount, setBuildingRetryCount] = useState(0)
+  const [pendingErrand, setPendingErrand] = useState<ErrandDashboardItem | null>(null)
+  const [locallyAcceptedErrands, setLocallyAcceptedErrands] = useState<ErrandDashboardItem[]>([])
+  const [acceptMessage, setAcceptMessage] = useState('')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -74,8 +79,19 @@ export function DashboardPage() {
         : null,
     [dashboardData, deliveryBuildings],
   )
-  const visibleErrands = displayData?.items ?? []
-  const availableCount = displayData?.total ?? 0
+  const acceptedIds = useMemo(
+    () => new Set(locallyAcceptedErrands.map((errand) => errand.id)),
+    [locallyAcceptedErrands],
+  )
+  const visibleErrands = useMemo(
+    () => displayData?.items.filter((errand) => !acceptedIds.has(errand.id)) ?? [],
+    [acceptedIds, displayData],
+  )
+  const availableCount = Math.max(
+    0,
+    (displayData?.total ?? 0) -
+      (displayData?.items.filter((errand) => acceptedIds.has(errand.id)).length ?? 0),
+  )
 
   function prepareRequest() {
     setIsLoading(true)
@@ -118,6 +134,18 @@ export function DashboardPage() {
   function retryBuildings() {
     setBuildingErrorMessage(null)
     setBuildingRetryCount((count) => count + 1)
+  }
+
+  function acceptErrandPreview() {
+    if (!pendingErrand) return
+
+    setLocallyAcceptedErrands((current) =>
+      current.some((errand) => errand.id === pendingErrand.id)
+        ? current
+        : [...current, pendingErrand],
+    )
+    setAcceptMessage(`${pendingErrand.required_item} was added to your active errands preview.`)
+    setPendingErrand(null)
   }
 
   return (
@@ -203,7 +231,7 @@ export function DashboardPage() {
           ) : visibleErrands.length > 0 ? (
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               {visibleErrands.map((errand) => (
-                <ErrandCard key={errand.id} errand={errand} />
+                <ErrandCard key={errand.id} errand={errand} onAccept={setPendingErrand} />
               ))}
             </div>
           ) : (
@@ -225,6 +253,18 @@ export function DashboardPage() {
 
         <ActiveErrandsPanel count={0} />
       </div>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        {acceptMessage}
+      </p>
+
+      {pendingErrand ? (
+        <AcceptErrandDialog
+          errand={pendingErrand}
+          onClose={() => setPendingErrand(null)}
+          onConfirm={acceptErrandPreview}
+        />
+      ) : null}
     </section>
   )
 }

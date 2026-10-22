@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createErrand, ErrandApiError } from '../features/errands/errand.api'
 import type { CreateErrandResponse } from '../features/errands/errand.types'
+import { useCredits } from '../features/credits/useCredits'
 import { listSupplierBuildings, listSuppliers } from '../features/suppliers/supplier.api'
 import type { Supplier, SupplierReference } from '../features/suppliers/supplier.types'
 import { CreateErrandPage } from './CreateErrandPage'
@@ -31,9 +32,15 @@ vi.mock('../features/errands/errand.api', () => ({
   },
 }))
 
+vi.mock('../features/credits/useCredits', () => ({
+  useCredits: vi.fn(),
+}))
+
 const listSuppliersMock = vi.mocked(listSuppliers)
 const listSupplierBuildingsMock = vi.mocked(listSupplierBuildings)
 const createErrandMock = vi.mocked(createErrand)
+const useCreditsMock = vi.mocked(useCredits)
+const refreshBalanceMock = vi.fn<() => Promise<void>>()
 
 const suppliers: Supplier[] = [
   {
@@ -143,6 +150,14 @@ describe('CreateErrandPage', () => {
     listSuppliersMock.mockReset()
     listSupplierBuildingsMock.mockReset()
     createErrandMock.mockReset()
+    refreshBalanceMock.mockReset()
+    refreshBalanceMock.mockResolvedValue()
+    useCreditsMock.mockReturnValue({
+      availableBalance: 24,
+      status: 'ready',
+      error: null,
+      refreshBalance: refreshBalanceMock,
+    })
     listSuppliersMock.mockResolvedValue(supplierResponse)
     listSupplierBuildingsMock.mockResolvedValue({ items: buildings })
     createErrandMock.mockResolvedValue(createdErrand)

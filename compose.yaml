@@ -263,6 +263,7 @@ services:
       VITE_SUPPLIER_API_URL: ${VITE_SUPPLIER_API_URL:-http://localhost:8080}
       VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8081}
       VITE_ORDER_API_URL: ${VITE_ORDER_API_URL:-http://localhost:8002}
+      VITE_CREDIT_API_URL: ${VITE_CREDIT_API_URL:-http://localhost:8001}
       VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"
@@ -270,6 +271,7 @@ services:
       - supplier-service
       - user-service
       - order-service
+      - credit-service
     restart: unless-stopped
 
   # One-off job: creates the first administrator if none exists, then exits (non-zero on failure).

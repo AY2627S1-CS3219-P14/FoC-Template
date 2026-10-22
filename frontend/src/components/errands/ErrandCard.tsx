@@ -5,6 +5,7 @@ import type { ErrandDashboardItem } from '../../features/errands/errand.types'
 
 type ErrandCardProps = {
   errand: ErrandDashboardItem
+  onAccept: (errand: ErrandDashboardItem) => void
 }
 
 function formatExpiry(expiresAt: string) {
@@ -29,7 +30,7 @@ function formatExpiry(expiresAt: string) {
   }).format(expiry)
 }
 
-export function ErrandCard({ errand }: ErrandCardProps) {
+export function ErrandCard({ errand, onAccept }: ErrandCardProps) {
   const destination = [
     errand.delivery_building_name,
     errand.delivery_floor ? `Level ${errand.delivery_floor}` : null,
@@ -67,6 +68,14 @@ export function ErrandCard({ errand }: ErrandCardProps) {
           {errand.credit_value} credits
         </p>
       </div>
+
+      <button
+        type="button"
+        onClick={() => onAccept(errand)}
+        className="mt-4 h-10 w-full cursor-pointer rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
+      >
+        Accept errand
+      </button>
     </article>
   )
 }

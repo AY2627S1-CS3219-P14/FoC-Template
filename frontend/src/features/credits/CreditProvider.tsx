@@ -36,9 +36,29 @@ export function CreditProvider({ children }: PropsWithChildren) {
   }, [])
 
   useEffect(() => {
-    void refreshBalance()
-    return () => requestControllerRef.current?.abort()
-  }, [refreshBalance])
+    const controller = new AbortController()
+    requestControllerRef.current = controller
+
+    getAvailableBalance(controller.signal)
+      .then((balance) => {
+        if (!controller.signal.aborted) {
+          setAvailableBalance(balance)
+          setStatus('ready')
+        }
+      })
+      .catch((requestError: unknown) => {
+        if (controller.signal.aborted) return
+        setAvailableBalance(null)
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Unable to load your credit balance.',
+        )
+        setStatus('error')
+      })
+
+    return () => controller.abort()
+  }, [])
 
   const value = useMemo<CreditContextValue>(
     () => ({ availableBalance, status, error, refreshBalance }),

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 import { CreditOfferCard } from '../components/errands/CreditOfferCard'
 import { FormField } from '../components/ui/FormField'
 import { createErrand, ErrandApiError } from '../features/errands/errand.api'
-import { MOCK_AVAILABLE_CREDITS } from '../features/errands/errand.mock'
+import { useCredits } from '../features/credits/useCredits'
 import type {
   CreateErrandRequest,
   ErrandDraft,
@@ -89,6 +89,12 @@ function toCreateRequest(draft: ErrandDraft): CreateErrandRequest {
 }
 
 export function CreateErrandPage() {
+  const {
+    availableBalance,
+    status: creditStatus,
+    error: creditError,
+    refreshBalance,
+  } = useCredits()
   const [searchParams] = useSearchParams()
   const requestedSupplierId = searchParams.get('supplierId') ?? ''
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -113,7 +119,12 @@ export function CreateErrandPage() {
 
   const selectedSupplier = suppliers.find((supplier) => supplier.id === draft.supplierId)
   const optionsReady = optionsStatus === 'ready'
-  const canSubmit = optionsReady && suppliers.length > 0 && deliveryBuildings.length > 0
+  const canSubmit =
+    optionsReady &&
+    suppliers.length > 0 &&
+    deliveryBuildings.length > 0 &&
+    creditStatus === 'ready' &&
+    availableBalance !== null
   const dateBounds = useMemo(() => {
     const now = new Date()
     return {
@@ -188,7 +199,8 @@ export function CreateErrandPage() {
 
     setSubmitError(null)
     setCreatedErrandId(null)
-    const nextErrors = validateDraft(draft, MOCK_AVAILABLE_CREDITS)
+    if (availableBalance === null) return
+    const nextErrors = validateDraft(draft, availableBalance)
     setErrors(nextErrors)
 
     if (Object.keys(nextErrors).length > 0) {
@@ -203,7 +215,10 @@ export function CreateErrandPage() {
 
     try {
       const createdErrand = await createErrand(toCreateRequest(draft), controller.signal)
-      if (!controller.signal.aborted) setCreatedErrandId(createdErrand.id)
+      if (!controller.signal.aborted) {
+        setCreatedErrandId(createdErrand.id)
+        void refreshBalance()
+      }
     } catch (error) {
       if (controller.signal.aborted) return
 
@@ -445,7 +460,10 @@ export function CreateErrandPage() {
 
         <aside className="space-y-3.5 xl:sticky xl:top-[106px]">
           <CreditOfferCard
-            availableCredits={MOCK_AVAILABLE_CREDITS}
+            availableCredits={availableBalance}
+            balanceLoading={creditStatus === 'loading'}
+            balanceError={creditError}
+            onRetryBalance={() => void refreshBalance()}
             value={draft.creditValue}
             error={errors.creditValue}
             onChange={(value) => updateDraft('creditValue', value)}

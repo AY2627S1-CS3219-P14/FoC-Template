@@ -3,6 +3,7 @@ package com.campuscouriers.supplier.importer;
 import com.campuscouriers.supplier.entity.Building;
 import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.Supplier;
+import com.campuscouriers.supplier.event.SupplierEventPublisher;
 import com.campuscouriers.supplier.repository.BuildingRepository;
 import com.campuscouriers.supplier.repository.CategoryRepository;
 import com.campuscouriers.supplier.repository.SupplierRepository;
@@ -21,6 +22,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class SupplierSeedImporterTest {
@@ -28,6 +31,7 @@ class SupplierSeedImporterTest {
     private final SupplierRepository suppliers = mock(SupplierRepository.class);
     private final CategoryRepository categories = mock(CategoryRepository.class);
     private final BuildingRepository buildings = mock(BuildingRepository.class);
+    private final SupplierEventPublisher events = mock(SupplierEventPublisher.class);
     private final Map<String, Category> categoryStore = new HashMap<>();
     private final Map<String, Building> buildingStore = new HashMap<>();
     private final ArrayList<Supplier> supplierStore = new ArrayList<>();
@@ -36,7 +40,7 @@ class SupplierSeedImporterTest {
     @BeforeEach
     void setUp() {
         importer = new SupplierSeedImporter(
-                new SupplierSeedCsvReader(), suppliers, categories, buildings);
+                new SupplierSeedCsvReader(), suppliers, categories, buildings, events);
         when(categories.findByNormalizedName(any())).thenAnswer(invocation ->
                 Optional.ofNullable(categoryStore.get(invocation.getArgument(0))));
         when(categories.save(any())).thenAnswer(invocation -> {
@@ -78,6 +82,9 @@ class SupplierSeedImporterTest {
         assertThat(buildingStore).containsOnlyKeys("com2");
         assertThat(buildingStore.get("com2").getName()).isEqualTo("COM2");
         assertThat(supplierStore).hasSize(2);
+        // Only newly created suppliers are announced; skipped duplicates are not
+        supplierStore.forEach(supplier -> verify(events).publishSupplierCreated(supplier));
+        verifyNoMoreInteractions(events);
     }
 
     @Test

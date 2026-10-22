@@ -22,6 +22,7 @@ public class RefreshToken {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
+    @Column(nullable = false)
     private Instant expiresAt;
 
     protected RefreshToken() {} // required by JPA

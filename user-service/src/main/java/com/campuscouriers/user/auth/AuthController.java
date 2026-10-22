@@ -2,15 +2,18 @@ package com.campuscouriers.user.auth;
 
 import com.campuscouriers.user.auth.dto.LoginRequest;
 import com.campuscouriers.user.auth.dto.LoginResponse;
-import com.campuscouriers.user.auth.dto.LogoutRequest;
-import com.campuscouriers.user.auth.dto.RefreshRequest;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InvalidCredentialsException;
 import com.campuscouriers.user.exception.InvalidRefreshTokenException;
 import com.campuscouriers.user.security.access.AccessTokenClaims;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,14 +21,20 @@ import com.campuscouriers.user.auth.dto.RegisterRequest;
 
 import jakarta.validation.Valid;
 
+import java.time.Duration;
+
 @RestController 
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthService authService;
+    static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
-    public AuthController(AuthService authService) {
+    private final AuthService authService;
+    private final Duration refreshTokenTtl;
+
+    public AuthController(AuthService authService, @Value("${app.jwt.refresh-token-ttl}") String refreshTokenTtl) {
         this.authService = authService;
+        this.refreshTokenTtl = DurationStyle.detectAndParse(refreshTokenTtl);
     }
 
     @PostMapping("/register")
@@ -35,19 +44,48 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return withRefreshTokenCookie(authService.login(request));
     }
+
     @PostMapping("/refresh")
-    public LoginResponse refresh(@Valid @RequestBody RefreshRequest request) {
-        return authService.refresh(request);
+    public ResponseEntity<LoginResponse> refresh(
+            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InvalidRefreshTokenException();   // 401 rather than a 400 for the missing cookie
+        }
+        return withRefreshTokenCookie(authService.refresh(refreshToken));
     }
 
     // Logs out the current device only; the frontend handles the redirect to the login page
     @PostMapping("/logout")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@AuthenticationPrincipal AccessTokenClaims claims, @Valid @RequestBody LogoutRequest request) {
-        authService.logout(claims.accountId(), request);
+    public ResponseEntity<Void> logout(
+            @AuthenticationPrincipal AccessTokenClaims claims,
+            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            authService.logout(claims.accountId(), refreshToken);
+        }
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie("", Duration.ZERO).toString())
+                .build();
+    }
+
+    // Access token goes in the body; refresh token only goes in the HttpOnly cookie
+    private ResponseEntity<LoginResponse> withRefreshTokenCookie(AuthTokens tokens) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie(tokens.refreshToken(), refreshTokenTtl).toString())
+                .body(new LoginResponse(tokens.accessToken(), tokens.expiresIn()));
+    }
+
+    // Domain is omitted so the cookie is host-only; a zero max age tells the browser to delete it
+    private static ResponseCookie refreshTokenCookie(String value, Duration maxAge) {
+        return ResponseCookie.from(REFRESH_TOKEN_COOKIE, value)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/auth")
+                .maxAge(maxAge)
+                .build();
     }
 
     // For when the duplicate email check returns false at the service level

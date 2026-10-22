@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { SearchInput } from '../components/ui/SearchInput'
 import { Select } from '../components/ui/Select'
 import { SupplierCard } from '../components/ui/SupplierCard'
@@ -16,6 +17,7 @@ const SEARCH_DEBOUNCE_MS = 300
 const SUPPLIERS_PER_PAGE = 20
 
 export function SuppliersPage() {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -25,7 +27,6 @@ export function SuppliersPage() {
   const [areFiltersLoading, setAreFiltersLoading] = useState(true)
   const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null)
   const [filterRetryCount, setFilterRetryCount] = useState(0)
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
   const [pageNumber, setPageNumber] = useState(0)
   const [supplierResponse, setSupplierResponse] = useState<SupplierListResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -116,7 +117,6 @@ export function SuppliersPage() {
   function updateFilter(update: () => void) {
     setIsLoading(true)
     setErrorMessage(null)
-    setSelectedSupplierId(null)
     setPageNumber(0)
     update()
   }
@@ -129,18 +129,25 @@ export function SuppliersPage() {
 
   return (
     <section>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-        Choose a supplier
-      </h1>
-      <p className="mt-3 max-w-2xl text-slate-600">
-        Select the supplier for your campus errand.
-      </p>
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <p className="text-xs font-medium tracking-[0.04em] text-[#175c45]">
+            SUPPLIERS
+          </p>
+          <h1 className="mt-2 text-[2rem] font-medium leading-tight tracking-[-0.035em] text-[#17211d] sm:text-[2.375rem]">
+            Choose a supplier
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-base">
+            Browse campus suppliers or choose one to start an errand.
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-[minmax(16rem,1fr)_18rem_18rem]">
+      <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 xl:grid-cols-[minmax(16rem,1fr)_15rem_15rem]">
         <div className="col-span-2 xl:col-span-1">
           <SearchInput
             label="Search suppliers by name"
-            placeholder="Search suppliers by name"
+            placeholder="Search suppliers or campus locations"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             autoComplete="off"
@@ -169,7 +176,7 @@ export function SuppliersPage() {
       </div>
 
       {filterErrorMessage ? (
-        <p className="mt-3 text-sm text-amber-700" role="alert">
+        <p className="mt-3 rounded-xl bg-[#fff3d8] px-4 py-3 text-sm text-amber-900" role="alert">
           The category and building filters could not be loaded.{' '}
           <button
             type="button"
@@ -181,15 +188,17 @@ export function SuppliersPage() {
         </p>
       ) : null}
 
-      <p className="mt-4 text-sm text-slate-500" aria-live="polite">
-        {isLoading
-          ? 'Loading suppliers…'
-          : `${page?.totalElements ?? 0} ${page?.totalElements === 1 ? 'supplier' : 'suppliers'} found`}
-      </p>
+      <div className="mt-5 flex items-center justify-between" aria-live="polite">
+        <p className="text-lg font-medium tracking-[-0.015em] text-[#17211d] sm:text-[1.375rem]">
+          {isLoading
+            ? 'Loading suppliers…'
+            : `${page?.totalElements ?? 0} ${page?.totalElements === 1 ? 'supplier' : 'suppliers'} found`}
+        </p>
+      </div>
 
       {errorMessage ? (
         <div
-          className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-6 py-8 text-center"
+          className="mt-4 rounded-[18px] border border-red-200 bg-red-50 px-6 py-8 text-center"
           role="alert"
         >
           <h2 className="text-lg font-semibold text-red-900">Could not load suppliers</h2>
@@ -197,13 +206,13 @@ export function SuppliersPage() {
           <button
             type="button"
             onClick={retryRequest}
-            className="mt-5 cursor-pointer rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
+            className="mt-5 cursor-pointer rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-800"
           >
             Try again
           </button>
         </div>
       ) : isLoading && !supplierResponse ? (
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600">
+        <div className="mt-4 rounded-[18px] border border-[#dde3de] bg-white px-6 py-12 text-center text-[#68736c]">
           Loading suppliers…
         </div>
       ) : suppliers.length > 0 ? (
@@ -213,30 +222,39 @@ export function SuppliersPage() {
               <SupplierCard
                 key={supplier.id}
                 supplier={supplier}
-                isSelected={selectedSupplierId === supplier.id}
-                onSelect={() => setSelectedSupplierId(supplier.id)}
+                onSelect={(selectedSupplier) =>
+                  navigate(`/errands/new?supplierId=${encodeURIComponent(selectedSupplier.id)}`, {
+                    state: {
+                      supplier: {
+                        id: selectedSupplier.id,
+                        name: selectedSupplier.name,
+                        category: selectedSupplier.category.name,
+                      },
+                    },
+                  })
+                }
               />
             ))}
           </div>
 
           {page && page.totalPages > 1 ? (
-            <nav className="mt-8 flex items-center justify-center gap-4" aria-label="Supplier pages">
+            <nav className="mt-9 flex items-center justify-center gap-4" aria-label="Supplier pages">
               <button
                 type="button"
                 disabled={!page.hasPrevious || isLoading}
                 onClick={() => requestPage(Math.max(0, page.number - 1))}
-                className="cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer rounded-lg border border-[#dde3de] bg-white px-4 py-2 text-sm font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Previous
               </button>
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-[#68736c]">
                 Page {page.number + 1} of {page.totalPages}
               </span>
               <button
                 type="button"
                 disabled={!page.hasNext || isLoading}
                 onClick={() => requestPage(page.number + 1)}
-                className="cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer rounded-lg border border-[#dde3de] bg-white px-4 py-2 text-sm font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
               </button>
@@ -244,9 +262,9 @@ export function SuppliersPage() {
           ) : null}
         </>
       ) : (
-        <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-          <h2 className="text-lg font-semibold text-slate-900">No suppliers found</h2>
-          <p className="mt-2 text-sm text-slate-600">
+        <div className="mt-4 rounded-[18px] border border-dashed border-[#bdc8c0] bg-white px-6 py-12 text-center">
+          <h2 className="text-lg font-semibold text-[#17211d]">No suppliers found</h2>
+          <p className="mt-2 text-sm text-[#68736c]">
             Try checking the spelling or using a different supplier name.
           </p>
         </div>

@@ -32,7 +32,7 @@ public class RefreshTokenService {
         this.ttl = DurationStyle.detectAndParse(ttl);
     }
 
-    // Issuing a Refresh token (30-day expiry checked lazily)
+    // Issuing a Refresh token (expiry checked lazily)
     public String issue(Account account) {
         String rawToken = UUID.randomUUID().toString();
         RefreshToken token = new RefreshToken(tokenHasher.hash(rawToken), account, clock.instant().plus(ttl));

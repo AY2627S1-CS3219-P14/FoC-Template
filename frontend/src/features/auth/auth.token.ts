@@ -4,6 +4,26 @@ let accessToken: string | null = null
 let refreshPromise: Promise<string> | null = null
 const sessionExpiredListeners = new Set<() => void>()
 
+type AccessTokenPayload = {
+  sub?: unknown
+}
+
+export function getAccessTokenSubject(token: string | null) {
+  if (!token) return null
+
+  try {
+    const payloadSegment = token.split('.')[1]
+    if (!payloadSegment) return null
+
+    const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/')
+    const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+    const payload = JSON.parse(atob(paddedBase64)) as AccessTokenPayload
+    return typeof payload.sub === 'string' && payload.sub.length > 0 ? payload.sub : null
+  } catch {
+    return null
+  }
+}
+
 export function getAccessToken() {
   return accessToken
 }

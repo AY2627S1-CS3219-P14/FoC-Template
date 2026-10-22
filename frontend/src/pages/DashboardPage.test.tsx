@@ -1,9 +1,13 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   loadErrandDashboardBuildings,
   loadOpenErrandDashboard,
 } from '../features/errands/errand.dashboard'
+import { acceptErrand } from '../features/errands/errand.api'
+import { loadMyErrands } from '../features/errands/errand.view'
+import { MOCK_MY_ERRANDS } from '../features/errands/my-errands.mock'
 import type { OpenErrandDashboardData } from '../features/errands/errand.dashboard'
 import type { ErrandDashboardItem } from '../features/errands/errand.types'
 import { DashboardPage } from './DashboardPage'
@@ -14,8 +18,28 @@ vi.mock('../features/errands/errand.dashboard', () => ({
   loadOpenErrandDashboard: vi.fn(),
 }))
 
+vi.mock('../features/errands/errand.api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../features/errands/errand.api')>()),
+  acceptErrand: vi.fn(),
+}))
+
+vi.mock('../features/errands/errand.view', () => ({
+  loadMyErrands: vi.fn(),
+}))
+
+vi.mock('../features/auth/useAuth', () => ({
+  useAuth: () => ({
+    status: 'authenticated',
+    currentUserId: '11111111-1111-4111-8111-111111111111',
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}))
+
 const loadOpenErrandDashboardMock = vi.mocked(loadOpenErrandDashboard)
 const loadErrandDashboardBuildingsMock = vi.mocked(loadErrandDashboardBuildings)
+const acceptErrandMock = vi.mocked(acceptErrand)
+const loadMyErrandsMock = vi.mocked(loadMyErrands)
 
 const openErrand: ErrandDashboardItem = {
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -72,12 +96,29 @@ const defaultFilters = {
   sort: 'expires_at,asc',
 } as const
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <DashboardPage />
+    </MemoryRouter>,
+  )
+}
+
 describe('DashboardPage', () => {
   beforeEach(() => {
     loadOpenErrandDashboardMock.mockReset()
     loadErrandDashboardBuildingsMock.mockReset()
     loadOpenErrandDashboardMock.mockResolvedValue(dashboardData)
     loadErrandDashboardBuildingsMock.mockResolvedValue(deliveryBuildings)
+    acceptErrandMock.mockReset()
+    acceptErrandMock.mockResolvedValue({
+      id: openErrand.id,
+      status: 'ACCEPTED',
+      courier_id: '11111111-1111-4111-8111-111111111111',
+      accepted_at: '2026-10-22T04:00:00.000Z',
+    })
+    loadMyErrandsMock.mockReset()
+    loadMyErrandsMock.mockResolvedValue(MOCK_MY_ERRANDS)
   })
 
   it('shows a loading state before live open errands arrive', async () => {
@@ -89,16 +130,18 @@ describe('DashboardPage', () => {
         }),
     )
 
-    render(<DashboardPage />)
+    renderPage()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Loading open errands…')
+    expect(screen.getByText('Loading open errands…')).toBeInTheDocument()
 
     await act(async () => resolveRequest(dashboardData))
-    expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 }),
+    ).toBeInTheDocument()
   })
 
   it('renders API-backed card information and friendly status text', async () => {
-    render(<DashboardPage />)
+    renderPage()
 
     expect(await screen.findByText('2 available')).toBeInTheDocument()
     const nasiLemakCard = screen
@@ -117,7 +160,7 @@ describe('DashboardPage', () => {
   })
 
   it('requests a new result set when the delivery location changes', async () => {
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByText('2 available')
     await screen.findByRole('option', { name: 'COM3' })
 
@@ -138,7 +181,7 @@ describe('DashboardPage', () => {
   })
 
   it('requests API-compatible credit and expiry filters', async () => {
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByText('2 available')
 
     fireEvent.change(screen.getByLabelText('Filter by credit value'), {
@@ -163,7 +206,7 @@ describe('DashboardPage', () => {
   })
 
   it('requests a new server ordering when the sort changes', async () => {
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByText('2 available')
 
     fireEvent.change(screen.getByLabelText('Sort errands'), {
@@ -183,7 +226,7 @@ describe('DashboardPage', () => {
       total: 0,
       items: [],
     })
-    render(<DashboardPage />)
+    renderPage()
     await screen.findByRole('heading', { name: 'No open errands match' })
     await screen.findByRole('option', { name: 'COM3' })
 
@@ -208,14 +251,16 @@ describe('DashboardPage', () => {
     loadOpenErrandDashboardMock
       .mockRejectedValueOnce(new Error('Could not connect to the Order Service.'))
       .mockResolvedValueOnce(dashboardData)
-    render(<DashboardPage />)
+    renderPage()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Could not connect to the Order Service.',
     )
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
-    expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 }),
+    ).toBeInTheDocument()
     expect(loadOpenErrandDashboardMock).toHaveBeenCalledTimes(2)
   })
 
@@ -223,12 +268,14 @@ describe('DashboardPage', () => {
     loadErrandDashboardBuildingsMock
       .mockRejectedValueOnce(new Error('Could not connect to the Supplier Service.'))
       .mockResolvedValueOnce(deliveryBuildings)
-    render(<DashboardPage />)
+    renderPage()
 
-    expect(await screen.findByText('Nasi Lemak + Iced Milo')).toBeInTheDocument()
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Delivery locations could not be loaded.',
-    )
+    expect(
+      await screen.findByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText(/Delivery locations could not be loaded\./),
+    ).toBeInTheDocument()
     expect(loadOpenErrandDashboardMock).toHaveBeenCalledTimes(1)
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry locations' }))
@@ -240,7 +287,7 @@ describe('DashboardPage', () => {
 
   it('cancels the previous request when filters change', async () => {
     loadOpenErrandDashboardMock.mockImplementation(() => new Promise(() => undefined))
-    render(<DashboardPage />)
+    renderPage()
     const firstSignal = loadOpenErrandDashboardMock.mock.calls[0][1]
 
     fireEvent.change(screen.getByLabelText('Filter by credit value'), {
@@ -250,15 +297,80 @@ describe('DashboardPage', () => {
     await waitFor(() => expect(firstSignal?.aborted).toBe(true))
   })
 
-  it('keeps the active-errands panel as an empty reserved area', async () => {
-    render(<DashboardPage />)
+  it('shows fixture-backed active errands and links to the full list', async () => {
+    renderPage()
     await screen.findByText('2 available')
 
     const panel = screen.getByRole('complementary')
     expect(within(panel).getByRole('heading', { name: 'Active errands' })).toBeInTheDocument()
-    expect(within(panel).getByText('No active errands')).toBeInTheDocument()
+    expect(within(panel).getByText('4')).toBeInTheDocument()
+    expect(within(panel).getByRole('link', { name: 'View all active errands' })).toHaveAttribute(
+      'href',
+      '/my-errands',
+    )
+    expect(screen.getByText('4 errands in progress')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View my errands' })).toHaveAttribute(
+      'href',
+      '/my-errands',
+    )
+  })
+
+  it('confirms an errand before moving it from open to active', async () => {
+    const acceptedActiveErrand = {
+      ...MOCK_MY_ERRANDS[0],
+      id: openErrand.id,
+      requiredItem: openErrand.required_item,
+      role: 'courier' as const,
+      progress: 'accepted' as const,
+    }
+    loadOpenErrandDashboardMock
+      .mockResolvedValueOnce(dashboardData)
+      .mockResolvedValue({ total: 1, items: [secondOpenErrand] })
+    loadMyErrandsMock
+      .mockResolvedValueOnce(MOCK_MY_ERRANDS)
+      .mockResolvedValue([acceptedActiveErrand, ...MOCK_MY_ERRANDS])
+    renderPage()
+    await screen.findByText('2 available')
+
+    const openCard = screen
+      .getAllByRole('article')
+      .find((card) => within(card).queryByText('Nasi Lemak + Iced Milo'))
+    expect(openCard).toBeDefined()
+
+    fireEvent.click(within(openCard!).getByRole('button', { name: 'Accept errand' }))
+    const dialog = screen.getByRole('dialog', { name: 'Ready to make this delivery?' })
+    expect(dialog).toHaveTextContent('The Deck')
+    expect(dialog).toHaveTextContent('UTown Residence')
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Accept errand' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(acceptErrandMock).toHaveBeenCalledWith(openErrand.id, expect.any(AbortSignal))
+    expect(await screen.findByText('1 available')).toBeInTheDocument()
+    const panel = screen.getByRole('complementary')
+    expect(within(panel).getByText('5')).toBeInTheDocument()
     expect(
-      within(panel).getByText('Errands you request or accept will appear here.'),
-    ).toBeInTheDocument()
+      within(panel)
+        .getAllByRole('link', { name: 'View details →' })
+        .some((link) => link.getAttribute('href') === `/errands/${openErrand.id}`),
+    ).toBe(true)
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
+      'Nasi Lemak + Iced Milo was added to your active errands.',
+    )
+  })
+
+  it('lets the user leave the acceptance dialog without changing the lists', async () => {
+    renderPage()
+    await screen.findByText('2 available')
+
+    const openCard = screen
+      .getAllByRole('article')
+      .find((card) => within(card).queryByText('Print and bind project report'))
+    fireEvent.click(within(openCard!).getByRole('button', { name: 'Accept errand' }))
+    const dialog = screen.getByRole('dialog', { name: 'Ready to make this delivery?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Go back' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByText('2 available')).toBeInTheDocument()
   })
 })

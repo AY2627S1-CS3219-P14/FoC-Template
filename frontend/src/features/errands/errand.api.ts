@@ -1,9 +1,14 @@
 import { authenticatedFetch } from '../auth/auth.fetch'
 import type {
+  AcceptErrandResponse,
+  CancelErrandResponse,
+  CompleteErrandResponse,
   CreateErrandRequest,
   CreateErrandResponse,
+  ErrandListItem,
   ErrandListResponse,
   ErrandValidationIssue,
+  FailErrandResponse,
   ListErrandsParams,
 } from './errand.types'
 
@@ -34,6 +39,44 @@ export class ErrandApiError extends Error {
     this.status = status
     this.issues = issues
   }
+}
+
+async function postErrandAction<T>(
+  path: string,
+  request: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<T> {
+  let response: Response
+
+  try {
+    response = await authenticatedFetch(`${orderApiBaseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+      signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error
+    throw new ErrandApiError('Could not connect to the Order Service.', 0)
+  }
+
+  if (!response.ok) {
+    const problem = (await response.json().catch(() => null)) as OrderApiProblem | null
+    const issues = Array.isArray(problem?.detail)
+      ? problem.detail.filter(isValidationIssue)
+      : []
+    const message =
+      typeof problem?.detail === 'string'
+        ? problem.detail
+        : issues[0]?.msg ?? 'Unable to update the errand right now. Please try again.'
+
+    throw new ErrandApiError(message, response.status, issues)
+  }
+
+  return (await response.json()) as T
 }
 
 export async function listErrands(
@@ -108,6 +151,53 @@ export async function listErrands(
   }
 
   return (await response.json()) as ErrandListResponse
+}
+
+export async function getErrand(
+  errandId: string,
+  signal?: AbortSignal,
+): Promise<ErrandListItem> {
+  const response = await listErrands({ errandId, page: 0, size: 1 }, signal)
+  const errand = response.items[0]
+
+  if (!errand) throw new ErrandApiError('Errand not found.', 404)
+  return errand
+}
+
+export function acceptErrand(errandId: string, signal?: AbortSignal) {
+  return postErrandAction<AcceptErrandResponse>(
+    '/errand/accept',
+    { errand_id: errandId },
+    signal,
+  )
+}
+
+export function cancelErrand(errandId: string, signal?: AbortSignal) {
+  return postErrandAction<CancelErrandResponse>(
+    '/errand/cancel',
+    { errand_id: errandId },
+    signal,
+  )
+}
+
+export function completeErrand(errandId: string, signal?: AbortSignal) {
+  return postErrandAction<CompleteErrandResponse>(
+    '/errand/complete',
+    { errand_id: errandId },
+    signal,
+  )
+}
+
+export function failErrand(
+  errandId: string,
+  failureReason: string,
+  signal?: AbortSignal,
+) {
+  return postErrandAction<FailErrandResponse>(
+    '/errand/fail',
+    { errand_id: errandId, failure_reason: failureReason },
+    signal,
+  )
 }
 
 export async function createErrand(

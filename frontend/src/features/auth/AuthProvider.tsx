@@ -3,6 +3,7 @@ import { AuthApiError, login, logout } from './auth.api'
 import { AuthContext, type AuthContextValue, type AuthStatus } from './auth.context'
 import {
   clearAccessToken,
+  getAccessTokenSubject,
   getAccessToken,
   refreshAccessToken,
   setAccessToken,
@@ -15,21 +16,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<AuthStatus>(
     mockAuthEnabled ? 'authenticated' : 'loading',
   )
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     if (mockAuthEnabled) return
 
     let active = true
     const unsubscribe = subscribeToSessionExpiry(() => {
-      if (active) setStatus('unauthenticated')
+      if (active) {
+        setCurrentUserId(null)
+        setStatus('unauthenticated')
+      }
     })
 
     refreshAccessToken()
-      .then(() => {
-        if (active) setStatus('authenticated')
+      .then((token) => {
+        if (active) {
+          setCurrentUserId(getAccessTokenSubject(token))
+          setStatus('authenticated')
+        }
       })
       .catch(() => {
-        if (active) setStatus('unauthenticated')
+        if (active) {
+          setCurrentUserId(null)
+          setStatus('unauthenticated')
+        }
       })
 
     return () => {
@@ -41,9 +52,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
+      currentUserId,
       async signIn(credentials) {
         const session = await login(credentials)
         setAccessToken(session.accessToken)
+        setCurrentUserId(getAccessTokenSubject(session.accessToken))
         setStatus('authenticated')
       },
       async signOut() {
@@ -64,11 +77,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
           // Local authentication is still cleared when the API is unavailable.
         } finally {
           clearAccessToken()
+          setCurrentUserId(null)
           setStatus('unauthenticated')
         }
       },
     }),
-    [status],
+    [currentUserId, status],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

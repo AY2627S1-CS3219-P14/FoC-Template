@@ -40,7 +40,7 @@ export function AcceptErrandDialog({
         aria-describedby="accept-errand-description"
         tabIndex={-1}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') onClose()
+          if (event.key === 'Escape' && !isSubmitting) onClose()
         }}
         className="w-full max-w-md rounded-[18px] border border-[#dde3de] bg-white p-5 shadow-[0_24px_64px_rgba(13,60,45,0.22)] sm:p-6"
       >

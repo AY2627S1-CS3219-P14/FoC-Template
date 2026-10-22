@@ -36,29 +36,17 @@ export function CreditProvider({ children }: PropsWithChildren) {
   }, [])
 
   useEffect(() => {
-    const controller = new AbortController()
-    requestControllerRef.current = controller
+    let active = true
 
-    getAvailableBalance(controller.signal)
-      .then((balance) => {
-        if (!controller.signal.aborted) {
-          setAvailableBalance(balance)
-          setStatus('ready')
-        }
-      })
-      .catch((requestError: unknown) => {
-        if (controller.signal.aborted) return
-        setAvailableBalance(null)
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : 'Unable to load your credit balance.',
-        )
-        setStatus('error')
-      })
+    queueMicrotask(() => {
+      if (active) void refreshBalance()
+    })
 
-    return () => controller.abort()
-  }, [])
+    return () => {
+      active = false
+      requestControllerRef.current?.abort()
+    }
+  }, [refreshBalance])
 
   const value = useMemo<CreditContextValue>(
     () => ({ availableBalance, status, error, refreshBalance }),

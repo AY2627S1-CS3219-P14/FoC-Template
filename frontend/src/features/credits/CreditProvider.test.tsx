@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAvailableBalance } from './credit.api'
 import { CreditProvider } from './CreditProvider'
@@ -43,5 +43,25 @@ describe('CreditProvider', () => {
     screen.getByRole('button', { name: 'Refresh' }).click()
     expect(await screen.findByText('0')).toBeInTheDocument()
     expect(screen.getByText('ready')).toBeInTheDocument()
+  })
+
+  it('aborts a refresh that is still active when unmounted', async () => {
+    getAvailableBalanceMock.mockResolvedValueOnce(30)
+    const { unmount } = render(<CreditProvider><Consumer /></CreditProvider>)
+    expect(await screen.findByText('30')).toBeInTheDocument()
+
+    let refreshSignal: AbortSignal | undefined
+    getAvailableBalanceMock.mockImplementationOnce(
+      (signal) =>
+        new Promise((resolve) => {
+          refreshSignal = signal
+          signal?.addEventListener('abort', () => resolve(25))
+        }),
+    )
+    screen.getByRole('button', { name: 'Refresh' }).click()
+    await waitFor(() => expect(refreshSignal).toBeDefined())
+
+    unmount()
+    expect(refreshSignal?.aborted).toBe(true)
   })
 })

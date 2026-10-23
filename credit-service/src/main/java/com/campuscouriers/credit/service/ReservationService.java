@@ -26,6 +26,19 @@ public class ReservationService {
 
     private final WalletService walletService;
 
+    @Transactional(readOnly = true)
+    public void assertOwnedBy(UUID reservationId, UUID userId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(ReservationNotFoundException::new);
+        Wallet wallet = walletRepository.findByUserUuid(userId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.FORBIDDEN, "Reservation is not owned by caller"));
+        if (!wallet.getWalletId().equals(reservation.getWalletId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Reservation is not owned by caller");
+        }
+    }
+
     public ReservationService(WalletRepository walletRepository,
                             ReservationRepository reservationRepository,
                             WalletService walletService) {
@@ -118,10 +131,14 @@ public class ReservationService {
 
 
     @Transactional
-    public ReservationResponse completeReservation(UUID reservationId, UUID courierUserId) {
+    public ReservationResponse completeReservation(UUID reservationId, UUID courierUserId, UUID orderId) {
         // Lock order: reservation first, then both wallets in ascending wallet ID order
         Reservation reservation = reservationRepository.findWithLockByReservationId(reservationId)
                 .orElseThrow(() -> new ReservationNotFoundException());
+        if (!reservation.getOrderId().equals(orderId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT, "Order ID does not match reservation");
+        }
  
         UUID requesterWalletId = reservation.getWalletId();
  

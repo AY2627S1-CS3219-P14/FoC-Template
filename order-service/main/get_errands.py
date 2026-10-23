@@ -48,6 +48,8 @@ def available_errands(now: datetime):
         Errand.status == ErrandStatus.OPEN,
         Errand.expires_at > now,
         Errand.courier_id.is_(None),
+        Errand.pending_credit_action.is_(None),
+        Errand.credit_reservation_id.is_not(None),
         Errand.accepted_at.is_(None),
         Errand.completed_at.is_(None),
         Errand.cancelled_at.is_(None),

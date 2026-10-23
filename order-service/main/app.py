@@ -26,7 +26,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_allowed_origins,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
+    expose_headers=["Idempotency-Key"],
 )
 
 app.include_router(create_errand_router)

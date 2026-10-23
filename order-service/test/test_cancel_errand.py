@@ -6,12 +6,13 @@ from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from main import accept_errand, cancel_errand
+from main import accept_errand, cancel_errand, credit_operations
 from main.app import app
 from main.database import Base
 from main.models import Errand, ErrandStatus
@@ -45,7 +46,8 @@ def database(monkeypatch):
 def endpoint(database, monkeypatch):
     claims = {"sub": str(uuid4()), "type": "Student"}
     release = Mock(return_value=True)
-    monkeypatch.setattr(cancel_errand, "release_reserved_credits", release)
+    credit_client = Mock(release=release)
+    monkeypatch.setattr(credit_operations, "CreditClient", lambda token: credit_client)
     previous = app.dependency_overrides.copy()
     app.dependency_overrides[cancel_errand.verified_claims] = lambda: claims
     try:
@@ -85,7 +87,7 @@ def test_cancel_records_timestamp_and_releases_credits(endpoint):
     assert body["id"] == str(errand["id"])
     assert body["status"] == "CANCELLED"
     assert body["cancelled_at"] is not None
-    release.assert_called_once_with(errand["credit_value"], claims["sub"])
+    release.assert_called_once_with(errand["credit_reservation_id"], errand["id"], errand["credit_value"])
     with factory() as db:
         stored = db.get(Errand, errand["id"])
         assert stored.status == ErrandStatus.CANCELLED
@@ -147,11 +149,11 @@ def test_repeated_cancellation_does_not_release_twice(endpoint):
 def test_failed_release_rolls_back_and_allows_retry(endpoint):
     client, claims, factory, release = endpoint
     errand = own_errand(claims, factory)
-    release.return_value = False
+    release.side_effect = HTTPException(503, "Credit unavailable")
     response = post(client, errand["id"])
     assert response.status_code == 503
     assert_open(factory, errand["id"])
-    release.return_value = True
+    release.side_effect = None
     assert post(client, errand["id"]).status_code == 200
 
 
@@ -169,7 +171,8 @@ def test_commit_failure_rolls_back_cancellation(endpoint):
     errand = own_errand(claims, factory)
 
     def reject_commit(session):
-        raise RuntimeError("Commit failed")
+        if any(isinstance(row, Errand) and row.status == ErrandStatus.CANCELLED for row in session.dirty):
+            raise RuntimeError("Commit failed")
 
     event.listen(factory, "before_commit", reject_commit)
     try:
@@ -210,7 +213,8 @@ def test_concurrent_postgres_transition_has_one_winner(postgres_database, monkey
     factory = postgres_database
     monkeypatch.setattr(cancel_errand, "SessionLocal", factory)
     release = Mock(return_value=True)
-    monkeypatch.setattr(cancel_errand, "release_reserved_credits", release)
+    credit_client = Mock(release=release)
+    monkeypatch.setattr(credit_operations, "CreditClient", lambda token: credit_client)
     errand = seed(factory)
     barrier = Barrier(2)
 
@@ -221,6 +225,7 @@ def test_concurrent_postgres_transition_has_one_winner(postgres_database, monkey
                 response = cancel_errand.cancel_errand_request(
                     cancel_errand.CancelErrandRequest(errand_id=errand["id"]),
                     {"sub": str(errand["requester_id"])},
+                    HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token"),
                 )
             else:
                 response = accept_errand.accept_errand_request(

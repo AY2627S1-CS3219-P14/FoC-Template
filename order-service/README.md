@@ -2,11 +2,11 @@
 
 This folder contains one FastAPI order service:
 
-- `main/create_errand.py`: `POST /errand/create` validates the request, verifies the JWT and supplier, checks and reserves credits using placeholders, and saves an open errand to PostgreSQL.
+- `main/create_errand.py`: `POST /errand/create` validates the request, verifies the JWT and supplier, checks and reserves credits through Credit Service, and saves an open errand to PostgreSQL.
 - `main/accept_errand.py`: `POST /errand/accept` atomically assigns an open, unexpired errand to the authenticated courier.
-- `main/cancel_errand.py`: `POST /errand/cancel` lets the requester cancel an open, unexpired errand and calls a credit-release placeholder.
-- `main/complete_errand.py`: `POST /errand/complete` lets the requester confirm completion of an accepted, unexpired errand and calls a credit-transfer placeholder.
-- `main/fail_errand.py`: `POST /errand/fail` lets the requester report failure of an accepted, unexpired errand with a required reason and calls the credit-release placeholder.
+- `main/cancel_errand.py`: `POST /errand/cancel` lets the requester cancel an open, unexpired errand and releases its credit reservation.
+- `main/complete_errand.py`: `POST /errand/complete` lets the requester confirm completion of an accepted, unexpired errand and transfers reserved credits to the courier.
+- `main/fail_errand.py`: `POST /errand/fail` lets the requester report failure of an accepted, unexpired errand with a required reason and releases its credit reservation.
 - `main/get_errands.py`: `GET /errands` lists available open errands and the caller's own/assigned errands, or all errands for administrators.
 - `main/app.py`: registers the route modules in one FastAPI application.
 
@@ -86,11 +86,12 @@ cannot supply requester, courier, or status fields. Invalid input or an unavaila
 supplier returns 422. Insufficient credits or a rejected reservation returns 409;
 an unavailable Supplier Service returns 503.
 
-`verify_credit_value` and `reserve_credits` currently return `True` without contacting
-Credit Service. Reservation is called only after validation, supplier verification,
-and balance verification succeed. Delivery building UUID syntax is validated, but
-building existence is not yet checked. When real reservations are added, failed
-database inserts must release reserved credits, and retries need idempotent handling.
+Creation reads available balance and reserves through Credit Service only after
+validation and supplier verification. Reservation itself enforces the balance atomically.
+The errand UUID is generated before reserving and stored as the reservation orderId;
+the returned reservation UUID is saved internally. See the credit integration section
+below for required configuration, idempotency keys and retry/recovery behaviour.
+Delivery building UUID syntax is validated, but building existence is not yet checked.
 
 ## Accept an errand
 
@@ -103,7 +104,7 @@ Send a bearer token and only the errand UUID in the JSON body:
 `POST /errand/accept` returns 200 with `id`, `status`, `courier_id`, and `accepted_at`.
 The courier UUID comes from the verified JWT. Missing/invalid/extra body fields
 return 422, self-acceptance returns 403, an unknown errand returns 404, and a
-non-open, expired, or already assigned errand returns 409. Acceptance executes as
+non-open, expired, assigned, unfunded legacy, or pending-credit errand returns 409. Acceptance executes as
 one conditional PostgreSQL update so concurrent couriers cannot both succeed.
 Expired errands are rejected here; changing them to EXPIRED and releasing credits
 belongs to the separate expiry workflow. No schema migration is needed for acceptance.
@@ -129,12 +130,11 @@ and invalid request bodies return 422. Repeated or concurrent cancellation canno
 invoke credit release twice after a successful cancellation. Acceptance and cancellation
 compete through conditional updates to the same PostgreSQL row.
 
-`release_reserved_credits(credit_value, requester_id)` currently returns `True`
-without changing any balance. A `False` result returns 503 and rolls back cancellation;
-an exception also rolls back the database update. Before implementing a real external
-credit release, add reservation identity, idempotent release and failure recovery:
-a database rollback cannot undo a release already performed by another service.
-No additional schema migration is needed for this endpoint.
+Cancellation persists a credit-operation intent before calling the reservation-release
+API. On success, cancellation and its domain event commit together. On an unknown
+result or failure, the original state remains and the pending intent blocks conflicting
+actions. Retry cancellation with a valid requester token to recover the same reservation;
+see the integration section below. Migration 0005 adds the necessary internal fields.
 
 Run `python -m pytest -q test/test_cancel_errand.py` from this directory. Set
 `TEST_ORDER_DATABASE_URL` as above to also test concurrent cancellation and
@@ -146,22 +146,23 @@ Only the requester may terminate an ACCEPTED, unexpired errand with an assigned
 courier. Both endpoints obtain the requester UUID from the verified bearer token.
 
 `POST /errand/complete` accepts only `{"errand_id": "<errand UUID>"}`. It sets
-COMPLETED and `completed_at`, calls `transfer_reserved_credits(credit_value,
-requester_id, courier_id)`, and returns 200 with `id`, `status`, and `completed_at`.
+COMPLETED and `completed_at` after Credit Service completes the stored reservation
+for the assigned courier, and returns 200 with `id`, `status`, and `completed_at`.
 
 `POST /errand/fail` accepts `{"errand_id": "<errand UUID>", "failure_reason":
 "Missing items"}`. The reason is required, trimmed, nonblank, and limited to 500
 characters. It sets FAILED, `failed_at`, and `failure_reason`, calls the shared
-credit-release placeholder, and returns 200 with those fields and `id`.
+reservation-release API, and returns 200 with those fields and `id`.
 
 Both return 403 for another user (including the courier), 404 for an unknown errand,
 409 for an invalid state/expired deadline/missing courier, and 422 for invalid inputs.
-A reported credit failure returns 503 and rolls back the state transition. Credit
-operations remain placeholders. Real external operations require reservation identity,
-idempotency and recovery if the credit operation succeeds but database commit fails.
+Credit conflicts return 409; unavailable services return 503; rejected credentials
+return 401/403; invalid upstream success responses return 502. Durable intents make
+the same operation retryable when the HTTP result or final database commit is unknown.
+A pending operation cannot be replaced with a different terminal action.
 Repeated or competing completion/failure requests cannot both commit successfully.
 
-No schema migration is needed. Run `python -m pytest -q test` for the service suite.
+Apply migration 0005 before using credit integration. Run `python -m pytest -q test` for the service suite.
 Set `TEST_ORDER_DATABASE_URL` to also run PostgreSQL terminal-state concurrency tests.
 The separate sibling integration-test suite has not been changed. Automatic expiry
 remains a separate feature.
@@ -169,7 +170,8 @@ remains a separate feature.
 ## List errands and view details
 
 `GET /errands` requires a verified bearer token. Regular users can see available
-OPEN errands, plus errands in any status where they are the requester or assigned
+OPEN errands backed by a credit reservation with no pending credit action, plus
+errands in any status where they are the requester or assigned
 courier. Available means unexpired, unassigned OPEN with no leftover lifecycle
 timestamps or failure reason. Administrators (`type: Administrator` in the verified
 JWT) can see all errands, including overdue ones. Request parameters never grant
@@ -197,8 +199,7 @@ Couriers view completion confirmation using `GET /errands?errand_id=<uuid>`:
 the returned item's COMPLETED status and `completed_at` show the requester's
 confirmation, including after the deadline. Before confirmation an ACCEPTED errand
 has `completed_at: null`. This replaces the separate completion-confirmation route.
-It reads the recorded decision, not independently verified credit settlement while
-Credit Service calls are placeholders.
+It reads the recorded decision after the reservation completion call succeeds.
 
 Examples:
 
@@ -226,3 +227,6 @@ an atomic safeguard against supplier deactivation racing with creation.
 No schema migration is needed. Run `python -m pytest -q test/test_get_errands.py`.
 The expiry worker/background trigger and Supplier Service integration remain future
 work. The separate sibling integration-test suite has not been changed.
+
+See [CREDIT_INTEGRATION.md](CREDIT_INTEGRATION.md) for required configuration,
+migration 0005, idempotency/recovery behaviour and repeatable Docker tests.

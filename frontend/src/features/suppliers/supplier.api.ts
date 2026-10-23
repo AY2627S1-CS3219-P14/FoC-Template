@@ -1,4 +1,5 @@
 import type {
+  Supplier,
   SupplierListResponse,
   SupplierReferenceListResponse,
 } from './supplier.types'
@@ -76,6 +77,10 @@ export async function listSuppliers(
   if (buildingId) searchParams.set('buildingId', buildingId)
 
   return getJson<SupplierListResponse>(`/suppliers?${searchParams}`, signal)
+}
+
+export function getSupplier(supplierId: string, signal?: AbortSignal) {
+  return getJson<Supplier>(`/suppliers/${encodeURIComponent(supplierId)}`, signal)
 }
 
 export function listSupplierCategories(signal?: AbortSignal) {

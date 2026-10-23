@@ -24,11 +24,12 @@ const logoutMock = vi.mocked(logout)
 const refreshSessionMock = vi.mocked(refreshSession)
 
 function AuthProbe() {
-  const { status, signIn, signOut } = useAuth()
+  const { status, currentUserId, signIn, signOut } = useAuth()
 
   return (
     <div>
       <span>{status}</span>
+      <span>{currentUserId ?? 'no-user'}</span>
       <button
         type="button"
         onClick={() => signIn({ email: 'student@u.nus.edu', password: 'password' })}
@@ -44,10 +45,24 @@ function AuthProbe() {
 
 describe('AuthProvider', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs()
     loginMock.mockReset()
     logoutMock.mockReset()
     refreshSessionMock.mockReset()
     clearAccessToken()
+  })
+
+  it('skips session restoration when mock authentication is enabled in development', () => {
+    vi.stubEnv('VITE_MOCK_AUTH', 'true')
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>,
+    )
+
+    expect(screen.getByText('authenticated')).toBeInTheDocument()
+    expect(refreshSessionMock).not.toHaveBeenCalled()
   })
 
   it('restores a browser session through the refresh cookie and logs out that session', async () => {

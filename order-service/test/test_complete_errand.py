@@ -4,6 +4,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import event
 
+from fastapi import HTTPException
+
 from main import complete_errand
 from main.app import app
 from main.models import Errand, ErrandStatus
@@ -23,8 +25,8 @@ def test_success_records_transition_and_calls_credit_operation(terminal_endpoint
     assert body["status"] == "COMPLETED"
     assert body["completed_at"] is not None
     credit.assert_called_once_with(
-        fields["credit_value"], claims["sub"],
-        str(fields["courier_id"]),
+        fields["credit_reservation_id"], fields["id"], fields["credit_value"],
+        fields["courier_id"],
     )
     with factory() as db:
         stored = db.get(Errand, fields["id"])
@@ -91,10 +93,10 @@ def test_repeated_request_does_not_repeat_credit_operation(terminal_endpoint):
 
 def test_credit_failure_rolls_back_and_allows_retry(terminal_endpoint):
     client, _, factory, credit, fields = terminal_endpoint
-    credit.return_value = False
+    credit.side_effect = HTTPException(503, "Credit unavailable")
     assert post(client, ACTION, fields["id"]).status_code == 503
     assert_accepted(factory, fields["id"])
-    credit.return_value = True
+    credit.side_effect = None
     assert post(client, ACTION, fields["id"]).status_code == 200
 
 
@@ -110,7 +112,8 @@ def test_commit_failure_rolls_back(terminal_endpoint):
     client, _, factory, credit, fields = terminal_endpoint
 
     def reject_commit(session):
-        raise RuntimeError("Commit failed")
+        if any(isinstance(row, Errand) and row.status == ErrandStatus.COMPLETED for row in session.dirty):
+            raise RuntimeError("Commit failed")
 
     event.listen(factory, "before_commit", reject_commit)
     try:

@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from main import complete_errand, fail_errand
+from main import complete_errand, fail_errand, credit_operations
 from main.app import app
 from main.database import Base
 from main.models import Errand, ErrandStatus
@@ -38,7 +38,9 @@ def terminal_endpoint(request, monkeypatch):
     factory = sessionmaker(bind=engine)
     monkeypatch.setattr(module, "SessionLocal", factory)
     credit = Mock(return_value=True)
-    monkeypatch.setattr(module, effect_name, credit)
+    credit_client = Mock()
+    setattr(credit_client, "complete" if action == "complete" else "release", credit)
+    monkeypatch.setattr(credit_operations, "CreditClient", lambda token: credit_client)
     fields = seed(factory, status=ErrandStatus.ACCEPTED,
                   courier_id=uuid4(), accepted_at=datetime.now(timezone.utc))
     claims = {"sub": str(fields["requester_id"]), "type": "Student"}

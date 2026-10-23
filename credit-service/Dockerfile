@@ -12,6 +12,9 @@ COPY src ./src
 RUN mvn package -B -DskipTests \
     && cp target/*.jar /workspace/app.jar
 
+FROM build AS contract-tests
+RUN mvn -B -Dtest=ReservationContractTests test
+
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app

@@ -8,7 +8,12 @@ describe('LoginPage', () => {
   it('links to account registration and confirms completed registration', () => {
     render(
       <AuthContext.Provider
-        value={{ status: 'unauthenticated', signIn: vi.fn(), signOut: vi.fn() }}
+        value={{
+          status: 'unauthenticated',
+          currentUserId: null,
+          signIn: vi.fn(),
+          signOut: vi.fn(),
+        }}
       >
         <MemoryRouter
           initialEntries={[{ pathname: '/login', state: { registrationComplete: true } }]}

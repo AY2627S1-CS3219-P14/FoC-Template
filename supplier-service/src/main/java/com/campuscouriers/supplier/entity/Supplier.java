@@ -119,4 +119,12 @@ public class Supplier {
         this.closingTime = closingTime;
         this.imageUrl = imageUrl;
     }
+
+    public void deactivate() {
+        this.status = SupplierStatus.INACTIVE;
+    }
+
+    public void reactivate() {
+        this.status = SupplierStatus.ACTIVE;
+    }
 }

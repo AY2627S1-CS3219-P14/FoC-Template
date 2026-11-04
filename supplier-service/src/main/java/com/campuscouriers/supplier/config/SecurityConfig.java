@@ -32,6 +32,9 @@ public class SecurityConfig {
                         .hasAuthority("Administrator")
                         .requestMatchers(HttpMethod.PUT, "/suppliers/**")
                         .hasAuthority("Administrator")
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/suppliers/*/deactivate", "/suppliers/*/reactivate")
+                        .hasAuthority("Administrator")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
@@ -46,7 +49,7 @@ public class SecurityConfig {
                 .map(String::trim)
                 .filter(origin -> !origin.isEmpty())
                 .toList());
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Location"));
         configuration.setMaxAge(3600L);

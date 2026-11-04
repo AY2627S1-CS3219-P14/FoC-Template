@@ -221,6 +221,59 @@ class SupplierServiceTest {
         verifyNoInteractions(supplierEventPublisher);
     }
 
+    @Test
+    void deactivate_existingSupplier_marksItInactiveAndReturnsUpdatedResponse() {
+        UUID supplierId = UUID.randomUUID();
+        Supplier supplier = supplier("Coffee Bean", category, building);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+        when(supplierRepository.saveAndFlush(supplier)).thenReturn(supplier);
+
+        var response = supplierService.deactivate(supplierId);
+
+        assertThat(supplier.getStatus()).isEqualTo(SupplierStatus.INACTIVE);
+        assertThat(response.status()).isEqualTo(SupplierStatus.INACTIVE);
+        verify(supplierRepository).saveAndFlush(supplier);
+    }
+
+    @Test
+    void deactivate_unknownSupplier_throwsAndDoesNotSave() {
+        UUID supplierId = UUID.randomUUID();
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> supplierService.deactivate(supplierId))
+                .isInstanceOf(ReferenceNotFoundException.class);
+
+        verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void reactivate_inactiveSupplier_marksItActiveAndReturnsUpdatedResponse() {
+        UUID supplierId = UUID.randomUUID();
+        Supplier supplier = supplier("Coffee Bean", category, building);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+        supplier.deactivate();
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+        when(supplierRepository.saveAndFlush(supplier)).thenReturn(supplier);
+
+        var response = supplierService.reactivate(supplierId);
+
+        assertThat(supplier.getStatus()).isEqualTo(SupplierStatus.ACTIVE);
+        assertThat(response.status()).isEqualTo(SupplierStatus.ACTIVE);
+        verify(supplierRepository).saveAndFlush(supplier);
+    }
+
+    @Test
+    void reactivate_unknownSupplier_throwsAndDoesNotSave() {
+        UUID supplierId = UUID.randomUUID();
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> supplierService.reactivate(supplierId))
+                .isInstanceOf(ReferenceNotFoundException.class);
+
+        verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
     private Supplier supplier(String name, Category supplierCategory, Building supplierBuilding) {
         return new Supplier(
                 name, name.toLowerCase(Locale.ROOT), supplierCategory, supplierBuilding,

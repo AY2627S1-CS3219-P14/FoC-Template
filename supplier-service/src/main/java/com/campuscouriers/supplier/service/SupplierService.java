@@ -175,6 +175,24 @@ public class SupplierService {
         return SupplierResponse.from(saved);
     }
 
+    @Transactional
+    public SupplierResponse deactivate(UUID id) {
+        Supplier supplier = supplierRepository.findById(id)
+                .orElseThrow(() -> new ReferenceNotFoundException("Supplier", id));
+
+        supplier.deactivate();
+        return SupplierResponse.from(supplierRepository.saveAndFlush(supplier));
+    }
+
+    @Transactional
+    public SupplierResponse reactivate(UUID id) {
+        Supplier supplier = supplierRepository.findById(id)
+                .orElseThrow(() -> new ReferenceNotFoundException("Supplier", id));
+
+        supplier.reactivate();
+        return SupplierResponse.from(supplierRepository.saveAndFlush(supplier));
+    }
+
     private Category activeCategory(UUID id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ReferenceNotFoundException("Category", id));

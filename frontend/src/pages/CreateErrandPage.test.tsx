@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createErrand, ErrandApiError } from '../features/errands/errand.api'
 import type { CreateErrandResponse } from '../features/errands/errand.types'
+import { useCredits } from '../features/credits/useCredits'
 import { listSupplierBuildings, listSuppliers } from '../features/suppliers/supplier.api'
 import type { Supplier, SupplierReference } from '../features/suppliers/supplier.types'
 import { CreateErrandPage } from './CreateErrandPage'
@@ -31,9 +32,15 @@ vi.mock('../features/errands/errand.api', () => ({
   },
 }))
 
+vi.mock('../features/credits/useCredits', () => ({
+  useCredits: vi.fn(),
+}))
+
 const listSuppliersMock = vi.mocked(listSuppliers)
 const listSupplierBuildingsMock = vi.mocked(listSupplierBuildings)
 const createErrandMock = vi.mocked(createErrand)
+const useCreditsMock = vi.mocked(useCredits)
+const refreshBalanceMock = vi.fn<() => Promise<void>>()
 
 const suppliers: Supplier[] = [
   {
@@ -143,6 +150,14 @@ describe('CreateErrandPage', () => {
     listSuppliersMock.mockReset()
     listSupplierBuildingsMock.mockReset()
     createErrandMock.mockReset()
+    refreshBalanceMock.mockReset()
+    refreshBalanceMock.mockResolvedValue()
+    useCreditsMock.mockReturnValue({
+      availableBalance: 24,
+      status: 'ready',
+      error: null,
+      refreshBalance: refreshBalanceMock,
+    })
     listSuppliersMock.mockResolvedValue(supplierResponse)
     listSupplierBuildingsMock.mockResolvedValue({ items: buildings })
     createErrandMock.mockResolvedValue(createdErrand)
@@ -164,6 +179,52 @@ describe('CreateErrandPage', () => {
       expect.any(AbortSignal),
     )
     expect(listSupplierBuildingsMock).toHaveBeenCalledWith(expect.any(AbortSignal))
+  })
+
+  it('uses the wallet balance for display and credit validation', async () => {
+    useCreditsMock.mockReturnValue({
+      availableBalance: 7,
+      status: 'ready',
+      error: null,
+      refreshBalance: refreshBalanceMock,
+    })
+    renderPage('/errands/new')
+    await fillValidForm()
+
+    expect(screen.getByText('7 available')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/credits/i), { target: { value: '8' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create errand' }))
+
+    expect(screen.getByText('You only have 7 credits available.')).toBeInTheDocument()
+    expect(createErrandMock).not.toHaveBeenCalled()
+  })
+
+  it('prevents submission while the wallet balance is loading', async () => {
+    useCreditsMock.mockReturnValue({
+      availableBalance: null,
+      status: 'loading',
+      error: null,
+      refreshBalance: refreshBalanceMock,
+    })
+    renderPage('/errands/new')
+
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Loading your balance…')
+    expect(screen.getByLabelText(/credits/i)).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Create errand' })).toBeDisabled()
+  })
+
+  it('allows retrying a failed wallet balance request', () => {
+    useCreditsMock.mockReturnValue({
+      availableBalance: null,
+      status: 'error',
+      error: 'Wallet unavailable',
+      refreshBalance: refreshBalanceMock,
+    })
+    renderPage('/errands/new')
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Wallet unavailable')
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(refreshBalanceMock).toHaveBeenCalledOnce()
   })
 
   it('starts without a supplier when opened directly', async () => {
@@ -275,6 +336,7 @@ describe('CreateErrandPage', () => {
       expect.any(AbortSignal),
     )
     expect(screen.getByRole('button', { name: 'Errand created' })).toBeDisabled()
+    expect(refreshBalanceMock).toHaveBeenCalledOnce()
   })
 
   it('prevents duplicate submissions while creation is in progress', async () => {

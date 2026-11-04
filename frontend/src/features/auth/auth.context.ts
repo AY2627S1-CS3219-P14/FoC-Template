@@ -5,6 +5,7 @@ export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
 
 export type AuthContextValue = {
   status: AuthStatus
+  currentUserId: string | null
   signIn: (credentials: LoginCredentials) => Promise<void>
   signOut: () => Promise<void>
 }

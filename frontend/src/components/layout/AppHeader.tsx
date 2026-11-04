@@ -3,9 +3,11 @@ import { Link } from 'react-router'
 import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'
 import { useAuth } from '../../features/auth/useAuth'
+import { useCredits } from '../../features/credits/useCredits'
 
 export function AppHeader() {
   const { signOut } = useAuth()
+  const { availableBalance, status: creditStatus, refreshBalance } = useCredits()
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   async function handleSignOut() {
@@ -31,11 +33,25 @@ export function AppHeader() {
       </Link>
 
       <div className="flex items-center gap-2.5 text-sm text-[#17211d] lg:gap-3">
-        <span className="flex items-center gap-2 rounded-full bg-[#fff3d8] px-2.5 py-2 lg:px-3.5">
+        <span
+          className="flex items-center gap-2 rounded-full bg-[#fff3d8] px-2.5 py-2 lg:px-3.5"
+          aria-live="polite"
+        >
           <img src={creditCoin} alt="" width="18" height="18" className="size-4 lg:size-[18px]" />
-          <span className="hidden sm:inline">24 credits</span>
-          <span className="sm:hidden">24</span>
+          <span className="hidden sm:inline">
+            {creditStatus === 'ready' ? `${availableBalance} credits` : '— credits'}
+          </span>
+          <span className="sm:hidden">{creditStatus === 'ready' ? availableBalance : '—'}</span>
         </span>
+        {creditStatus === 'error' ? (
+          <button
+            type="button"
+            onClick={() => void refreshBalance()}
+            className="cursor-pointer text-xs font-semibold text-[#175c45] underline underline-offset-2"
+          >
+            Retry balance
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={handleSignOut}

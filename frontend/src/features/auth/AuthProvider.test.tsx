@@ -24,11 +24,12 @@ const logoutMock = vi.mocked(logout)
 const refreshSessionMock = vi.mocked(refreshSession)
 
 function AuthProbe() {
-  const { status, signIn, signOut } = useAuth()
+  const { status, currentUserId, signIn, signOut } = useAuth()
 
   return (
     <div>
       <span>{status}</span>
+      <span>{currentUserId ?? 'no-user'}</span>
       <button
         type="button"
         onClick={() => signIn({ email: 'student@u.nus.edu', password: 'password' })}

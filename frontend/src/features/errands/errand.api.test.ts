@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { authenticatedFetch } from '../auth/auth.fetch'
-import { createErrand, ErrandApiError, listErrands } from './errand.api'
+import {
+  acceptErrand,
+  cancelErrand,
+  completeErrand,
+  createErrand,
+  ErrandApiError,
+  failErrand,
+  getErrand,
+  listErrands,
+} from './errand.api'
 import type {
   CreateErrandRequest,
   CreateErrandResponse,
@@ -280,5 +289,108 @@ describe('createErrand', () => {
     authenticatedFetchMock.mockRejectedValue(abortError)
 
     await expect(createErrand(request, controller.signal)).rejects.toBe(abortError)
+  })
+})
+
+describe('errand lifecycle actions', () => {
+  beforeEach(() => {
+    authenticatedFetchMock.mockReset()
+  })
+
+  it.each([
+    ['acceptErrand', acceptErrand, '/errand/accept'],
+    ['cancelErrand', cancelErrand, '/errand/cancel'],
+    ['completeErrand', completeErrand, '/errand/complete'],
+  ] as const)('posts the errand ID for %s', async (_name, action, path) => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ id: request.supplier_id, status: 'ACCEPTED' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await action('550e8400-e29b-41d4-a716-446655440000')
+
+    const expectedBaseUrl = (import.meta.env.VITE_ORDER_API_URL ?? '').trim().replace(/\/+$/, '')
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(`${expectedBaseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ errand_id: '550e8400-e29b-41d4-a716-446655440000' }),
+      signal: undefined,
+    })
+  })
+
+  it('includes the failure reason when reporting an errand', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'FAILED',
+          failed_at: '2026-10-22T04:00:00.000Z',
+          failure_reason: 'The requested item was unavailable.',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    await failErrand(
+      '550e8400-e29b-41d4-a716-446655440000',
+      'The requested item was unavailable.',
+    )
+
+    expect(JSON.parse(String(authenticatedFetchMock.mock.calls[0][1]?.body))).toEqual({
+      errand_id: '550e8400-e29b-41d4-a716-446655440000',
+      failure_reason: 'The requested item was unavailable.',
+    })
+  })
+
+  it('preserves lifecycle conflicts returned by the service', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ detail: 'Errand is no longer OPEN' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await expect(
+      acceptErrand('550e8400-e29b-41d4-a716-446655440000'),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Errand is no longer OPEN',
+    })
+  })
+
+  it('gets a single visible errand through the list endpoint', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify(listedErrands), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await expect(
+      getErrand('550e8400-e29b-41d4-a716-446655440000'),
+    ).resolves.toEqual(listedErrands.items[0])
+
+    expect(String(authenticatedFetchMock.mock.calls[0][0])).toContain(
+      'errand_id=550e8400-e29b-41d4-a716-446655440000',
+    )
+  })
+
+  it('reports a missing visible errand as not found', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ total: 0, items: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await expect(getErrand('missing')).rejects.toMatchObject({
+      status: 404,
+      message: 'Errand not found.',
+    })
   })
 })

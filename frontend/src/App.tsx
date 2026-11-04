@@ -9,10 +9,12 @@ import { MyErrandsPage } from './pages/MyErrandsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { SuppliersPage } from './pages/SuppliersPage'
+import { AdminPreviewPage } from './pages/AdminPreviewPage'
 
 function App() {
   return (
     <Routes>
+      {import.meta.env.DEV && <Route path="admin/*" element={<AdminPreviewPage />} />}
       <Route element={<PublicOnlyRoute />}>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />

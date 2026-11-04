@@ -57,6 +57,7 @@ export function MobileBottomNav() {
       <MobileNavItem to="/errands/new">
         Create errand
       </MobileNavItem>
+      {import.meta.env.DEV && <MobileNavItem to="/admin" icon={clipboardIcon}>Admin preview</MobileNavItem>}
     </nav>
   )
 }

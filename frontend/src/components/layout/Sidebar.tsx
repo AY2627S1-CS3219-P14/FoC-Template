@@ -56,6 +56,8 @@ export function Sidebar() {
         </SidebarNavItem>
       </nav>
 
+      {import.meta.env.DEV && <NavLink to="/admin" className="mt-8 block rounded-xl border border-[#dde3de] px-3.5 py-3 text-sm font-medium text-[#175c45]">Admin dashboard <span className="text-xs text-[#68736c]">· Preview</span></NavLink>}
+
       <div className="mt-7 rounded-[18px] bg-[#0d3c2d] p-4 text-white">
         <p className="text-sm leading-5">Need something picked up on campus?</p>
         <NavLink

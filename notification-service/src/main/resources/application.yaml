@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5436}/${DB_NAME:campuscouriers_notification}
+    username: ${DB_USERNAME:notification_service}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8003

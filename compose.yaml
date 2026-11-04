@@ -256,6 +256,17 @@ services:
       - user-net
     restart: unless-stopped
 
+  notification-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME}
+      POSTGRES_USER: ${NOTIFICATION_DB_USERNAME}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+    ports:
+      - "5436:5432"
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
+
   frontend:
     build: ./frontend
     image: campuscouriers/frontend
@@ -301,3 +312,4 @@ volumes:
   supplier-db-data:
   user-db-data:
   credit-db-data:
+  notification-db-data:

@@ -72,7 +72,9 @@ class NotificationServiceApplicationTests {
                 assertThat(saved.getType()).isEqualTo(topic.replace('.', '_').toUpperCase());
                 assertThat(saved.getReadAt()).isNull();
                 if (topic.equals("errand.completed")) {
-                    assertThat(saved.getMessage()).contains("10 credits");
+                    assertThat(saved.getMessage())
+                        .isEqualTo("The requester confirmed your errand is complete.")
+                        .doesNotContain("earned", "paid", "credits");
                 }
             });
             assertCommitted(topic, result.getRecordMetadata().partition(),

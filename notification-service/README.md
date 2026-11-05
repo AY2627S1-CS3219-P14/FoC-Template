@@ -14,6 +14,8 @@ and positive integer `creditValue`. Additional payload fields are ignored.
 The UTF-8 `eventId` Kafka header must contain the original outbox UUID;
 see `../debezium/connectors/order-outbox.json`.
 Cancellation and ready-for-collection events are not consumed.
+Completion notifications confirm the requester's action; they do not claim that credits
+were transferred. The order service's credit transfer integration is currently a placeholder.
 
 ## Run locally
 

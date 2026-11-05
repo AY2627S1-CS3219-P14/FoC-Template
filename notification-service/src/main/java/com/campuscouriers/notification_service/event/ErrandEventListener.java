@@ -24,7 +24,7 @@ public class ErrandEventListener {
                 "ERRAND_ACCEPTED", event.errandId(), "Someone has accepted your errand.");
             case "errand.completed" -> notifications.save(event.eventId(), event.courierId(),
                 "ERRAND_COMPLETED", event.errandId(),
-                "Your errand is complete. You earned " + event.creditValue() + " credits.");
+                "The requester confirmed your errand is complete.");
             case "errand.failed" -> notifications.save(event.eventId(), event.courierId(),
                 "ERRAND_FAILED", event.errandId(), "The requester reported a failure with your errand.");
             default -> throw new InvalidErrandEventException("Unsupported event topic");

@@ -1,0 +1,166 @@
+# credit-service: wallets and credit reservations; consumes user.registered from Kafka.
+# Same layout as user-service.yaml, which has the full explanations.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: credit-service
+  namespace: campuscouriers-app
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: credit-service-config
+  namespace: campuscouriers-app
+data:
+  DB_HOST: credit-db
+  DB_PORT: "5432"
+  DB_NAME: campuscouriers_credit
+  USER_SERVICE_URL: http://user-service:8080
+  SUPPLIER_SERVICE_URL: http://supplier-service:8080
+  JWT_ISSUER: campuscouriers-user-service
+  CREDIT_CORS_ALLOWED_ORIGINS: https://app.example.com # TODO: CloudFront frontend domain
+  # Kafka lives in the other namespace, so use its full DNS name. Without this, Spring Kafka
+  # falls back to localhost:9092 (note: compose.yaml does not set this yet either).
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka.campuscouriers-messaging.svc.cluster.local:9092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-service
+  namespace: campuscouriers-app
+  labels:
+    app.kubernetes.io/name: credit-service
+spec:
+  # Pod count is owned by the HorizontalPodAutoscaler below
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: credit-service
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: credit-service
+    spec:
+      serviceAccountName: credit-service
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001 # the image's user has no fixed uid, so pin one
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: credit-service
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: credit-service
+      containers:
+        - name: credit-service
+          image: campuscouriers/credit-service
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: credit-service-config
+            - secretRef:
+                name: credit-db-credentials # DB_USERNAME, DB_PASSWORD
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 36
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: credit-service
+  namespace: campuscouriers-app
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: credit-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# Scaling note: all pods share the "credit-service" consumer group, and each Kafka partition goes
+# to one consumer. Topics have 3 partitions, so at most 3 pods consume events at once. Extra pods
+# still serve HTTP traffic.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: credit-service
+  namespace: campuscouriers-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: credit-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: credit-service
+  namespace: campuscouriers-app
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: credit-service

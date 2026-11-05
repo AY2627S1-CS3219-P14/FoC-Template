@@ -1,0 +1,158 @@
+# supplier-service: suppliers, categories, buildings.
+# Same layout as user-service.yaml, which has the full explanations.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: supplier-service
+  namespace: campuscouriers-app
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supplier-service-config
+  namespace: campuscouriers-app
+data:
+  DB_HOST: supplier-db
+  DB_PORT: "5432"
+  DB_NAME: campuscouriers_supplier
+  USER_SERVICE_URL: http://user-service:8080 # JWT public keys (/.well-known/jwks.json)
+  SUPPLIER_CORS_ALLOWED_ORIGINS: https://app.example.com # TODO: CloudFront frontend domain
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supplier-service
+  namespace: campuscouriers-app
+  labels:
+    app.kubernetes.io/name: supplier-service
+spec:
+  # Pod count is owned by the HorizontalPodAutoscaler below
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: supplier-service
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: supplier-service
+    spec:
+      serviceAccountName: supplier-service
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001 # the image's user has no fixed uid, so pin one
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: supplier-service
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: supplier-service
+      containers:
+        - name: supplier-service
+          image: campuscouriers/supplier-service
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: supplier-service-config
+            - secretRef:
+                name: supplier-db-credentials # DB_USERNAME, DB_PASSWORD
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 36
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: supplier-service
+  namespace: campuscouriers-app
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: supplier-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: supplier-service
+  namespace: campuscouriers-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: supplier-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: supplier-service
+  namespace: campuscouriers-app
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: supplier-service

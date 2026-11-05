@@ -1,0 +1,104 @@
+# Public entry point for the APIs. The AWS Load Balancer Controller sees this Ingress and creates an
+# internet-facing Application Load Balancer (ALB) in the public subnets.
+#
+# The frontend is NOT here: it is served from S3 + CloudFront at app.<domain>. Only api.<domain> is
+# routed here, by path. The ALB cannot rewrite paths, so the rules use each service's existing paths.
+#
+# Paths left out on purpose (reachable only inside the cluster):
+#   /api/reservations/**    credit reservations; only order-service should call these, and today any
+#                           logged-in user's JWT is accepted, so exposing them would let users change credits
+#   /.well-known/jwks.json  only the services need the JWT public keys
+#   /actuator/**, /health   health checks
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  namespace: campuscouriers-app
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # Send traffic straight to pod IPs (needs the VPC CNI, which EKS uses) instead of via node ports
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443" # HTTP -> HTTPS
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    # TLS certificate: if left out, the controller finds an issued ACM certificate matching the
+    # host below. Pin it explicitly once Terraform creates it:
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:<ACCOUNT_ID>:certificate/<ID>
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    # Lets new pods start receiving traffic sooner after a deploy (default is 300s)
+    alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=30
+    alb.ingress.kubernetes.io/tags: project=campuscouriers
+spec:
+  ingressClassName: alb
+  rules:
+    - host: api.example.com # TODO: your API domain (Route 53 record -> this ALB)
+      http:
+        paths:
+          # user-service
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  name: http
+          - path: /api/v1/accounts
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  name: http
+          - path: /api/v1/profiles
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  name: http
+          # supplier-service
+          - path: /suppliers
+            pathType: Prefix
+            backend:
+              service:
+                name: supplier-service
+                port:
+                  name: http
+          - path: /categories
+            pathType: Prefix
+            backend:
+              service:
+                name: supplier-service
+                port:
+                  name: http
+          - path: /buildings
+            pathType: Prefix
+            backend:
+              service:
+                name: supplier-service
+                port:
+                  name: http
+          # credit-service
+          - path: /api/wallets
+            pathType: Prefix
+            backend:
+              service:
+                name: credit-service
+                port:
+                  name: http
+          # order-service. Prefix matches whole path segments, so /errand does not cover /errands
+          - path: /errand
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service
+                port:
+                  name: http
+          - path: /errands
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service
+                port:
+                  name: http

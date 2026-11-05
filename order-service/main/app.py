@@ -29,6 +29,12 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+@app.get("/health", include_in_schema=False)
+def health() -> dict[str, str]:
+    """Liveness/readiness check for Kubernetes probes and the ALB (not routed through the Ingress)."""
+    return {"status": "ok"}
+
+
 app.include_router(create_errand_router)
 app.include_router(accept_errand_router)
 app.include_router(cancel_errand_router)

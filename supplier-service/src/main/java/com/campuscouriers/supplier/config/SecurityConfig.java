@@ -24,6 +24,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> { })
                 .authorizeHttpRequests(requests -> requests
+                        // Kubernetes probes and ALB health checks (not routed through the Ingress)
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/suppliers/**", "/categories/**", "/buildings/**")
                         .authenticated()

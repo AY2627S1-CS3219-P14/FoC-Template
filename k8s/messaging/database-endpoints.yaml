@@ -1,0 +1,30 @@
+# Debezium (Kafka Connect) reads the outbox of these three databases. The connector configs in
+# debezium/connectors/ use the hostnames user-db, order-db and supplier-db, the same as in
+# compose.yaml. Service names only resolve within their own namespace, so the aliases are repeated
+# here (see k8s/app/database-endpoints.yaml).
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-db
+  namespace: campuscouriers-messaging
+spec:
+  type: ExternalName
+  externalName: campuscouriers.replace-me.ap-southeast-1.rds.amazonaws.com # TODO: RDS endpoint
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: supplier-db
+  namespace: campuscouriers-messaging
+spec:
+  type: ExternalName
+  externalName: campuscouriers.replace-me.ap-southeast-1.rds.amazonaws.com # TODO: RDS endpoint
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-db
+  namespace: campuscouriers-messaging
+spec:
+  type: ExternalName
+  externalName: campuscouriers.replace-me.ap-southeast-1.rds.amazonaws.com # TODO: RDS endpoint

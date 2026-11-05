@@ -1,0 +1,46 @@
+# Everything that runs continuously. Preview:  kubectl kustomize k8s
+#                                     Apply:    kubectl apply -k k8s
+# One-off Jobs live separately in k8s/jobs/ so they run only when you choose.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespaces.yaml
+  # messaging
+  - messaging/storageclass.yaml
+  - messaging/database-endpoints.yaml
+  - messaging/kafka.yaml
+  - messaging/kafka-connect.yaml
+  - messaging/network-policies.yaml
+  # app
+  - app/database-endpoints.yaml
+  - app/user-service.yaml
+  - app/supplier-service.yaml
+  - app/credit-service.yaml
+  - app/order-service.yaml
+  - app/ingress.yaml
+  - app/network-policies.yaml
+
+# Added to every resource's metadata (not to selectors, which can't change after creation)
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: campuscouriers
+    includeSelectors: false
+
+# The manifests say "image: campuscouriers/user-service" (the compose name). This rewrites it to
+# the ECR repository and tag in one place. Keep in sync with k8s/jobs/kustomization.yaml.
+# TODO: your AWS account id and region. Prefer a git SHA tag over "latest" so each deploy is traceable:
+#   kustomize edit set image campuscouriers/user-service=<repo>:<sha>  (or let CI do it)
+images:
+  - name: campuscouriers/user-service
+    newName: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/user-service
+    newTag: latest
+  - name: campuscouriers/supplier-service
+    newName: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/supplier-service
+    newTag: latest
+  - name: campuscouriers/credit-service
+    newName: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/credit-service
+    newTag: latest
+  - name: campuscouriers/order-service
+    newName: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/order-service
+    newTag: latest

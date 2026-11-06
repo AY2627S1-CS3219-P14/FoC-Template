@@ -14,6 +14,7 @@ import com.campuscouriers.credit.repository.ReservationRepository;
 import com.campuscouriers.credit.repository.WalletRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Optional;
 
 import java.util.UUID;
@@ -23,7 +24,8 @@ public class ReservationService {
 
     private final WalletRepository walletRepository;
     private final ReservationRepository reservationRepository;
-
+    
+    private final CreditRecordsService creditRecordsService;
     private final WalletService walletService;
 
     @Transactional(readOnly = true)
@@ -41,9 +43,11 @@ public class ReservationService {
 
     public ReservationService(WalletRepository walletRepository,
                             ReservationRepository reservationRepository,
+                            CreditRecordsService creditRecordsService,
                             WalletService walletService) {
         this.walletRepository = walletRepository;
         this.reservationRepository = reservationRepository;
+        this.creditRecordsService = creditRecordsService;
         this.walletService = walletService;
     }
 
@@ -75,6 +79,8 @@ public class ReservationService {
         }
 
         walletService.reserve(wallet, amount);
+        creditRecordsService.recordReserved(wallet, orderId, amount);
+
 
         Reservation reservation = reservationRepository.save(
                 new Reservation(wallet.getWalletId(), orderId, amount));
@@ -123,9 +129,13 @@ public class ReservationService {
         if (reservation.getStatus() != ReservationStatus.HELD) {       // e.g. already paid to a courier
             throw new InvalidReservationStateException();
         }
- 
+
+        UUID orderId = reservation.getOrderId();
+
         walletService.release(wallet, reservation.getAmount());
-        markReleased(reservation);  
+        markReleased(reservation); 
+        creditRecordsService.recordReleased(wallet, orderId, reservation.getAmount());
+
         return ReservationResponse.from(reservation, wallet);
     }
 
@@ -172,6 +182,8 @@ public class ReservationService {
         walletService.deductFromReserve(requesterWallet, reservation.getAmount());
         walletService.transferToAvailable(courierWallet, reservation.getAmount());
         markTransferred(reservation, courierWalletId);
+        creditRecordsService.recordTransferred(requesterWallet, courierWallet, orderId, reservation.getAmount());
+        creditRecordsService.recordReceived(courierWallet, requesterWallet, orderId, reservation.getAmount());
  
         return ReservationResponse.from(reservation, requesterWallet);
     }

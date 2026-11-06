@@ -31,6 +31,7 @@ class ErrandResponse(BaseModel):
     expires_at: datetime
     created_at: datetime
     accepted_at: datetime | None
+    delivered_at: datetime | None
     completed_at: datetime | None
     cancelled_at: datetime | None
     failed_at: datetime | None
@@ -51,6 +52,7 @@ def available_errands(now: datetime):
         Errand.pending_credit_action.is_(None),
         Errand.credit_reservation_id.is_not(None),
         Errand.accepted_at.is_(None),
+        Errand.delivered_at.is_(None),
         Errand.completed_at.is_(None),
         Errand.cancelled_at.is_(None),
         Errand.failed_at.is_(None),

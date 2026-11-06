@@ -12,6 +12,7 @@ from main.database import Base
 class ErrandStatus(str, enum.Enum):
     OPEN = "OPEN"
     ACCEPTED = "ACCEPTED"
+    DELIVERED = "DELIVERED"
     COMPLETED = "COMPLETED"
     EXPIRED = "EXPIRED"
     CANCELLED = "CANCELLED"
@@ -37,6 +38,7 @@ class Errand(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

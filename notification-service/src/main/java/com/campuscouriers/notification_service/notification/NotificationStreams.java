@@ -13,8 +13,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter.SseEventBuilder;
 
@@ -51,6 +53,17 @@ public class NotificationStreams {
     void heartbeat() {
         connections.values().forEach(group ->
             group.forEach(connection -> connection.enqueue(SseEmitter.event().comment("heartbeat"))));
+    }
+
+    @TransactionalEventListener
+    void deliver(NotificationSaved saved) {
+        Set<Connection> recipients = connections.get(saved.recipientId());
+        if (recipients != null) {
+            NotificationResponse notification = saved.notification();
+            recipients.forEach(connection -> connection.enqueue(SseEmitter.event()
+                .id(notification.id().toString()).name("notification")
+                .data(notification, MediaType.APPLICATION_JSON)));
+        }
     }
 
     private final class Connection {

@@ -1,12 +1,16 @@
 package com.campuscouriers.notification_service.notification;
 
+import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
+    List<Notification> findByRecipientIdOrderByCreatedAtDescIdDesc(UUID recipientId, Pageable page);
+
     // A conflicting event is a no-op, including concurrent deliveries. Other SQL errors propagate.
     @Modifying
     @Query(value = """

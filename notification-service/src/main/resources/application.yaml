@@ -21,8 +21,16 @@ spring:
     username: ${DB_USERNAME:notification_service}
     password: ${DB_PASSWORD:password}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
 
 server:
   port: 8003
+
+notification:
+  auth:
+    issuer: ${JWT_ISSUER:campuscouriers-user-service}
+    jwk-set-uri: ${USER_SERVICE_URL:http://localhost:8081}/.well-known/jwks.json
+  cors:
+    allowed-origins: ${NOTIFICATION_CORS_ALLOWED_ORIGINS:http://localhost:5173}

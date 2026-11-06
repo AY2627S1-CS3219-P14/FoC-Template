@@ -4,14 +4,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.sun.net.httpserver.HttpServer;
 import com.campuscouriers.notification_service.notification.Notification;
 import com.campuscouriers.notification_service.notification.NotificationRepository;
 import com.campuscouriers.notification_service.notification.NotificationService;
@@ -21,26 +40,61 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class NotificationServiceApplicationTests {
+    private static final String ISSUER = "campuscouriers-user-service";
+    private static HttpServer jwks;
+    private static RSAKey signingKey;
+    private final HttpClient http = HttpClient.newBuilder()
+        .version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
+    private final JsonMapper json = JsonMapper.builder().build();
+
     @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
     @Container
     static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:4.3.1");
+
+    @BeforeAll
+    static void startJwks() throws Exception {
+        signingKey = new RSAKeyGenerator(2048).keyID("integration-test").generate();
+        byte[] keys = new JWKSet(signingKey.toPublicJWK()).toString().getBytes(StandardCharsets.UTF_8);
+        jwks = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        jwks.createContext("/.well-known/jwks.json", exchange -> {
+            try (exchange) {
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, keys.length);
+                exchange.getResponseBody().write(keys);
+            }
+        });
+        jwks.start();
+    }
+
+    @AfterAll
+    static void stopJwks() {
+        if (jwks != null) {
+            jwks.stop(0);
+        }
+    }
 
     @DynamicPropertySource
     static void connections(DynamicPropertyRegistry registry) {
@@ -48,12 +102,195 @@ class NotificationServiceApplicationTests {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.kafka.bootstrap-servers", KAFKA::getBootstrapServers);
+        registry.add("notification.auth.issuer", () -> ISSUER);
+        registry.add("notification.auth.jwk-set-uri",
+            () -> "http://127.0.0.1:" + jwks.getAddress().getPort() + "/.well-known/jwks.json");
     }
 
     @Autowired KafkaTemplate<String, String> kafka;
     @Autowired NotificationRepository repository;
     @Autowired NotificationService notifications;
     @Autowired JdbcTemplate jdbc;
+    @Autowired TransactionTemplate transactions;
+    @LocalServerPort int port;
+
+    @Test
+    void historyAndReadActionsAreScopedToTheAuthenticatedUser() throws Exception {
+        UUID alice = UUID.randomUUID();
+        UUID bob = UUID.randomUUID();
+        UUID aliceEvent = UUID.randomUUID();
+        UUID secondAliceEvent = UUID.randomUUID();
+        UUID bobEvent = UUID.randomUUID();
+        notifications.save(aliceEvent, alice, "ERRAND_ACCEPTED", UUID.randomUUID(), "Alice's first");
+        notifications.save(secondAliceEvent, alice, "ERRAND_ACCEPTED", UUID.randomUUID(), "Alice's second");
+        notifications.save(bobEvent, bob, "ERRAND_ACCEPTED", UUID.randomUUID(), "Bob's");
+        String aliceToken = token(alice);
+        String bobToken = token(bob);
+
+        assertThat(request("GET", "/notifications", null).statusCode()).isEqualTo(401);
+        assertThat(request("GET", "/notifications", "invalid").statusCode()).isEqualTo(401);
+        assertThat(request("GET", "/notifications",
+            token(alice.toString(), "another-issuer", Instant.now().plusSeconds(60))).statusCode())
+            .isEqualTo(401);
+        assertThat(request("GET", "/notifications",
+            token("not-an-account-id", ISSUER, Instant.now().plusSeconds(60))).statusCode())
+            .isEqualTo(401);
+        assertThat(request("GET", "/notifications",
+            token(alice.toString(), ISSUER, Instant.now().minusSeconds(1))).statusCode())
+            .isEqualTo(401);
+        assertThat(request("GET", "/notifications?limit=101", aliceToken).statusCode()).isEqualTo(400);
+        var history = request("GET", "/notifications?limit=1", aliceToken);
+        assertThat(history.statusCode()).isEqualTo(200);
+        JsonNode items = json.readTree(history.body()).get("items");
+        assertThat(items.size()).isEqualTo(1);
+        assertThat(items.get(0).get("id").asString()).isEqualTo(find(secondAliceEvent).getId().toString());
+        assertThat(items.get(0).get("readAt").isNull()).isTrue();
+        assertThat(unread(aliceToken)).isEqualTo(2);
+
+        String readAlice = "/notifications/" + find(aliceEvent).getId() + "/read";
+        assertThat(request("PATCH", readAlice, bobToken).statusCode()).isEqualTo(404);
+        assertThat(request("PATCH", readAlice, aliceToken).statusCode()).isEqualTo(204);
+        Instant readAt = find(aliceEvent).getReadAt();
+        assertThat(readAt).isNotNull();
+        assertThat(request("PATCH", readAlice, aliceToken).statusCode()).isEqualTo(204);
+        assertThat(find(aliceEvent).getReadAt()).isEqualTo(readAt);
+        assertThat(unread(aliceToken)).isEqualTo(1);
+        assertThat(request("POST", "/notifications/read-all", aliceToken).statusCode()).isEqualTo(204);
+        assertThat(unread(aliceToken)).isZero();
+        assertThat(unread(bobToken)).isEqualTo(1);
+    }
+
+    @Test
+    void liveDeliveryReachesBothRecipientTabsAndSkipsRedeliveryAndRollback() throws Exception {
+        UUID alice = UUID.randomUUID();
+        UUID bob = UUID.randomUUID();
+        UUID accepted = UUID.randomUUID();
+        String body = payload(UUID.randomUUID(), alice, UUID.randomUUID());
+        try (BufferedReader firstTab = openStream(token(alice));
+             BufferedReader secondTab = openStream(token(alice));
+             BufferedReader otherUser = openStream(token(bob))) {
+            for (BufferedReader stream : List.of(firstTab, secondTab, otherUser)) {
+                assertThat(nextEvent(stream).type()).isEqualTo("connected");
+            }
+            kafka.send(record("errand.accepted", accepted, body)).get(10, TimeUnit.SECONDS);
+            SseFrame first = nextEvent(firstTab);
+            SseFrame second = nextEvent(secondTab);
+            assertThat(first.type()).isEqualTo("notification");
+            assertThat(first).isEqualTo(second);
+            assertThat(first.id()).isEqualTo(find(accepted).getId().toString());
+            var history = request("GET", "/notifications", token(alice));
+            assertThat(json.readTree(first.data())).isEqualTo(json.readTree(history.body()).get("items").get(0));
+
+            firstTab.close();
+            transactions.executeWithoutResult(status -> {
+                notifications.save(UUID.randomUUID(), alice, "ERRAND_ACCEPTED", UUID.randomUUID(), "Rolled back");
+                status.setRollbackOnly();
+            });
+            kafka.send(record("errand.accepted", accepted, body)).get(10, TimeUnit.SECONDS);
+            UUID nextAlice = UUID.randomUUID();
+            kafka.send(record("errand.accepted", nextAlice, body)).get(10, TimeUnit.SECONDS);
+            assertThat(nextEvent(secondTab).id()).isEqualTo(find(nextAlice).getId().toString());
+
+            UUID nextBob = UUID.randomUUID();
+            kafka.send(record("errand.accepted", nextBob,
+                payload(UUID.randomUUID(), bob, UUID.randomUUID()))).get(10, TimeUnit.SECONDS);
+            assertThat(nextEvent(otherUser).id()).isEqualTo(find(nextBob).getId().toString());
+        }
+    }
+
+    @Test
+    void streamRequiresAuthenticationAndClosesWhenTokenExpires() throws Exception {
+        var preflight = http.send(httpRequest("/notifications/stream", null)
+            .header("Origin", "http://localhost:5173")
+            .header("Access-Control-Request-Method", "GET")
+            .header("Access-Control-Request-Headers", "authorization,last-event-id")
+            .method("OPTIONS", HttpRequest.BodyPublishers.noBody()).build(),
+            HttpResponse.BodyHandlers.discarding());
+        assertThat(preflight.statusCode()).isEqualTo(200);
+        assertThat(preflight.headers().firstValue("Access-Control-Allow-Origin"))
+            .contains("http://localhost:5173");
+        var unauthorized = http.send(
+            httpRequest("/notifications/stream", null).GET().build(), HttpResponse.BodyHandlers.ofInputStream());
+        try (var body = unauthorized.body()) {
+            assertThat(unauthorized.statusCode()).isEqualTo(401);
+        }
+        String expiring = token(UUID.randomUUID().toString(), ISSUER, Instant.now().plusSeconds(4));
+        try (BufferedReader stream = openStream(expiring)) {
+            assertThat(nextEvent(stream).type()).isEqualTo("connected");
+            assertThat(nextEvent(stream)).isNull();
+        }
+    }
+
+    private int unread(String token) throws Exception {
+        var response = request("GET", "/notifications/unread-count", token);
+        assertThat(response.statusCode()).isEqualTo(200);
+        return json.readTree(response.body()).get("count").asInt();
+    }
+
+    private HttpResponse<String> request(String method, String path, String token) throws Exception {
+        return http.send(httpRequest(path, token).method(method, HttpRequest.BodyPublishers.noBody()).build(),
+            HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpRequest.Builder httpRequest(String path, String token) {
+        var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+            .timeout(Duration.ofSeconds(10));
+        if (token != null) {
+            request.header("Authorization", "Bearer " + token);
+        }
+        return request;
+    }
+
+    private BufferedReader openStream(String token) throws Exception {
+        var response = http.send(httpRequest("/notifications/stream", token)
+            .header("Accept", "text/event-stream").GET().build(), HttpResponse.BodyHandlers.ofInputStream());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8));
+        if (response.statusCode() != 200) {
+            reader.close();
+        }
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("Content-Type").orElseThrow()).startsWith("text/event-stream");
+        return reader;
+    }
+
+    private SseFrame nextEvent(BufferedReader reader) throws Exception {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                String type = null;
+                String id = null;
+                String data = null;
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("event:")) {
+                        type = line.substring(6).stripLeading();
+                    } else if (line.startsWith("id:")) {
+                        id = line.substring(3).stripLeading();
+                    } else if (line.startsWith("data:")) {
+                        data = line.substring(5).stripLeading();
+                    } else if (line.isEmpty() && type != null) {
+                        return new SseFrame(type, id, data);
+                    }
+                }
+                return null;
+            } catch (IOException exception) {
+                throw new java.io.UncheckedIOException(exception);
+            }
+        }).get(12, TimeUnit.SECONDS);
+    }
+
+    private String token(UUID recipientId) throws Exception {
+        return token(recipientId.toString(), ISSUER, Instant.now().plusSeconds(60));
+    }
+
+    private String token(String subject, String issuer, Instant expiresAt) throws Exception {
+        SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256)
+            .keyID(signingKey.getKeyID()).build(), new JWTClaimsSet.Builder()
+            .issuer(issuer).subject(subject).expirationTime(Date.from(expiresAt)).build());
+        jwt.sign(new RSASSASigner(signingKey));
+        return jwt.serialize();
+    }
+
+    private record SseFrame(String type, String id, String data) {}
 
     @Test
     void mapsAllTopicsToTheOtherParticipantAndCommitsOffsets() throws Exception {

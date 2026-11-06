@@ -12,6 +12,25 @@ import org.springframework.data.repository.query.Param;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
     List<Notification> findByRecipientIdOrderByCreatedAtDescIdDesc(UUID recipientId, Pageable page);
 
+    long countByRecipientIdAndReadAtIsNull(UUID recipientId);
+
+    boolean existsByIdAndRecipientId(UUID id, UUID recipientId);
+
+    @Modifying
+    @Query("""
+        update Notification n set n.readAt = :readAt
+        where n.id = :id and n.recipientId = :recipientId and n.readAt is null
+        """)
+    int markRead(@Param("id") UUID id, @Param("recipientId") UUID recipientId,
+                 @Param("readAt") Instant readAt);
+
+    @Modifying
+    @Query("""
+        update Notification n set n.readAt = :readAt
+        where n.recipientId = :recipientId and n.readAt is null
+        """)
+    int markAllRead(@Param("recipientId") UUID recipientId, @Param("readAt") Instant readAt);
+
     // A conflicting event is a no-op, including concurrent deliveries. Other SQL errors propagate.
     @Modifying
     @Query(value = """

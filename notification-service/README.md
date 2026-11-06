@@ -1,7 +1,7 @@
 # Notification service
 
 Consumes committed errand outbox events from Kafka and stores notifications in PostgreSQL.
-SSE delivery and public notification endpoints are not implemented yet.
+Authenticated HTTP endpoints expose saved notifications and stream new ones over SSE.
 
 | Kafka topic | Recipient | Notification type |
 | --- | --- | --- |
@@ -49,6 +49,31 @@ Spring does not load the root `.env`; these settings use defaults or the process
 If containerized later, set `KAFKA_BOOTSTRAP_SERVERS=kafka:19092`, `DB_HOST=notification-db`,
 `DB_PORT=5432`, and matching database credentials.
 
+## Frontend API
+
+Send `Authorization: Bearer <access-token>` to every endpoint. The service verifies the JWT
+using the user service's public keys and derives the recipient from its subject. Configure
+`USER_SERVICE_URL` (default `http://localhost:8081`), `JWT_ISSUER` (default
+`campuscouriers-user-service`), and `NOTIFICATION_CORS_ALLOWED_ORIGINS` (comma-separated,
+default `http://localhost:5173`) as needed.
+
+| Request | Successful response |
+| --- | --- |
+| `GET /notifications?limit=20` | `200` with `{"items":[...]}` ordered newest first. Limit defaults to 20 and accepts 1–100. |
+| `GET /notifications/stream` | `200 text/event-stream` with an initial `connected` event, heartbeat comments, and `notification` events. |
+| `GET /notifications/unread-count` | `200` with `{"count":2}`. |
+| `PATCH /notifications/{id}/read` | `204`, including if already read. A missing or another user's ID returns `404`. |
+| `POST /notifications/read-all` | `204` after marking the caller's unread notifications as read. |
+
+The notification object has `id`, `type`, `errandId`, `message`, `createdAt`, and `readAt`
+(`null` when unread). SSE uses the same object as JSON data and sets the SSE ID to the
+notification ID. After each `connected` event, fetch recent history and merge by ID.
+This recovers missed alerts within the requested history window. The stream accepts
+reconnect requests carrying `Last-Event-ID`, with catch-up handled by the history endpoint.
+Live connections are held in memory, so deploy one notification-service instance for live delivery.
+Reconnect with a fresh token when the current one expires. Read-status changes are
+available through the HTTP endpoints. Refresh history or the count after marking read.
+
 ## Persistence and failure handling
 
 Hibernate `ddl-auto=update` creates the entity table and its unique constraint on startup.
@@ -88,3 +113,5 @@ Testcontainers starts isolated Kafka and PostgreSQL containers on random ports; 
 not use the development database. Docker is required. Tests cover recipient mapping,
 offset commits, duplicate and concurrent delivery, constraint errors, malformed messages,
 temporary database failure recovery, and persistent failures going to a DLT.
+The suite also exercises authenticated history and read actions, user isolation, SSE
+delivery to multiple tabs, rollback and duplicate suppression, and token expiry.

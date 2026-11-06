@@ -30,4 +30,15 @@ public class NotificationService {
         }
         return inserted;
     }
+
+    @Transactional
+    public boolean markRead(UUID id, UUID recipientId) {
+        return repository.markRead(id, recipientId, Instant.now()) > 0
+            || repository.existsByIdAndRecipientId(id, recipientId);
+    }
+
+    @Transactional
+    public void markAllRead(UUID recipientId) {
+        repository.markAllRead(recipientId, Instant.now());
+    }
 }

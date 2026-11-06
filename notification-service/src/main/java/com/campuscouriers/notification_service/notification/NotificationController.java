@@ -11,8 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -22,10 +26,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class NotificationController {
     private final NotificationRepository repository;
     private final NotificationStreams streams;
+    private final NotificationService notifications;
 
-    public NotificationController(NotificationRepository repository, NotificationStreams streams) {
+    public NotificationController(NotificationRepository repository, NotificationStreams streams,
+                                  NotificationService notifications) {
         this.repository = repository;
         this.streams = streams;
+        this.notifications = notifications;
     }
 
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -48,5 +55,27 @@ public class NotificationController {
         return new HistoryResponse(items);
     }
 
+    @GetMapping("/unread-count")
+    public UnreadCountResponse unreadCount(@AuthenticationPrincipal Jwt jwt) {
+        return new UnreadCountResponse(repository.countByRecipientIdAndReadAtIsNull(
+            UUID.fromString(jwt.getSubject())));
+    }
+
+    @PatchMapping("/{id}/read")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markRead(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
+        if (!notifications.markRead(id, UUID.fromString(jwt.getSubject()))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping("/read-all")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markAllRead(@AuthenticationPrincipal Jwt jwt) {
+        notifications.markAllRead(UUID.fromString(jwt.getSubject()));
+    }
+
     public record HistoryResponse(List<NotificationResponse> items) {}
+
+    public record UnreadCountResponse(long count) {}
 }

@@ -75,7 +75,7 @@ public class SecurityConfig {
         cors.setAllowedOrigins(Arrays.stream(origins.split(","))
             .map(String::trim).filter(origin -> !origin.isEmpty()).toList());
         cors.setAllowedMethods(List.of("GET", "PATCH", "POST", "OPTIONS"));
-        cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Last-Event-ID"));
         cors.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/notifications", cors);

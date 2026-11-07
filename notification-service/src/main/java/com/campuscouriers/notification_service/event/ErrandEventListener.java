@@ -29,7 +29,7 @@ public class ErrandEventListener {
                 "The requester confirmed your errand is complete.");
             case "errand.failed" -> notifications.save(event.eventId(), event.courierId(),
                 "ERRAND_FAILED", event.errandId(), "The requester reported a failure with your errand.");
-            default -> throw new InvalidErrandEventException("Unsupported event topic");
+            default -> throw new InvalidNotificationEventException("Unsupported event topic");
         }
     }
 }

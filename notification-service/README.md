@@ -9,14 +9,22 @@ Authenticated HTTP endpoints expose saved notifications and stream new ones over
 | `errand.delivered` | `requesterId` | `ERRAND_DELIVERED` |
 | `errand.completed` | `courierId` | `ERRAND_COMPLETED` |
 | `errand.failed` | `courierId` | `ERRAND_FAILED` |
+| `credit.received` | `userId` (courier) | `CREDIT_RECEIVED` |
+| `credit.released` | `userId` (requester) | `CREDIT_RELEASED` |
 
-Events are plain JSON with `errandId`, `requesterId`, `courierId` (UUIDs),
+Errand events are plain JSON with `errandId`, `requesterId`, `courierId` (UUIDs),
 and positive integer `creditValue`. Additional payload fields are ignored.
 The UTF-8 `eventId` Kafka header must contain the original outbox UUID;
 see `../debezium/connectors/order-outbox.json`.
 Delivery notifications confirm that the assigned courier marked the errand delivered.
 Completion notifications confirm the requester's action; they do not claim that credits
-were transferred. The order service's credit transfer integration is currently a placeholder.
+were transferred. The credit service publishes separate events after its credit changes commit.
+
+Credit alerts use `userId` as the recipient, `orderId` as the notification's `errandId`, and
+the positive available-balance change `amount` in the message. The payload's `eventId`
+identifies the credit record and deduplicates republished records. The Kafka header ID
+identifies the outbox row. Every committed release can generate an alert because the event
+does not distinguish releases completed inline from those completed later.
 
 ## Run locally
 

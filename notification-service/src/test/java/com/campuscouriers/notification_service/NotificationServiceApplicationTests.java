@@ -320,6 +320,29 @@ class NotificationServiceApplicationTests {
     }
 
     @Test
+    void savesBothCreditAlertTypesAndDeduplicatesByCreditRecordId() throws Exception {
+        for (String change : List.of("RECEIVED", "RELEASED")) {
+            UUID event = UUID.randomUUID();
+            UUID user = UUID.randomUUID();
+            UUID order = UUID.randomUUID();
+            String topic = "credit." + change.toLowerCase(java.util.Locale.ROOT);
+            String body = """
+                {"eventId":"%s","changeType":"%s","userId":"%s","orderId":"%s","amount":10}
+                """.formatted(event, change, user, order);
+            kafka.send(record(topic, UUID.randomUUID(), body)).get(10, TimeUnit.SECONDS);
+            var replay = kafka.send(record(topic, UUID.randomUUID(), body)).get(10, TimeUnit.SECONDS);
+            assertCommitted(topic, replay.getRecordMetadata().partition(), replay.getRecordMetadata().offset());
+            assertThat(repository.findAll().stream().filter(n -> n.getSourceEventId().equals(event)))
+                .singleElement().satisfies(saved -> {
+                    assertThat(saved.getRecipientId()).isEqualTo(user);
+                    assertThat(saved.getErrandId()).isEqualTo(order);
+                    assertThat(saved.getType()).isEqualTo("CREDIT_" + change);
+                    assertThat(saved.getMessage()).contains("10 credits");
+                });
+        }
+    }
+
+    @Test
     void kafkaRedeliveryDoesNotDuplicateNotifications() throws Exception {
         UUID eventId = UUID.randomUUID();
         String body = payload(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());

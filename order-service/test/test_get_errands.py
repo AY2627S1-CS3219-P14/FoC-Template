@@ -82,6 +82,8 @@ def test_participants_can_view_all_statuses_and_full_details(endpoint, actor, st
         changes.update(failure_reason="Missing items", failed_at=datetime.now(timezone.utc))
     if state == ErrandStatus.COMPLETED:
         changes["completed_at"] = datetime.now(timezone.utc)
+    if state == ErrandStatus.DELIVERED:
+        changes["delivered_at"] = datetime.now(timezone.utc)
     target = seed(factory, **changes)
     response = get(client, errand_id=str(target["id"]))
     assert ids(response) == [str(target["id"])]
@@ -90,6 +92,7 @@ def test_participants_can_view_all_statuses_and_full_details(endpoint, actor, st
     assert body["requester_id"] == str(changes["requester_id"])
     assert body["courier_id"] == str(changes["courier_id"])
     assert body["accepted_at"] is not None
+    assert (body["delivered_at"] is not None) == (state == ErrandStatus.DELIVERED)
     assert body["failure_reason"] == changes.get("failure_reason")
     if state == ErrandStatus.COMPLETED:
         assert body["completed_at"] is not None
@@ -106,7 +109,7 @@ def test_unrelated_user_cannot_probe_private_errand_or_count(endpoint, state):
     assert response.json() == {"total": 0, "items": []}
 
 
-@pytest.mark.parametrize("field", ["courier_id", "accepted_at", "completed_at", "cancelled_at", "failed_at", "failure_reason"])
+@pytest.mark.parametrize("field", ["courier_id", "accepted_at", "delivered_at", "completed_at", "cancelled_at", "failed_at", "failure_reason"])
 def test_inconsistent_open_private_fields_are_hidden_from_unrelated_users(endpoint, field):
     client, _, factory = endpoint
     value = uuid4() if field == "courier_id" else "Private reason" if field == "failure_reason" else datetime.now(timezone.utc)
@@ -121,7 +124,7 @@ def test_public_open_returns_nullable_lifecycle_fields(endpoint):
     assert ids(response) == [str(target["id"])]
     body = response.json()["items"][0]
     assert body["delivery_floor"] == "Level 3"
-    for field in ["courier_id", "accepted_at", "completed_at", "cancelled_at", "failed_at", "failure_reason"]:
+    for field in ["courier_id", "accepted_at", "delivered_at", "completed_at", "cancelled_at", "failed_at", "failure_reason"]:
         assert body[field] is None
 
 
@@ -133,7 +136,7 @@ def test_admin_sees_all_states_and_overdue_records(endpoint):
              expires_at=datetime.now(timezone.utc) - timedelta(hours=1))
     response = get(client)
     assert response.status_code == 200
-    assert response.json()["total"] == 6
+    assert response.json()["total"] == len(ErrandStatus)
     assert {item["status"] for item in response.json()["items"]} == {s.value for s in ErrandStatus}
 
 

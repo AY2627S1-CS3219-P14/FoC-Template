@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from main.credit_client import Reservation
 
 from main.app import app
 from main import create_errand
@@ -48,41 +50,33 @@ def endpoint(monkeypatch):
         events.append("credit")
         return True
 
-    async def reserve(*args):
-        events.append("reserve")
-        return True
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+    monkeypatch.setattr(create_errand, "SessionLocal", factory)
+    original_insert = create_errand.insert_errand
 
-    def save(request, requester_id):
+    def reserve(requester_id, order_id, amount):
+        events.append("reserve")
+        return Reservation(reservationId=uuid4(), orderId=order_id, amount=amount, status="HELD")
+
+    def save(*args):
         events.append("insert")
-        return create_errand.CreateErrandResponse(
-            id=uuid4(),
-            status=create_errand.ErrandStatus.OPEN,
-            requester_id=requester_id,
-            courier_id=None,
-            supplier_id=request.supplier_id,
-            required_item=request.required_item,
-            credit_value=request.credit_value,
-            delivery_building_id=request.delivery_building_id,
-            delivery_floor=request.delivery_floor,
-            delivery_description=request.delivery_description,
-            expires_at=request.expires_at,
-            created_at=datetime.now(timezone.utc),
-        )
+        return original_insert(*args)
 
     mocks = {
         "supplier": AsyncMock(side_effect=supplier),
         "credit": AsyncMock(side_effect=credit),
-        "reserve": AsyncMock(side_effect=reserve),
+        "reserve": Mock(side_effect=reserve),
         "insert": Mock(side_effect=save),
     }
-    for name, mock in mocks.items():
-        target = {
-            "supplier": "verify_supplier",
-            "credit": "verify_credit_value",
-            "reserve": "reserve_credits",
-            "insert": "insert_errand",
-        }[name]
-        monkeypatch.setattr(create_errand, target, mock)
+    monkeypatch.setattr(create_errand, "verify_supplier", mocks["supplier"])
+    monkeypatch.setattr(create_errand, "verify_credit_value", mocks["credit"])
+    monkeypatch.setattr(create_errand, "insert_errand", mocks["insert"])
+    credit_client = Mock(reserve=mocks["reserve"])
+    monkeypatch.setattr(create_errand, "CreditClient", lambda token: credit_client)
 
     previous = app.dependency_overrides.copy()
     app.dependency_overrides[create_errand.verified_claims] = lambda: claims
@@ -92,6 +86,7 @@ def endpoint(monkeypatch):
     finally:
         app.dependency_overrides.clear()
         app.dependency_overrides.update(previous)
+        engine.dispose()
 
 
 def test_create_errand_verifies_then_reserves_then_inserts(endpoint, payload):
@@ -107,9 +102,9 @@ def test_create_errand_verifies_then_reserves_then_inserts(endpoint, payload):
     assert body["credit_value"] == 10
     assert events == ["supplier", "credit", "reserve", "insert"]
     mocks["supplier"].assert_awaited_once_with(str(SUPPLIER_ID), "test-token")
-    mocks["credit"].assert_awaited_once_with(10, str(REQUESTER_ID))
-    mocks["reserve"].assert_awaited_once_with(10, str(REQUESTER_ID))
-    request, requester_id = mocks["insert"].call_args.args
+    mocks["credit"].assert_awaited_once_with(10, "test-token")
+    mocks["reserve"].assert_called_once_with(REQUESTER_ID, create_errand.UUID(body["id"]), 10)
+    request, requester_id = mocks["insert"].call_args.args[:2]
     assert request.supplier_id == SUPPLIER_ID
     assert requester_id == REQUESTER_ID
 
@@ -119,13 +114,15 @@ def test_failed_check_prevents_insert(endpoint, payload, check, code):
     client, mocks, _, _ = endpoint
     mocks[check].side_effect = None
     mocks[check].return_value = False
+    if check == "reserve":
+        mocks[check].side_effect = HTTPException(409, "Insufficient credits")
     response = client.post("/errand/create", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == code
     mocks["insert"].assert_not_called()
     if check == "supplier":
         mocks["credit"].assert_not_awaited()
     if check != "reserve":
-        mocks["reserve"].assert_not_awaited()
+        mocks["reserve"].assert_not_called()
 
 
 def test_supplier_unavailable_prevents_reservation(endpoint, payload):
@@ -134,7 +131,7 @@ def test_supplier_unavailable_prevents_reservation(endpoint, payload):
     response = client.post("/errand/create", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 503
     mocks["credit"].assert_not_awaited()
-    mocks["reserve"].assert_not_awaited()
+    mocks["reserve"].assert_not_called()
     mocks["insert"].assert_not_called()
 
 
@@ -163,7 +160,7 @@ def test_invalid_input_prevents_side_effects(endpoint, payload, field, value):
     assert response.status_code == 422
     mocks["supplier"].assert_not_awaited()
     mocks["credit"].assert_not_awaited()
-    mocks["reserve"].assert_not_awaited()
+    mocks["reserve"].assert_not_called()
     mocks["insert"].assert_not_called()
 
 
@@ -173,7 +170,7 @@ def test_missing_required_input(endpoint, payload, field):
     del payload[field]
     response = client.post("/errand/create", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
-    mocks["reserve"].assert_not_awaited()
+    mocks["reserve"].assert_not_called()
     mocks["insert"].assert_not_called()
 
 
@@ -182,7 +179,7 @@ def test_invalid_requester_prevents_reservation(endpoint, payload):
     claims["sub"] = "invalid"
     response = client.post("/errand/create", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 401
-    mocks["reserve"].assert_not_awaited()
+    mocks["reserve"].assert_not_called()
     mocks["insert"].assert_not_called()
 
 
@@ -190,7 +187,7 @@ def test_authentication_required(endpoint, payload):
     client, mocks, _, _ = endpoint
     response = client.post("/errand/create", json=payload)
     assert response.status_code in (401, 403)
-    mocks["reserve"].assert_not_awaited()
+    mocks["reserve"].assert_not_called()
     mocks["insert"].assert_not_called()
 
 
@@ -307,7 +304,7 @@ def test_expiry_window(endpoint, payload, clock, offset, expected):
         assert response.json()["detail"][0]["loc"] == ["body", "expires_at"]
         mocks["supplier"].assert_not_awaited()
         mocks["credit"].assert_not_awaited()
-        mocks["reserve"].assert_not_awaited()
+        mocks["reserve"].assert_not_called()
         mocks["insert"].assert_not_called()
 
 
@@ -332,7 +329,7 @@ def test_expired_during_checks_does_not_reserve(endpoint, payload, clock):
     mocks["credit"].side_effect = slow_credit_check
     response = client.post("/errand/create", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
-    mocks["reserve"].assert_not_awaited()
+    mocks["reserve"].assert_not_called()
     mocks["insert"].assert_not_called()
 
 

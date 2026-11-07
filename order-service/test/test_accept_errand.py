@@ -45,7 +45,7 @@ def database(monkeypatch):
 
 def seed(factory, **changes):
     fields = dict(
-        id=uuid4(), status=ErrandStatus.OPEN,
+        id=uuid4(), status=ErrandStatus.OPEN, credit_reservation_id=uuid4(),
         requester_id=uuid4(), supplier_id=uuid4(),
         required_item="One coffee", credit_value=5,
         delivery_building_id=uuid4(),

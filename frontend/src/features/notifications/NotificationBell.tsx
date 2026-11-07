@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { groupNotifications } from './notification.groups'
 import { useNotifications } from './useNotifications'
 
 export function NotificationBell() {
@@ -109,32 +110,44 @@ export function NotificationBell() {
             </p>
           ) : null}
           <ul className="max-h-[min(25rem,60dvh)] divide-y divide-[#dde3de] overflow-y-auto">
-            {items.map((item) => (
-              <li key={item.id} className={item.readAt ? 'px-4 py-3' : 'bg-[#f0f6f2] px-4 py-3'}>
-                <Link
-                  to={`/errands/${encodeURIComponent(item.errandId)}`}
-                  onClick={() => setOpen(false)}
-                  className="block text-sm font-medium hover:underline"
-                >
-                  {item.message}
-                </Link>
-                <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-[#68736c]">
-                  <time dateTime={item.createdAt}>
-                    {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                  </time>
-                  {!item.readAt ? (
-                    <button
-                      type="button"
-                      disabled={updating}
-                      onClick={() => void updateReadStatus(() => markRead([item.id]))}
-                      className="cursor-pointer font-semibold text-[#175c45] hover:underline disabled:opacity-45"
-                    >
-                      Mark as read
-                    </button>
-                  ) : null}
-                </div>
-              </li>
-            ))}
+            {groupNotifications(items).map(({ key, latest, related }) => {
+              const unread = !latest.readAt || Boolean(related && !related.readAt)
+              return (
+                <li key={key} className={unread ? 'bg-[#f0f6f2] px-4 py-3' : 'px-4 py-3'}>
+                  <Link
+                    to={`/errands/${encodeURIComponent(latest.errandId)}`}
+                    onClick={() => setOpen(false)}
+                    className="block text-sm font-medium hover:underline"
+                  >
+                    {related ? (
+                      <>
+                        <span className="block">Errand completed</span>{' '}
+                        <span className="block text-[#53645a]">
+                          {(latest.type === 'CREDIT_RECEIVED' ? latest : related).message}
+                        </span>
+                      </>
+                    ) : latest.message}
+                  </Link>
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-[#68736c]">
+                    <time dateTime={latest.createdAt}>
+                      {new Date(latest.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                    </time>
+                    {unread ? (
+                      <button
+                        type="button"
+                        disabled={updating}
+                        onClick={() => void updateReadStatus(() => markRead(
+                          related ? [latest.id, related.id] : [latest.id],
+                        ))}
+                        className="cursor-pointer font-semibold text-[#175c45] hover:underline disabled:opacity-45"
+                      >
+                        Mark as read
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         </section>
       ) : null}

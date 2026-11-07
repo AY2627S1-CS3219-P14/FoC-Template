@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../auth/useAuth'
@@ -127,5 +127,42 @@ describe('NotificationProvider', () => {
     expect(await screen.findByRole('button', { name: 'Notifications' })).toBeInTheDocument()
     expect(markAllNotificationsRead).toHaveBeenCalledOnce()
     expect(screen.queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument()
+  })
+
+  it.each(['completion first', 'credits first'])('groups the two errand outcomes with %s', async (order) => {
+    vi.mocked(useAuth).mockReturnValue(alice)
+    vi.mocked(openNotificationStream).mockImplementation(() => new Promise(() => {}))
+    const completed = {
+      ...item, id: 'completed', type: 'ERRAND_COMPLETED', message: 'The requester confirmed your errand is complete.',
+    }
+    const credit = {
+      ...item, id: 'credit', type: 'CREDIT_RECEIVED', message: 'You received 10 credits for your errand.',
+    }
+    const [first, second] = order === 'completion first' ? [completed, credit] : [credit, completed]
+    let items = [first]
+    vi.mocked(getNotifications).mockImplementation(async () => items)
+    vi.mocked(getUnreadCount).mockImplementation(async () => items.filter((alert) => !alert.readAt).length)
+    vi.mocked(markNotificationRead).mockImplementation(async (id) => {
+      items = items.map((alert) => alert.id === id ? { ...alert, readAt: alert.createdAt } : alert)
+    })
+    render(<MemoryRouter><NotificationProvider><NotificationBell /></NotificationProvider></MemoryRouter>)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Notifications (1 unread)' }))
+    const panel = within(screen.getByRole('region', { name: 'Recent notifications' }))
+    expect(panel.getByRole('link', { name: first.message })).toBeInTheDocument()
+    expect(panel.queryByText(second.message)).not.toBeInTheDocument()
+    expect(panel.queryByText(/pending/i)).not.toBeInTheDocument()
+
+    items = [second, first]
+    const stream = vi.mocked(openNotificationStream).mock.calls[0][0]
+    act(() => stream.onNotification(second))
+    expect(await screen.findByRole('button', { name: 'Notifications (2 unread)' })).toBeInTheDocument()
+    expect(panel.getAllByRole('listitem')).toHaveLength(1)
+    expect(panel.getByRole('link', { name: `Errand completed ${credit.message}` })).toBeInTheDocument()
+
+    fireEvent.click(panel.getByRole('button', { name: 'Mark as read' }))
+    expect(await screen.findByRole('button', { name: 'Notifications' })).toBeInTheDocument()
+    expect(markNotificationRead).toHaveBeenCalledWith(completed.id, expect.any(AbortSignal))
+    expect(markNotificationRead).toHaveBeenCalledWith(credit.id, expect.any(AbortSignal))
   })
 })

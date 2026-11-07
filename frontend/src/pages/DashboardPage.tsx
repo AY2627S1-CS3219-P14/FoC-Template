@@ -16,6 +16,7 @@ import type { MyErrandItem } from '../features/errands/my-errands.types'
 import { acceptErrand, ErrandApiError } from '../features/errands/errand.api'
 import { loadMyErrands } from '../features/errands/errand.view'
 import { useAuth } from '../features/auth/useAuth'
+import { useErrandNotificationRevision } from '../features/notifications/useErrandNotificationRevision'
 import type {
   ErrandCreditFilter,
   ErrandDashboardItem,
@@ -46,6 +47,7 @@ export function DashboardPage() {
   const [acceptError, setAcceptError] = useState<string | null>(null)
   const [isAccepting, setIsAccepting] = useState(false)
   const acceptControllerRef = useRef<AbortController | null>(null)
+  const notificationRevision = useErrandNotificationRevision()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -72,9 +74,13 @@ export function DashboardPage() {
       { deliveryBuildingId, credit, expiry, sort },
       controller.signal,
     )
-      .then(setDashboardData)
+      .then((data) => {
+        if (controller.signal.aborted) return
+        setDashboardData(data)
+        setErrorMessage(null)
+      })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
+        if (controller.signal.aborted) return
         setErrorMessage(
           error instanceof Error ? error.message : 'Unable to load open errands.',
         )
@@ -84,7 +90,7 @@ export function DashboardPage() {
       })
 
     return () => controller.abort()
-  }, [credit, deliveryBuildingId, expiry, retryCount, sort])
+  }, [credit, deliveryBuildingId, expiry, retryCount, sort, notificationRevision])
 
   useEffect(() => {
     if (!currentUserId) return
@@ -92,11 +98,12 @@ export function DashboardPage() {
     const controller = new AbortController()
     loadMyErrands(currentUserId, controller.signal)
       .then((errands) => {
+        if (controller.signal.aborted) return
         setActiveErrands(errands)
         setActiveErrandsError(null)
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
+        if (controller.signal.aborted) return
         setActiveErrandsError(
           error instanceof Error ? error.message : 'Unable to load your active errands.',
         )
@@ -106,7 +113,7 @@ export function DashboardPage() {
       })
 
     return () => controller.abort()
-  }, [activeRetryCount, currentUserId])
+  }, [activeRetryCount, currentUserId, notificationRevision])
 
   useEffect(
     () => () => {

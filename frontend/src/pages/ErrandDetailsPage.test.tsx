@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getMockErrandDetails } from '../features/errands/errand-details.mock'
@@ -10,6 +10,8 @@ import {
   failErrand,
 } from '../features/errands/errand.api'
 import { loadErrandDetails } from '../features/errands/errand.view'
+import { NotificationContext, type NotificationContextValue } from '../features/notifications/notification.context'
+import type { NotificationListener } from '../features/notifications/notification.types'
 import { ErrandDetailsPage } from './ErrandDetailsPage'
 
 const requesterAcceptedId = '2fdf7658-f477-4a52-94ed-cbbf2447e005'
@@ -47,13 +49,15 @@ function activeErrand(errandId: string) {
   return { ...getMockErrandDetails(errandId)!, expiresAt: new Date(Date.now() + 60_000).toISOString() }
 }
 
-function renderPage(errandId: string) {
+function renderPage(errandId: string, notifications: NotificationContextValue | null = null) {
   return render(
-    <MemoryRouter initialEntries={[`/errands/${errandId}`]}>
-      <Routes>
-        <Route path="/errands/:errandId" element={<ErrandDetailsPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <NotificationContext.Provider value={notifications}>
+      <MemoryRouter initialEntries={[`/errands/${errandId}`]}>
+        <Routes>
+          <Route path="/errands/:errandId" element={<ErrandDetailsPage />} />
+        </Routes>
+      </MemoryRouter>
+    </NotificationContext.Provider>,
   )
 }
 
@@ -104,6 +108,40 @@ describe('ErrandDetailsPage', () => {
     expect(screen.queryByRole('button', { name: 'Confirm receipt' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Report problem' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel errand' })).not.toBeInTheDocument()
+  })
+
+  it('refetches the visible errand on its alert and ignores an older response after reconnect', async () => {
+    const accepted = activeErrand(requesterAcceptedId)
+    let resolveOlder!: (details: typeof accepted) => void
+    loadErrandDetailsMock
+      .mockResolvedValueOnce(accepted)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveOlder = resolve }))
+      .mockResolvedValueOnce({
+        ...accepted, status: 'COMPLETED', completedAt: '2026-11-08T00:00:00Z',
+      })
+    let notify!: NotificationListener
+    renderPage(requesterAcceptedId, {
+      items: [], unreadCount: 0, historyStatus: 'ready', connection: 'connected',
+      refresh: vi.fn(), markRead: vi.fn(), markAllRead: vi.fn(),
+      subscribe(listener) { notify = listener; return vi.fn() },
+    })
+    expect(await screen.findByRole('heading', { name: 'Courier assigned' })).toBeInTheDocument()
+
+    const item = {
+      id: 'delivered', type: 'ERRAND_DELIVERED', errandId: courierAcceptedId,
+      message: 'Delivered', createdAt: '2026-11-08T00:00:00Z', readAt: null,
+    }
+    act(() => notify({ type: 'notification', item }))
+    expect(loadErrandDetailsMock).toHaveBeenCalledOnce()
+
+    act(() => notify({ type: 'notification', item: { ...item, errandId: requesterAcceptedId } }))
+    expect(loadErrandDetailsMock).toHaveBeenCalledTimes(2)
+    const olderSignal = loadErrandDetailsMock.mock.calls[1][2]
+    act(() => notify({ type: 'connected' }))
+    expect(await screen.findByRole('heading', { name: 'Completed' })).toBeInTheDocument()
+    expect(olderSignal?.aborted).toBe(true)
+    await act(async () => { resolveOlder(accepted) })
+    expect(screen.getByRole('heading', { name: 'Completed' })).toBeInTheDocument()
   })
 
   it('lets the assigned courier mark an accepted errand ready for pickup', async () => {

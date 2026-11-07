@@ -9,7 +9,7 @@ import {
   openNotificationStream,
 } from './notification.api'
 import { NotificationContext, type NotificationContextValue } from './notification.context'
-import type { NotificationConnection, NotificationItem } from './notification.types'
+import type { NotificationConnection, NotificationItem, NotificationListener } from './notification.types'
 
 function mergeItems(previous: NotificationItem[], incoming: NotificationItem[]) {
   const items = new Map(previous.map((item) => [item.id, item]))
@@ -35,6 +35,13 @@ function NotificationSession({ children }: PropsWithChildren) {
   const sessionRef = useRef<AbortController | null>(null)
   const historyRequest = useRef<AbortController | null>(null)
   const countRequest = useRef<AbortController | null>(null)
+  const listeners = useRef(new Set<NotificationListener>())
+
+  const subscribe = useCallback((listener: NotificationListener) => {
+    const subscribers = listeners.current
+    subscribers.add(listener)
+    return () => { subscribers.delete(listener) }
+  }, [])
 
   const refreshUnreadCount = useCallback(async () => {
     const session = sessionRef.current
@@ -103,11 +110,13 @@ function NotificationSession({ children }: PropsWithChildren) {
           if (session.signal.aborted) return
           setConnection('connected')
           void refresh()
+          listeners.current.forEach((listener) => listener({ type: 'connected' }))
         },
         onNotification(item) {
           if (session.signal.aborted) return
           setItems((previous) => mergeItems(previous, [item]))
           void refreshUnreadCount()
+          listeners.current.forEach((listener) => listener({ type: 'notification', item }))
         },
         onReconnect() {
           if (!session.signal.aborted) setConnection('reconnecting')
@@ -123,8 +132,8 @@ function NotificationSession({ children }: PropsWithChildren) {
   }, [refresh, refreshUnreadCount])
 
   const value = useMemo<NotificationContextValue>(
-    () => ({ items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead }),
-    [items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead],
+    () => ({ items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead, subscribe }),
+    [items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead, subscribe],
   )
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
 }

@@ -18,6 +18,7 @@ import { loadErrandDetails } from '../features/errands/errand.view'
 import type { ErrandStatus } from '../features/errands/errand.types'
 import { useAuth } from '../features/auth/useAuth'
 import { useCredits } from '../features/credits/useCredits'
+import { useErrandNotificationRevision } from '../features/notifications/useErrandNotificationRevision'
 
 const statusPresentation: Record<
   ErrandStatus,
@@ -113,12 +114,17 @@ function getOutcomeTime(errand: ErrandDetails) {
 
 export function ErrandDetailsPage() {
   const { errandId = '' } = useParams()
+  return <ErrandDetailsView key={errandId} errandId={errandId} />
+}
+
+function ErrandDetailsView({ errandId }: { errandId: string }) {
   const { currentUserId } = useAuth()
   const [errand, setErrand] = useState<ErrandDetails | null>(null)
   const [isLoading, setIsLoading] = useState(Boolean(currentUserId && errandId))
   const [loadError, setLoadError] = useState<Error | null>(null)
   const [refreshCount, setRefreshCount] = useState(0)
   const [refreshMessage, setRefreshMessage] = useState('')
+  const notificationRevision = useErrandNotificationRevision(errandId)
 
   useEffect(() => {
     if (!currentUserId || !errandId) return
@@ -126,11 +132,12 @@ export function ErrandDetailsPage() {
     const controller = new AbortController()
     loadErrandDetails(errandId, currentUserId, controller.signal)
       .then((details) => {
+        if (controller.signal.aborted) return
         setErrand(details)
         setLoadError(null)
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
+        if (controller.signal.aborted) return
         setLoadError(error instanceof Error ? error : new Error('Unable to load this errand.'))
       })
       .finally(() => {
@@ -138,7 +145,7 @@ export function ErrandDetailsPage() {
       })
 
     return () => controller.abort()
-  }, [currentUserId, errandId, refreshCount])
+  }, [currentUserId, errandId, refreshCount, notificationRevision])
 
   function refreshErrand(message = 'Refreshing errand details…') {
     if (!currentUserId || !errandId) return

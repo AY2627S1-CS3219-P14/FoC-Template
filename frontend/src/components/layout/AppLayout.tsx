@@ -7,8 +7,8 @@ import { Sidebar } from './Sidebar'
 
 export function AppLayout() {
   return (
-    <CreditProvider>
-      <NotificationProvider>
+    <NotificationProvider>
+      <CreditProvider>
         <div className="min-h-screen bg-[#f5f7f4] text-[#17211d]">
           <AppHeader />
           <div className="lg:grid lg:grid-cols-[236px_1fr]">
@@ -19,7 +19,7 @@ export function AppLayout() {
           </div>
           <MobileBottomNav />
         </div>
-      </NotificationProvider>
-    </CreditProvider>
+      </CreditProvider>
+    </NotificationProvider>
   )
 }

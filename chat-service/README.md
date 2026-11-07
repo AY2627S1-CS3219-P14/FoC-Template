@@ -3,7 +3,9 @@
 The Chat Service provides one persistent conversation for each accepted errand.
 It consumes Order Service lifecycle events, stores messages in PostgreSQL, and
 uses WebSockets for live delivery. Kafka controls conversation lifecycle; chat
-messages themselves are stored directly in the Chat database.
+messages themselves are stored directly in the Chat database. Each newly stored
+message also writes a `chat.message.created` transactional outbox event for the
+Notification Service. Retried messages do not write another event.
 
 ## Lifecycle
 
@@ -55,6 +57,13 @@ Completed conversations store `chat_closes_at = completed_at + 30 minutes`.
 Message creation compares that timestamp with the current server time, so no
 background timer is required to enforce closure. History remains readable after
 the write window ends.
+
+## Notification integration
+
+Message insertion, sequence allocation, and the outbox row commit in one database
+transaction. Debezium publishes the outbox row to `chat.message.created`. Its payload
+identifies the other conversation participant as `recipientId`; it intentionally
+contains no message text, so notification previews do not leak chat content.
 
 Conversation creation follows Kafka asynchronously. The errand lookup returns
 `202 {"status":"PENDING"}` while the accepted event has not been projected yet;

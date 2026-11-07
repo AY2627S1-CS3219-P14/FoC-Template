@@ -11,6 +11,7 @@ Authenticated HTTP endpoints expose saved notifications and stream new ones over
 | `errand.failed` | `courierId` | `ERRAND_FAILED` |
 | `credit.received` | `userId` (courier) | `CREDIT_RECEIVED` |
 | `credit.released` | `userId` (requester) | `CREDIT_RELEASED` |
+| `chat.message.created` | `recipientId` | `CHAT_MESSAGE` |
 
 Errand events are plain JSON with `errandId`, `requesterId`, `courierId` (UUIDs),
 and positive integer `creditValue`. Additional payload fields are ignored.
@@ -25,6 +26,10 @@ the positive available-balance change `amount` in the message. The payload's `ev
 identifies the credit record and deduplicates republished records. The Kafka header ID
 identifies the outbox row. Every committed release can generate an alert because the event
 does not distinguish releases completed inline from those completed later.
+
+Chat alerts use the message event's `recipientId` and `errandId`. The saved notification
+uses a generic preview rather than storing chat content. The frontend can suppress the
+global toast and mark the notification read when that errand's chat is already open.
 
 ## Run locally
 
@@ -49,7 +54,7 @@ as described in `../debezium/README.md`.
 | --- | --- |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` |
 | `DB_HOST` | `localhost` |
-| `DB_PORT` | `5436` |
+| `DB_PORT` | `5437` |
 | `DB_NAME` | `campuscouriers_notification` |
 | `DB_USERNAME` | `notification_service` |
 | `DB_PASSWORD` | `password` (local development only) |
@@ -60,7 +65,7 @@ If containerized later, set `KAFKA_BOOTSTRAP_SERVERS=kafka:19092`, `DB_HOST=noti
 
 ## Notification API reference
 
-The local base URL is `http://localhost:8003`. Send `Authorization: Bearer <access-token>`
+The local base URL is `http://localhost:8004`. Send `Authorization: Bearer <access-token>`
 with every request. The service uses the token's subject to scope notifications to the
 signed-in account. A missing, invalid, or expired token returns `401`.
 
@@ -148,7 +153,7 @@ notifications. After either action, refresh history or the unread count as neede
 In PowerShell, set `$token` to a valid access token from the user service, then run:
 
 ```powershell
-$base = 'http://localhost:8003'
+$base = 'http://localhost:8004'
 $auth = "Authorization: Bearer $token"
 curl.exe -H $auth "$base/notifications?limit=20"
 curl.exe -N -H $auth -H 'Accept: text/event-stream' "$base/notifications/stream"

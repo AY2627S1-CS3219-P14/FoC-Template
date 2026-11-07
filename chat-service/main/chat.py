@@ -8,6 +8,7 @@ from sqlalchemy import delete, or_, select, update
 from sqlalchemy.orm import Session
 
 from main.models import Conversation, Message, WebSocketTicket
+from main.outbox import append_message_created
 from main.schemas import ConversationResponse, MessageResponse
 
 
@@ -140,6 +141,13 @@ def save_message(
     )
     conversation.next_sequence += 1
     db.add(message)
+    db.flush()
+    recipient_id = (
+        conversation.courier_id
+        if sender_id == conversation.requester_id
+        else conversation.requester_id
+    )
+    append_message_created(db, conversation, message, recipient_id)
     db.flush()
     return message, True
 

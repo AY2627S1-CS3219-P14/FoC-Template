@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from main.chat import consume_ticket, create_ticket, list_messages, save_message
-from main.models import Conversation, Message
+from main.models import Conversation, Message, OutboxEvent
 
 
 def test_messages_receive_per_conversation_sequence_numbers(factory, active_conversation):
@@ -24,6 +24,13 @@ def test_messages_receive_per_conversation_sequence_numbers(factory, active_conv
     assert (first.sequence_number, second.sequence_number) == (1, 2)
     with factory() as db:
         assert db.get(Conversation, conversation.id).next_sequence == 3
+        events = sorted(
+            db.scalars(select(OutboxEvent)).all(),
+            key=lambda event: event.payload["sequenceNumber"],
+        )
+        assert [event.type for event in events] == ["chat.message.created"] * 2
+        assert events[0].payload["recipientId"] == str(courier_id)
+        assert events[1].payload["recipientId"] == str(requester_id)
 
 
 def test_retry_returns_original_message_without_consuming_sequence(factory, active_conversation):
@@ -43,6 +50,7 @@ def test_retry_returns_original_message_without_consuming_sequence(factory, acti
     assert retried.id == original.id
     with factory() as db:
         assert len(db.scalars(select(Message)).all()) == 1
+        assert len(db.scalars(select(OutboxEvent)).all()) == 1
         assert db.get(Conversation, conversation.id).next_sequence == 2
 
 

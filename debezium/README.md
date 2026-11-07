@@ -37,6 +37,7 @@ Rows are never deleted by the pipeline; Debezium reads the WAL, so old rows can 
 | `errand.completed` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `completedAt` |
 | `errand.failed` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `failureReason`, `failedAt` |
 | `supplier.created` / `supplier.updated` | supplier-service | supplier id | `supplierId`, `name`, `categoryId`, `categoryName`, `buildingId`, `buildingName`, `floor`, `description`, `openingTime`, `closingTime`, `imageUrl`, `status` |
+| `chat.message.created` | chat-service | conversation id | `messageId`, `conversationId`, `errandId`, `senderId`, `recipientId`, `sequenceNumber`, `createdAt` |
 
 Timestamps are ISO-8601 strings. Fields whose value is `null` are **omitted** from the message (Debezium drops them
 when expanding the JSON payload), so consumers must treat a missing field as `null`. Topics are created on first use
@@ -47,7 +48,7 @@ with 3 partitions.
 1. Write the outbox row inside the transaction that makes the change:
    - Spring services: a method on the service's `*EventPublisher` (`@Transactional(propagation = MANDATORY)`, so calling
      it outside a transaction fails loudly).
-   - order-service: `append_errand_event(db, ...)` from `main/outbox.py` inside the `SessionLocal.begin()` block.
+   - Python services: append the event from `main/outbox.py` inside the same `SessionLocal.begin()` block as the business change.
 2. Add the topic to the catalogue above. No Debezium change is needed: the topic is taken from `type`.
 
 ## Adding a service (e.g. credit-service)

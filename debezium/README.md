@@ -32,6 +32,7 @@ Rows are never deleted by the pipeline; Debezium reads the WAL, so old rows can 
 | `user.registered` | user-service | user id | `userId`, `type`, `name`, `email`, `registeredAt` |
 | `errand.created` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `supplierId`, `expiresAt`, `createdAt` |
 | `errand.accepted` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `acceptedAt` |
+| `errand.delivered` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `deliveredAt` |
 | `errand.cancelled` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `cancelledAt` |
 | `errand.completed` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `completedAt` |
 | `errand.failed` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `failureReason`, `failedAt` |

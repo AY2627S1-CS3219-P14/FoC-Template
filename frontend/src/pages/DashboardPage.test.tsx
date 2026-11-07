@@ -55,6 +55,7 @@ const openErrand: ErrandDashboardItem = {
   expires_at: '2026-10-21T04:00:00.000Z',
   created_at: '2026-10-20T04:00:00.000Z',
   accepted_at: null,
+  delivered_at: null,
   completed_at: null,
   cancelled_at: null,
   failed_at: null,

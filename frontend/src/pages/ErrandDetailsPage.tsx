@@ -10,12 +10,14 @@ import type { ErrandDetails } from '../features/errands/errand-details.types'
 import {
   cancelErrand,
   completeErrand,
+  deliverErrand,
   ErrandApiError,
   failErrand,
 } from '../features/errands/errand.api'
 import { loadErrandDetails } from '../features/errands/errand.view'
 import type { ErrandStatus } from '../features/errands/errand.types'
 import { useAuth } from '../features/auth/useAuth'
+import { useCredits } from '../features/credits/useCredits'
 
 const statusPresentation: Record<
   ErrandStatus,
@@ -23,6 +25,7 @@ const statusPresentation: Record<
 > = {
   OPEN: { label: 'Open', className: 'bg-[#fff3d8] text-[#8e6523]' },
   ACCEPTED: { label: 'Accepted', className: 'bg-[#ddf3e7] text-[#1e694e]' },
+  DELIVERED: { label: 'Ready for pickup', className: 'bg-[#ddf3e7] text-[#1e694e]' },
   COMPLETED: { label: 'Completed', className: 'bg-[#ddf3e7] text-[#1e694e]' },
   CANCELLED: { label: 'Cancelled', className: 'bg-[#edf0ed] text-[#68736c]' },
   FAILED: { label: 'Failed', className: 'bg-[#fde8e7] text-[#a33a32]' },
@@ -64,7 +67,7 @@ function getStatusCopy(errand: ErrandDetails) {
   if (errand.status === 'ACCEPTED' && errand.viewerRole === 'requester') {
     return {
       title: 'Courier assigned',
-      description: `${errand.courierName ?? 'A courier'} accepted your errand. Confirm only after you receive the items.`,
+      description: `${errand.courierName ?? 'A courier'} accepted your errand. Wait until the items are ready for pickup.`,
     }
   }
 
@@ -75,7 +78,19 @@ function getStatusCopy(errand: ErrandDetails) {
     }
   }
 
-  const terminalCopy: Record<Exclude<ErrandStatus, 'OPEN' | 'ACCEPTED'>, string> = {
+  if (errand.status === 'DELIVERED') {
+    return errand.viewerRole === 'requester'
+      ? {
+          title: 'Collect your items',
+          description: 'Pick up your items at the delivery location, then confirm receipt or report a problem before the deadline.',
+        }
+      : {
+          title: 'Awaiting requester confirmation',
+          description: 'You marked the items ready for pickup. Credits transfer after the requester confirms receipt.',
+        }
+  }
+
+  const terminalCopy: Record<Exclude<ErrandStatus, 'OPEN' | 'ACCEPTED' | 'DELIVERED'>, string> = {
     COMPLETED: 'The requester confirmed this delivery as completed.',
     CANCELLED: 'The requester cancelled this errand before it was accepted.',
     FAILED: 'This errand was reported as unsuccessful and is now closed.',
@@ -222,10 +237,18 @@ function ErrandDetailsContent({
   loadError,
   onRefresh,
 }: ErrandDetailsContentProps) {
+  const { refreshBalance } = useCredits()
   const [activeAction, setActiveAction] = useState<ErrandAction | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [isPastDeadline, setIsPastDeadline] = useState(() => Date.parse(errand.expiresAt) <= Date.now())
   const actionControllerRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    const remainingMs = Date.parse(errand.expiresAt) - Date.now()
+    const timeout = window.setTimeout(() => setIsPastDeadline(true), Math.max(0, remainingMs))
+    return () => window.clearTimeout(timeout)
+  }, [errand.expiresAt])
 
   useEffect(
     () => () => {
@@ -237,6 +260,11 @@ function ErrandDetailsContent({
   const status = statusPresentation[errand.status]
   const statusCopy = getStatusCopy(errand)
   const outcomeTime = getOutcomeTime(errand)
+  const isRequester = errand.viewerRole === 'requester'
+  const canCancel = isRequester && errand.status === 'OPEN' && !errand.courierName
+  const canDeliver = !isRequester && errand.status === 'ACCEPTED'
+  const canResolve = isRequester && errand.status === 'DELIVERED'
+  const showDeadlinePassed = isPastDeadline && (canCancel || canDeliver || canResolve)
   const deliveryLocation = [
     errand.deliveryBuilding,
     errand.deliveryFloor ? `Level ${errand.deliveryFloor}` : null,
@@ -244,8 +272,13 @@ function ErrandDetailsContent({
     .filter(Boolean)
     .join(', ')
 
+  function openAction(action: ErrandAction) {
+    setActionError(null)
+    setActiveAction(action)
+  }
+
   async function confirmAction(failureReason?: string) {
-    if (!activeAction) return
+    if (!activeAction || isRefreshing || actionControllerRef.current) return
 
     const controller = new AbortController()
     actionControllerRef.current = controller
@@ -254,6 +287,7 @@ function ErrandDetailsContent({
 
     try {
       if (activeAction === 'cancel') await cancelErrand(errand.id, controller.signal)
+      if (activeAction === 'deliver') await deliverErrand(errand.id, controller.signal)
       if (activeAction === 'complete') await completeErrand(errand.id, controller.signal)
       if (activeAction === 'fail') {
         await failErrand(errand.id, failureReason ?? '', controller.signal)
@@ -262,8 +296,13 @@ function ErrandDetailsContent({
 
       setActiveAction(null)
       onRefresh('Errand updated. Refreshing details…')
+      if (activeAction !== 'deliver') void refreshBalance()
     } catch (error) {
       if (controller.signal.aborted) return
+      if (error instanceof ErrandApiError && error.status === 409) {
+        setActiveAction(null)
+        onRefresh()
+      }
       setActionError(
         error instanceof Error ? error.message : 'Unable to update this errand.',
       )
@@ -310,6 +349,11 @@ function ErrandDetailsContent({
       {loadError ? (
         <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
           The latest details could not be loaded. {loadError}
+        </p>
+      ) : null}
+      {!activeAction && actionError ? (
+        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {actionError}
         </p>
       ) : null}
 
@@ -380,6 +424,9 @@ function ErrandDetailsContent({
             {errand.acceptedAt ? (
               <DetailRow label="ACCEPTED" value={formatDateTime(errand.acceptedAt)} />
             ) : null}
+            {errand.deliveredAt ? (
+              <DetailRow label="READY FOR PICKUP" value={formatDateTime(errand.deliveredAt)} />
+            ) : null}
             {outcomeTime ? (
               <DetailRow
                 label={errand.status === 'EXPIRED' ? 'EXPIRED' : errand.status}
@@ -388,28 +435,46 @@ function ErrandDetailsContent({
             ) : null}
           </dl>
 
-          {errand.viewerRole === 'requester' && errand.status === 'OPEN' ? (
+          {showDeadlinePassed ? (
+            <p className="mt-6 text-sm text-[#68736c]">The errand deadline has passed.</p>
+          ) : null}
+
+          {canCancel && !isPastDeadline ? (
             <button
               type="button"
-              onClick={() => setActiveAction('cancel')}
+              disabled={isRefreshing}
+              onClick={() => openAction('cancel')}
               className="mt-6 h-11 w-full cursor-pointer rounded-lg border border-[#d49a95] bg-white px-4 text-sm font-semibold text-[#a33a32] transition hover:bg-[#fff5f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a33a32]"
             >
               Cancel errand
             </button>
           ) : null}
 
-          {errand.viewerRole === 'requester' && errand.status === 'ACCEPTED' ? (
+          {canDeliver && !isPastDeadline ? (
+            <button
+              type="button"
+              disabled={isRefreshing}
+              onClick={() => openAction('deliver')}
+              className="mt-6 h-11 w-full cursor-pointer rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#175c45]"
+            >
+              Mark ready for pickup
+            </button>
+          ) : null}
+
+          {canResolve && !isPastDeadline ? (
             <div className="mt-6 space-y-2">
               <button
                 type="button"
-                onClick={() => setActiveAction('complete')}
+                disabled={isRefreshing}
+                onClick={() => openAction('complete')}
                 className="h-11 w-full cursor-pointer rounded-lg bg-[#d8f06b] px-4 text-sm font-semibold text-[#0d3c2d] transition hover:bg-[#cce85b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45]"
               >
-                Confirm delivery
+                Confirm receipt
               </button>
               <button
                 type="button"
-                onClick={() => setActiveAction('fail')}
+                disabled={isRefreshing}
+                onClick={() => openAction('fail')}
                 className="h-11 w-full cursor-pointer rounded-lg border border-[#d49a95] bg-white px-4 text-sm font-semibold text-[#a33a32] transition hover:bg-[#fff5f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a33a32]"
               >
                 Report problem

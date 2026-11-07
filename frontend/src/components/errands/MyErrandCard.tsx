@@ -15,7 +15,7 @@ type MyErrandCardProps = {
 const progressLabels: Record<MyErrandProgress, string> = {
   'waiting-for-courier': 'Waiting for courier',
   accepted: 'Accepted',
-  'ready-for-collection': 'Waiting for requester',
+  'ready-for-collection': 'Ready for pickup',
   'awaiting-confirmation': 'Awaiting confirmation',
 }
 

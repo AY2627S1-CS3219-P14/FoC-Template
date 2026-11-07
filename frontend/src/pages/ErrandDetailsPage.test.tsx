@@ -5,6 +5,7 @@ import { getMockErrandDetails } from '../features/errands/errand-details.mock'
 import {
   cancelErrand,
   completeErrand,
+  deliverErrand,
   ErrandApiError,
   failErrand,
 } from '../features/errands/errand.api'
@@ -20,7 +21,12 @@ vi.mock('../features/errands/errand.api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../features/errands/errand.api')>()),
   cancelErrand: vi.fn(),
   completeErrand: vi.fn(),
+  deliverErrand: vi.fn(),
   failErrand: vi.fn(),
+}))
+const refreshBalance = vi.fn()
+vi.mock('../features/credits/useCredits', () => ({
+  useCredits: () => ({ refreshBalance }),
 }))
 vi.mock('../features/auth/useAuth', () => ({
   useAuth: () => ({
@@ -34,7 +40,12 @@ vi.mock('../features/auth/useAuth', () => ({
 const loadErrandDetailsMock = vi.mocked(loadErrandDetails)
 const cancelErrandMock = vi.mocked(cancelErrand)
 const completeErrandMock = vi.mocked(completeErrand)
+const deliverErrandMock = vi.mocked(deliverErrand)
 const failErrandMock = vi.mocked(failErrand)
+
+function activeErrand(errandId: string) {
+  return { ...getMockErrandDetails(errandId)!, expiresAt: new Date(Date.now() + 60_000).toISOString() }
+}
 
 function renderPage(errandId: string) {
   return render(
@@ -51,7 +62,9 @@ describe('ErrandDetailsPage', () => {
     loadErrandDetailsMock.mockReset()
     cancelErrandMock.mockReset()
     completeErrandMock.mockReset()
+    deliverErrandMock.mockReset().mockResolvedValue(undefined)
     failErrandMock.mockReset()
+    refreshBalance.mockReset().mockResolvedValue(undefined)
     cancelErrandMock.mockResolvedValue({
       id: requesterOpenId,
       status: 'CANCELLED',
@@ -69,9 +82,8 @@ describe('ErrandDetailsPage', () => {
       failure_reason: 'The requested item was unavailable.',
     })
     loadErrandDetailsMock.mockImplementation(async (errandId) => {
-      const errand = getMockErrandDetails(errandId)
-      if (!errand) throw new ErrandApiError('Errand not found.', 404)
-      return errand
+      if (!getMockErrandDetails(errandId)) throw new ErrandApiError('Errand not found.', 404)
+      return activeErrand(errandId)
     })
   })
 
@@ -86,23 +98,35 @@ describe('ErrandDetailsPage', () => {
     expect(screen.getByRole('link', { name: '← Back to My errands' })).toHaveAttribute('href', '/my-errands')
   })
 
-  it('shows requester actions only for an accepted requester errand', async () => {
+  it('has the requester wait for pickup after a courier accepts', async () => {
     renderPage(requesterAcceptedId)
-    expect(await screen.findByRole('button', { name: 'Confirm delivery' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Report problem' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Courier assigned' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirm receipt' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Report problem' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel errand' })).not.toBeInTheDocument()
   })
 
-  it('keeps an accepted courier errand read-only', async () => {
+  it('lets the assigned courier mark an accepted errand ready for pickup', async () => {
+    const acceptedErrand = activeErrand(courierAcceptedId)
+    loadErrandDetailsMock.mockResolvedValueOnce(acceptedErrand).mockResolvedValueOnce({
+      ...acceptedErrand,
+      status: 'DELIVERED',
+      deliveredAt: '2026-10-22T04:00:00.000Z',
+    })
     renderPage(courierAcceptedId)
-    expect(await screen.findByText('YOU ARE DELIVERING')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Delivery in progress' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Confirm delivery' })).not.toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark ready for pickup' }))
+    const dialog = screen.getByRole('dialog', { name: 'Mark this errand ready for pickup?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Mark ready for pickup' }))
+
+    expect(await screen.findByRole('heading', { name: 'Awaiting requester confirmation' })).toBeInTheDocument()
+    expect(deliverErrandMock).toHaveBeenCalledWith(courierAcceptedId, expect.any(AbortSignal))
+    expect(screen.queryByRole('button', { name: 'Mark ready for pickup' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirm receipt' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Report problem' })).not.toBeInTheDocument()
   })
 
   it('cancels an open errand and reloads its details', async () => {
-    const openErrand = getMockErrandDetails(requesterOpenId)!
+    const openErrand = activeErrand(requesterOpenId)
     loadErrandDetailsMock.mockResolvedValueOnce(openErrand).mockResolvedValueOnce({
       ...openErrand,
       status: 'CANCELLED',
@@ -118,12 +142,13 @@ describe('ErrandDetailsPage', () => {
       expect(cancelErrandMock).toHaveBeenCalledWith(requesterOpenId, expect.any(AbortSignal)),
     )
     expect(await screen.findByRole('heading', { name: 'Cancelled' })).toBeInTheDocument()
+    expect(refreshBalance).toHaveBeenCalledTimes(1)
   })
 
   it('requires and submits a failure reason before reloading', async () => {
-    const acceptedErrand = getMockErrandDetails(requesterAcceptedId)!
-    loadErrandDetailsMock.mockResolvedValueOnce(acceptedErrand).mockResolvedValueOnce({
-      ...acceptedErrand,
+    const deliveredErrand = { ...activeErrand(requesterAcceptedId), status: 'DELIVERED' as const }
+    loadErrandDetailsMock.mockResolvedValueOnce(deliveredErrand).mockResolvedValueOnce({
+      ...deliveredErrand,
       status: 'FAILED',
       failedAt: '2026-10-22T04:00:00.000Z',
       failureReason: 'The requested item was unavailable.',
@@ -148,18 +173,50 @@ describe('ErrandDetailsPage', () => {
       ),
     )
     expect(await screen.findByRole('heading', { name: 'Failed' })).toBeInTheDocument()
+    expect(refreshBalance).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps the dialog open when a mutation fails', async () => {
-    completeErrandMock.mockRejectedValue(new ErrandApiError('Errand is no longer ACCEPTED', 409))
+  it('confirms receipt after the courier handoff', async () => {
+    const deliveredErrand = { ...activeErrand(requesterAcceptedId), status: 'DELIVERED' as const }
+    loadErrandDetailsMock.mockResolvedValueOnce(deliveredErrand).mockResolvedValueOnce({
+      ...deliveredErrand,
+      status: 'COMPLETED',
+      completedAt: '2026-10-22T04:00:00.000Z',
+    })
     renderPage(requesterAcceptedId)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirm delivery' }))
-    const dialog = screen.getByRole('dialog', { name: 'Confirm this delivery?' })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm delivery' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm receipt' }))
+    const dialog = screen.getByRole('dialog', { name: 'Confirm receipt?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm receipt' }))
 
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Errand is no longer ACCEPTED')
+    expect(await screen.findByRole('heading', { name: 'Completed' })).toBeInTheDocument()
+    expect(completeErrandMock).toHaveBeenCalledWith(requesterAcceptedId, expect.any(AbortSignal))
+  })
+
+  it('keeps the dialog open after a retryable service error', async () => {
+    loadErrandDetailsMock.mockResolvedValueOnce({ ...activeErrand(requesterAcceptedId), status: 'DELIVERED' })
+    completeErrandMock.mockRejectedValue(new ErrandApiError('Credit service unavailable', 503))
+    renderPage(requesterAcceptedId)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm receipt' }))
+    const dialog = screen.getByRole('dialog', { name: 'Confirm receipt?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm receipt' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Credit service unavailable')
     expect(dialog).toBeInTheDocument()
+  })
+
+  it('hides requester actions once the delivered errand deadline has passed', async () => {
+    loadErrandDetailsMock.mockResolvedValueOnce({
+      ...activeErrand(requesterAcceptedId),
+      status: 'DELIVERED',
+      expiresAt: '2026-10-22T12:00:00.000Z',
+    })
+    renderPage(requesterAcceptedId)
+
+    expect(await screen.findByText('The errand deadline has passed.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirm receipt' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Report problem' })).not.toBeInTheDocument()
   })
 
   it('manually refreshes the current errand', async () => {
@@ -172,7 +229,7 @@ describe('ErrandDetailsPage', () => {
   it('shows terminal errands without mutation actions', async () => {
     renderPage('completed-errand')
     expect(await screen.findByRole('heading', { name: 'Completed' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Confirm delivery' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirm receipt' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Report problem' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel errand' })).not.toBeInTheDocument()
   })

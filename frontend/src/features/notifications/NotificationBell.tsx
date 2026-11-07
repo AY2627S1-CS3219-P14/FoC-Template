@@ -6,7 +6,7 @@ import { useNotifications } from './useNotifications'
 export function NotificationBell() {
   const notifications = useNotifications()
   const [open, setOpen] = useState(false)
-  const [updating, setUpdating] = useState(false)
+  const [pendingUpdates, setPendingUpdates] = useState(0)
   const [actionError, setActionError] = useState<string | null>(null)
   const root = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLButtonElement>(null)
@@ -35,16 +35,17 @@ export function NotificationBell() {
 
   if (!notifications) return null
   const { items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead } = notifications
+  const updating = pendingUpdates > 0
 
   async function updateReadStatus(action: () => Promise<void>) {
-    setUpdating(true)
+    setPendingUpdates((count) => count + 1)
     setActionError(null)
     try {
       await action()
     } catch {
       setActionError('Could not update read status. Please try again.')
     } finally {
-      setUpdating(false)
+      setPendingUpdates((count) => count - 1)
     }
   }
 
@@ -57,10 +58,7 @@ export function NotificationBell() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => {
-          if (!open) {
-            setActionError(null)
-            void refresh()
-          }
+          if (!open) void refresh()
           setOpen(!open)
         }}
         className="relative grid size-9 cursor-pointer place-items-center rounded-lg border border-[#cfd8d1] text-[#175c45] hover:bg-[#f0f6f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] lg:size-10"
@@ -112,11 +110,15 @@ export function NotificationBell() {
           <ul className="max-h-[min(25rem,60dvh)] divide-y divide-[#dde3de] overflow-y-auto">
             {groupNotifications(items).map(({ key, latest, related }) => {
               const unread = !latest.readAt || Boolean(related && !related.readAt)
+              const markCardRead = () => markRead(related ? [latest.id, related.id] : [latest.id])
               return (
                 <li key={key} className={unread ? 'bg-[#f0f6f2] px-4 py-3' : 'px-4 py-3'}>
                   <Link
                     to={`/errands/${encodeURIComponent(latest.errandId)}`}
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setOpen(false)
+                      if (unread) void updateReadStatus(markCardRead)
+                    }}
                     className="block text-sm font-medium hover:underline"
                   >
                     {related ? (
@@ -136,9 +138,7 @@ export function NotificationBell() {
                       <button
                         type="button"
                         disabled={updating}
-                        onClick={() => void updateReadStatus(() => markRead(
-                          related ? [latest.id, related.id] : [latest.id],
-                        ))}
+                        onClick={() => void updateReadStatus(markCardRead)}
                         className="cursor-pointer font-semibold text-[#175c45] hover:underline disabled:opacity-45"
                       >
                         Mark as read

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../auth/useAuth'
 import { NotificationProvider } from './NotificationProvider'
@@ -129,6 +129,43 @@ describe('NotificationProvider', () => {
     expect(screen.queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument()
   })
 
+  it('opens the errand immediately and lets the user retry if marking it read fails', async () => {
+    vi.mocked(useAuth).mockReturnValue(alice)
+    vi.mocked(openNotificationStream).mockImplementation(() => new Promise(() => {}))
+    vi.mocked(getNotifications).mockResolvedValue([item])
+    vi.mocked(getUnreadCount).mockResolvedValue(1)
+    let rejectRead!: (error: Error) => void
+    vi.mocked(markNotificationRead).mockImplementationOnce(() => new Promise((_, reject) => {
+      rejectRead = reject
+    }))
+    render(
+      <MemoryRouter>
+        <NotificationProvider>
+          <NotificationBell />
+          <Routes>
+            <Route path="/" element={<h1>Dashboard</h1>} />
+            <Route path="/errands/errand" element={<h1>Errand details</h1>} />
+          </Routes>
+        </NotificationProvider>
+      </MemoryRouter>,
+    )
+
+    const bell = await screen.findByRole('button', { name: 'Notifications (1 unread)' })
+    fireEvent.click(bell)
+    expect(markNotificationRead).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('link', { name: 'Delivered' }))
+    expect(screen.getByRole('heading', { name: 'Errand details' })).toBeInTheDocument()
+    expect(bell).toHaveAttribute('aria-expanded', 'false')
+    expect(markNotificationRead).toHaveBeenCalledWith(item.id, expect.any(AbortSignal))
+
+    vi.mocked(getUnreadCount).mockRejectedValue(new Error('Request failed'))
+    await act(async () => rejectRead(new Error('Request failed')))
+    expect(bell).toHaveAccessibleName('Notifications (1 unread)')
+    fireEvent.click(bell)
+    expect(screen.getByRole('alert')).toHaveTextContent('Could not update read status')
+    expect(screen.getByRole('button', { name: 'Mark as read' })).toBeEnabled()
+  })
+
   it.each(['completion first', 'credits first'])('groups the two errand outcomes with %s', async (order) => {
     vi.mocked(useAuth).mockReturnValue(alice)
     vi.mocked(openNotificationStream).mockImplementation(() => new Promise(() => {}))
@@ -141,7 +178,7 @@ describe('NotificationProvider', () => {
     const [first, second] = order === 'completion first' ? [completed, credit] : [credit, completed]
     let items = [first]
     vi.mocked(getNotifications).mockImplementation(async () => items)
-    vi.mocked(getUnreadCount).mockImplementation(async () => items.filter((alert) => !alert.readAt).length)
+    vi.mocked(getUnreadCount).mockImplementation(async () => items.some((alert) => !alert.readAt) ? 1 : 0)
     vi.mocked(markNotificationRead).mockImplementation(async (id) => {
       items = items.map((alert) => alert.id === id ? { ...alert, readAt: alert.createdAt } : alert)
     })
@@ -156,11 +193,10 @@ describe('NotificationProvider', () => {
     items = [second, first]
     const stream = vi.mocked(openNotificationStream).mock.calls[0][0]
     act(() => stream.onNotification(second))
-    expect(await screen.findByRole('button', { name: 'Notifications (2 unread)' })).toBeInTheDocument()
+    const grouped = await panel.findByRole('link', { name: `Errand completed ${credit.message}` })
+    expect(screen.getByRole('button', { name: 'Notifications (1 unread)' })).toBeInTheDocument()
     expect(panel.getAllByRole('listitem')).toHaveLength(1)
-    expect(panel.getByRole('link', { name: `Errand completed ${credit.message}` })).toBeInTheDocument()
-
-    fireEvent.click(panel.getByRole('button', { name: 'Mark as read' }))
+    fireEvent.click(grouped)
     expect(await screen.findByRole('button', { name: 'Notifications' })).toBeInTheDocument()
     expect(markNotificationRead).toHaveBeenCalledWith(completed.id, expect.any(AbortSignal))
     expect(markNotificationRead).toHaveBeenCalledWith(credit.id, expect.any(AbortSignal))

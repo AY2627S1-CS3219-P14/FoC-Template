@@ -54,7 +54,7 @@ function NotificationSession({ children }: PropsWithChildren) {
       const count = await getUnreadCount(signal)
       if (!signal.aborted) setUnreadCount(count)
     } catch {
-      if (!signal.aborted) setUnreadCount(null)
+      // Keep the last confirmed count until a refresh succeeds.
     }
   }, [])
 

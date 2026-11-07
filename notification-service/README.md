@@ -72,7 +72,7 @@ default `http://localhost:5173`) as needed.
 | --- | --- | --- |
 | `GET /notifications?limit=20` | Fetch recent notifications | `200` with `{"items":[...]}` |
 | `GET /notifications/stream` | Subscribe to live notifications | `200` with `Content-Type: text/event-stream` |
-| `GET /notifications/unread-count` | Count all unread notifications for the caller | `200` with `{"count":2}` |
+| `GET /notifications/unread-count` | Count unread notification cards for the caller | `200` with `{"count":2}` |
 | `PATCH /notifications/{id}/read` | Mark one notification as read | `204` with an empty body |
 | `POST /notifications/read-all` | Mark all of the caller's unread notifications as read | `204` with an empty body |
 
@@ -126,8 +126,9 @@ run one notification-service instance for live delivery.
 
 ### `GET /notifications/unread-count`
 
-The count includes all of the caller's unread notifications, even those outside the
-history window.
+The count includes the caller's unread notifications across all history. The latest
+completion and credit receipt for the same errand form one card, which counts as unread
+until both records are read. Other notifications each count separately.
 
 ```json
 {"count": 2}

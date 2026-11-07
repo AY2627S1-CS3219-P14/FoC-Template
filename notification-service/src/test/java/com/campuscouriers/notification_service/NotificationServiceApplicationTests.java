@@ -161,6 +161,35 @@ class NotificationServiceApplicationTests {
     }
 
     @Test
+    void countsCompletionAndCreditReceiptAsOneUnreadCardUntilBothAreRead() throws Exception {
+        UUID courier = UUID.randomUUID();
+        UUID otherUser = UUID.randomUUID();
+        UUID errand = UUID.randomUUID();
+        UUID completed = UUID.randomUUID();
+        UUID credit = UUID.randomUUID();
+        UUID delivered = UUID.randomUUID();
+        notifications.save(completed, courier, "ERRAND_COMPLETED", errand, "Completed");
+        notifications.save(credit, courier, "CREDIT_RECEIVED", errand, "Credit received");
+        notifications.save(delivered, courier, "ERRAND_DELIVERED", errand, "Delivered");
+        notifications.save(UUID.randomUUID(), otherUser, "CREDIT_RECEIVED", errand, "Credit received");
+        String courierToken = token(courier);
+
+        var history = request("GET", "/notifications?limit=1", courierToken);
+        assertThat(history.statusCode()).isEqualTo(200);
+        assertThat(json.readTree(history.body()).get("items").size()).isEqualTo(1);
+        assertThat(unread(courierToken)).isEqualTo(2);
+
+        assertThat(request("PATCH", "/notifications/" + find(completed).getId() + "/read",
+            courierToken).statusCode()).isEqualTo(204);
+        assertThat(unread(courierToken)).isEqualTo(2);
+
+        assertThat(request("PATCH", "/notifications/" + find(credit).getId() + "/read",
+            courierToken).statusCode()).isEqualTo(204);
+        assertThat(unread(courierToken)).isEqualTo(1);
+        assertThat(unread(token(otherUser))).isEqualTo(1);
+    }
+
+    @Test
     void liveDeliveryReachesBothRecipientTabsAndSkipsRedeliveryAndRollback() throws Exception {
         UUID alice = UUID.randomUUID();
         UUID bob = UUID.randomUUID();

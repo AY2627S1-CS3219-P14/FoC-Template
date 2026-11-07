@@ -4,6 +4,7 @@ import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'
 import { useAuth } from '../../features/auth/useAuth'
 import { useCredits } from '../../features/credits/useCredits'
+import { NotificationBell } from '../../features/notifications/NotificationBell'
 
 export function AppHeader() {
   const { signOut } = useAuth()
@@ -52,6 +53,7 @@ export function AppHeader() {
             Retry balance
           </button>
         ) : null}
+        <NotificationBell />
         <button
           type="button"
           onClick={handleSignOut}

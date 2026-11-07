@@ -3,6 +3,8 @@ import { useAuth } from '../auth/useAuth'
 import {
   getNotifications,
   getUnreadCount,
+  markAllNotificationsRead,
+  markNotificationRead,
   notificationHistoryLimit,
   openNotificationStream,
 } from './notification.api'
@@ -70,6 +72,24 @@ function NotificationSession({ children }: PropsWithChildren) {
     await Promise.all([refreshHistory(), refreshUnreadCount()])
   }, [refreshHistory, refreshUnreadCount])
 
+  const markRead = useCallback(async (ids: readonly string[]) => {
+    const signal = sessionRef.current?.signal
+    if (!signal || signal.aborted) return
+    const results = await Promise.allSettled(ids.map((id) => markNotificationRead(id, signal)))
+    if (signal.aborted) return
+    await refresh()
+    if (results.some((result) => result.status === 'rejected')) {
+      throw new Error('Could not update all selected notifications.')
+    }
+  }, [refresh])
+
+  const markAllRead = useCallback(async () => {
+    const signal = sessionRef.current?.signal
+    if (!signal || signal.aborted) return
+    await markAllNotificationsRead(signal)
+    if (!signal.aborted) await refresh()
+  }, [refresh])
+
   useEffect(() => {
     const session = new AbortController()
     sessionRef.current = session
@@ -103,8 +123,8 @@ function NotificationSession({ children }: PropsWithChildren) {
   }, [refresh, refreshUnreadCount])
 
   const value = useMemo<NotificationContextValue>(
-    () => ({ items, unreadCount, historyStatus, connection, refresh }),
-    [items, unreadCount, historyStatus, connection, refresh],
+    () => ({ items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead }),
+    [items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead],
   )
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
 }

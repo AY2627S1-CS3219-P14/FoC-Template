@@ -7,6 +7,8 @@ export type NotificationContextValue = {
   historyStatus: 'loading' | 'ready' | 'error'
   connection: NotificationConnection
   refresh: () => Promise<void>
+  markRead: (ids: readonly string[]) => Promise<void>
+  markAllRead: () => Promise<void>
 }
 
 export const NotificationContext = createContext<NotificationContextValue | null>(null)

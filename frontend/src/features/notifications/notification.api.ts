@@ -48,6 +48,22 @@ export async function getUnreadCount(signal: AbortSignal): Promise<number> {
   return count
 }
 
+export async function markNotificationRead(id: string, signal: AbortSignal): Promise<void> {
+  const response = await authenticatedFetch(`${baseUrl}/notifications/${encodeURIComponent(id)}/read`, {
+    method: 'PATCH',
+    signal,
+  })
+  if (!response.ok) throw new Error('Could not mark the notification as read.')
+}
+
+export async function markAllNotificationsRead(signal: AbortSignal): Promise<void> {
+  const response = await authenticatedFetch(`${baseUrl}/notifications/read-all`, {
+    method: 'POST',
+    signal,
+  })
+  if (!response.ok) throw new Error('Could not mark all notifications as read.')
+}
+
 class StreamAccessError extends Error {}
 
 export function openNotificationStream({

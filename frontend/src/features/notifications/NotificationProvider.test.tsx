@@ -1,8 +1,12 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../auth/useAuth'
 import { NotificationProvider } from './NotificationProvider'
-import { getNotifications, getUnreadCount, openNotificationStream } from './notification.api'
+import { NotificationBell } from './NotificationBell'
+import {
+  getNotifications, getUnreadCount, markAllNotificationsRead, markNotificationRead, openNotificationStream,
+} from './notification.api'
 import { useNotifications } from './useNotifications'
 import type { NotificationItem } from './notification.types'
 
@@ -10,6 +14,8 @@ vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('./notification.api', () => ({
   getNotifications: vi.fn(),
   getUnreadCount: vi.fn(),
+  markAllNotificationsRead: vi.fn(),
+  markNotificationRead: vi.fn(),
   openNotificationStream: vi.fn(),
   notificationHistoryLimit: 20,
 }))
@@ -96,5 +102,30 @@ describe('NotificationProvider', () => {
     act(() => previous.onNotification(item))
     await waitFor(() => expect(screen.getByLabelText('unread')).toHaveTextContent('0'))
     expect(screen.queryByText('Delivered')).not.toBeInTheDocument()
+  })
+
+  it('marks an alert or the whole feed as read and reloads the server unread count', async () => {
+    vi.mocked(useAuth).mockReturnValue(alice)
+    vi.mocked(openNotificationStream).mockImplementation(() => new Promise(() => {}))
+    let items = [item, { ...item, id: 'other', message: 'Another alert' }]
+    vi.mocked(getNotifications).mockImplementation(async () => items)
+    vi.mocked(getUnreadCount).mockImplementation(async () => items.filter((alert) => !alert.readAt).length)
+    vi.mocked(markNotificationRead).mockImplementation(async (id) => {
+      items = items.map((alert) => alert.id === id ? { ...alert, readAt: alert.createdAt } : alert)
+    })
+    vi.mocked(markAllNotificationsRead).mockImplementation(async () => {
+      items = items.map((alert) => ({ ...alert, readAt: alert.createdAt }))
+    })
+    render(<MemoryRouter><NotificationProvider><NotificationBell /></NotificationProvider></MemoryRouter>)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Notifications (2 unread)' }))
+    expect(screen.getByRole('link', { name: 'Delivered' })).toHaveAttribute('href', '/errands/errand')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mark as read' })[0])
+    expect(await screen.findByRole('button', { name: 'Notifications (1 unread)' })).toBeInTheDocument()
+    expect(markNotificationRead).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
+    expect(await screen.findByRole('button', { name: 'Notifications' })).toBeInTheDocument()
+    expect(markAllNotificationsRead).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument()
   })
 })

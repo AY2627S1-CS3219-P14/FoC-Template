@@ -6,8 +6,9 @@ from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 
-from main import complete_errand, fail_errand
+from main import complete_errand, fail_errand, credit_operations
 from main.models import Errand, ErrandStatus
 from test.outbox_support import assert_single_event
 from test.test_accept_errand import postgres_database, seed
@@ -21,8 +22,8 @@ def test_postgres_terminal_transition_has_one_winner(postgres_database, monkeypa
     monkeypatch.setattr(complete_errand, "SessionLocal", factory)
     monkeypatch.setattr(fail_errand, "SessionLocal", factory)
     transfer, release = Mock(return_value=True), Mock(return_value=True)
-    monkeypatch.setattr(complete_errand, "transfer_reserved_credits", transfer)
-    monkeypatch.setattr(fail_errand, "release_reserved_credits", release)
+    client = Mock(complete=transfer, release=release)
+    monkeypatch.setattr(credit_operations, "CreditClient", lambda token: client)
     fields = seed(factory, status=ErrandStatus.ACCEPTED, courier_id=uuid4(),
                   accepted_at=datetime.now(timezone.utc))
     barrier = Barrier(2)
@@ -33,12 +34,13 @@ def test_postgres_terminal_transition_has_one_winner(postgres_database, monkeypa
         try:
             if action == "complete":
                 response = complete_errand.complete_errand_request(
-                    complete_errand.CompleteErrandRequest(errand_id=fields["id"]), claims
+                    complete_errand.CompleteErrandRequest(errand_id=fields["id"]), claims,
+                    HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token")
                 )
             else:
                 response = fail_errand.fail_errand_request(
                     fail_errand.FailErrandRequest(errand_id=fields["id"], failure_reason="Missing items"),
-                    claims,
+                    claims, HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token"),
                 )
             return 200, response.status
         except HTTPException as exc:

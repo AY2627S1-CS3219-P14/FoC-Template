@@ -48,6 +48,8 @@ def accept_errand_request(
                 Errand.id == request.errand_id,
                 Errand.status == ErrandStatus.OPEN,
                 Errand.courier_id.is_(None),
+                Errand.pending_credit_action.is_(None),
+                Errand.credit_reservation_id.is_not(None),
                 Errand.requester_id != courier_id,
                 Errand.expires_at > func.clock_timestamp(),
             )

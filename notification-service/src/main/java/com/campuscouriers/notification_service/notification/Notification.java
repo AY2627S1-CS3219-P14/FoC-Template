@@ -36,6 +36,9 @@ public class Notification {
     @Column(name = "errand_id", nullable = false)
     private UUID errandId;
 
+    @Column(name = "conversation_id")
+    private UUID conversationId;
+
     @Column(nullable = false, columnDefinition = "text")
     private String message;
 
@@ -50,11 +53,12 @@ public class Notification {
     }
 
     public Notification(UUID recipientId, UUID sourceEventId, String type,
-                        UUID errandId, String message) {
+                        UUID errandId, UUID conversationId, String message) {
         this.recipientId = recipientId;
         this.sourceEventId = sourceEventId;
         this.type = type;
         this.errandId = errandId;
+        this.conversationId = conversationId;
         this.message = message;
     }
 
@@ -63,6 +67,7 @@ public class Notification {
     public UUID getSourceEventId() { return sourceEventId; }
     public String getType() { return type; }
     public UUID getErrandId() { return errandId; }
+    public UUID getConversationId() { return conversationId; }
     public String getMessage() { return message; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getReadAt() { return readAt; }

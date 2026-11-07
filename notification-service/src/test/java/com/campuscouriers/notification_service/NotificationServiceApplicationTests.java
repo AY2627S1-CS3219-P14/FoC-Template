@@ -144,6 +144,10 @@ class NotificationServiceApplicationTests {
         JsonNode items = json.readTree(history.body()).get("items");
         assertThat(items.size()).isEqualTo(1);
         assertThat(items.get(0).get("id").asString()).isEqualTo(find(secondAliceEvent).getId().toString());
+        assertThat(items.get(0).has("errandId")).isFalse();
+        assertThat(items.get(0).get("data").get("errandId").asString())
+            .isEqualTo(find(secondAliceEvent).getErrandId().toString());
+        assertThat(items.get(0).get("data").has("conversationId")).isFalse();
         assertThat(items.get(0).get("readAt").isNull()).isTrue();
         assertThat(unread(aliceToken)).isEqualTo(2);
 

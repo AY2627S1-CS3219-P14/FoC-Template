@@ -20,7 +20,7 @@ public class ChatMessageEventListener {
     public void onEvent(ConsumerRecord<String, String> record) {
         ChatMessageEvent event = parser.parse(record);
         notifications.save(event.eventId(), event.recipientId(), "CHAT_MESSAGE",
-            event.errandId(), "You received a new delivery message.");
+            event.errandId(), event.conversationId(), "You received a new delivery message.");
     }
 }
 

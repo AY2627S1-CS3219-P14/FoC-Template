@@ -93,8 +93,10 @@ descending, with `id` descending as a tie-breaker. An empty result is `{"items":
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "type": "ERRAND_ACCEPTED",
-      "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4",
       "message": "Someone has accepted your errand.",
+      "data": {
+        "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4"
+      },
       "createdAt": "2026-11-06T08:00:00Z",
       "readAt": null
     }
@@ -117,10 +119,27 @@ data:{}
 
 id:550e8400-e29b-41d4-a716-446655440000
 event:notification
-data:{"id":"550e8400-e29b-41d4-a716-446655440000","type":"ERRAND_ACCEPTED","errandId":"9f5c3201-aeb9-4a3b-8acd-817043c059d4","message":"Someone has accepted your errand.","createdAt":"2026-11-06T08:00:00Z","readAt":null}
+data:{"id":"550e8400-e29b-41d4-a716-446655440000","type":"ERRAND_ACCEPTED","message":"Someone has accepted your errand.","data":{"errandId":"9f5c3201-aeb9-4a3b-8acd-817043c059d4"},"createdAt":"2026-11-06T08:00:00Z","readAt":null}
 
 :heartbeat
 
+```
+
+For `CHAT_MESSAGE`, `data` also contains the conversation identifier so the client can
+navigate directly to the chat without resolving it through the errand first:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "CHAT_MESSAGE",
+  "message": "You received a new delivery message.",
+  "data": {
+    "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4",
+    "conversationId": "db30f086-8f1d-4fa8-b6d6-5acfb0b92885"
+  },
+  "createdAt": "2026-11-08T08:00:00Z",
+  "readAt": null
+}
 ```
 
 After each `connected` event, fetch history and merge it with live notifications by `id`.

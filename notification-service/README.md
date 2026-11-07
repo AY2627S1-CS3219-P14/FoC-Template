@@ -6,6 +6,7 @@ Authenticated HTTP endpoints expose saved notifications and stream new ones over
 | Kafka topic | Recipient | Notification type |
 | --- | --- | --- |
 | `errand.accepted` | `requesterId` | `ERRAND_ACCEPTED` |
+| `errand.delivered` | `requesterId` | `ERRAND_DELIVERED` |
 | `errand.completed` | `courierId` | `ERRAND_COMPLETED` |
 | `errand.failed` | `courierId` | `ERRAND_FAILED` |
 
@@ -13,7 +14,7 @@ Events are plain JSON with `errandId`, `requesterId`, `courierId` (UUIDs),
 and positive integer `creditValue`. Additional payload fields are ignored.
 The UTF-8 `eventId` Kafka header must contain the original outbox UUID;
 see `../debezium/connectors/order-outbox.json`.
-Cancellation and ready-for-collection events are not consumed.
+Delivery notifications confirm that the assigned courier marked the errand delivered.
 Completion notifications confirm the requester's action; they do not claim that credits
 were transferred. The order service's credit transfer integration is currently a placeholder.
 
@@ -32,7 +33,7 @@ cd notification-service
 
 Compose recreates Kafka if needed to expose its new external listener. Existing Docker
 clients still use `kafka:19092`; the locally running service uses `localhost:9092`.
-The three source topics and their three-partition DLTs are declared automatically.
+The source topics and their three-partition DLTs are declared automatically.
 Actual order events require the order service, its database, and Debezium to be running
 as described in `../debezium/README.md`.
 
@@ -95,7 +96,7 @@ therefore move events to DLTs; storage resumes through operator replay.
 
 The dedicated consumer group is `notification-service`. A new group starts at the earliest
 retained records; existing groups resume at their committed offsets. Kafka only orders
-within one topic partition, so do not infer a total order across the three event topics.
+within one topic partition, so do not infer a total order across event topics.
 
 Inspect stored notifications from the repository root:
 

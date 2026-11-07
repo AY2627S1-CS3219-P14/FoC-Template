@@ -15,13 +15,15 @@ public class ErrandEventListener {
         this.notifications = notifications;
     }
 
-    @KafkaListener(topics = {"errand.accepted", "errand.completed", "errand.failed"})
+    @KafkaListener(topics = {"errand.accepted", "errand.delivered", "errand.completed", "errand.failed"})
     public void onEvent(ConsumerRecord<String, String> record) {
         ErrandEvent event = parser.parse(record);
         // Save commits before this listener returns; RECORD mode then commits the offset.
         switch (record.topic()) {
             case "errand.accepted" -> notifications.save(event.eventId(), event.requesterId(),
                 "ERRAND_ACCEPTED", event.errandId(), "Someone has accepted your errand.");
+            case "errand.delivered" -> notifications.save(event.eventId(), event.requesterId(),
+                "ERRAND_DELIVERED", event.errandId(), "Your courier marked your errand as delivered.");
             case "errand.completed" -> notifications.save(event.eventId(), event.courierId(),
                 "ERRAND_COMPLETED", event.errandId(),
                 "The requester confirmed your errand is complete.");

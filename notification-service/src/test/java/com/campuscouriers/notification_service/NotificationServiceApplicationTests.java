@@ -293,8 +293,8 @@ class NotificationServiceApplicationTests {
     private record SseFrame(String type, String id, String data) {}
 
     @Test
-    void mapsAllTopicsToTheOtherParticipantAndCommitsOffsets() throws Exception {
-        for (String topic : List.of("errand.accepted", "errand.completed", "errand.failed")) {
+    void mapsErrandTopicsToTheOtherParticipantAndCommitsOffsets() throws Exception {
+        for (String topic : List.of("errand.accepted", "errand.delivered", "errand.completed", "errand.failed")) {
             UUID eventId = UUID.randomUUID();
             UUID requester = UUID.randomUUID();
             UUID courier = UUID.randomUUID();
@@ -304,7 +304,7 @@ class NotificationServiceApplicationTests {
             await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
                 Notification saved = find(eventId);
                 assertThat(saved.getRecipientId()).isEqualTo(
-                    topic.equals("errand.accepted") ? requester : courier);
+                    topic.equals("errand.accepted") || topic.equals("errand.delivered") ? requester : courier);
                 assertThat(saved.getErrandId()).isEqualTo(errand);
                 assertThat(saved.getType()).isEqualTo(topic.replace('.', '_').toUpperCase());
                 assertThat(saved.getReadAt()).isNull();

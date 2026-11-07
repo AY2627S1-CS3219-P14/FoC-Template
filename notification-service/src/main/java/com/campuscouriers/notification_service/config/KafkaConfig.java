@@ -18,9 +18,11 @@ public class KafkaConfig {
         // Match the existing outbox topics' three partitions, including their DLTs.
         return new KafkaAdmin.NewTopics(
             TopicBuilder.name("errand.accepted").partitions(3).replicas(1).build(),
+            TopicBuilder.name("errand.delivered").partitions(3).replicas(1).build(),
             TopicBuilder.name("errand.completed").partitions(3).replicas(1).build(),
             TopicBuilder.name("errand.failed").partitions(3).replicas(1).build(),
             TopicBuilder.name("errand.accepted.notification-dlt").partitions(3).replicas(1).build(),
+            TopicBuilder.name("errand.delivered.notification-dlt").partitions(3).replicas(1).build(),
             TopicBuilder.name("errand.completed.notification-dlt").partitions(3).replicas(1).build(),
             TopicBuilder.name("errand.failed.notification-dlt").partitions(3).replicas(1).build());
     }

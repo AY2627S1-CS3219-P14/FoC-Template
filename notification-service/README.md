@@ -89,7 +89,7 @@ descending, with `id` descending as a tie-breaker. An empty result is `{"items":
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "type": "ERRAND_ACCEPTED",
       "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4",
-      "message": "Someone has accepted your errand.",
+      "message": "Someone has accepted your errand",
       "createdAt": "2026-11-06T08:00:00Z",
       "readAt": null
     }
@@ -112,7 +112,7 @@ data:{}
 
 id:550e8400-e29b-41d4-a716-446655440000
 event:notification
-data:{"id":"550e8400-e29b-41d4-a716-446655440000","type":"ERRAND_ACCEPTED","errandId":"9f5c3201-aeb9-4a3b-8acd-817043c059d4","message":"Someone has accepted your errand.","createdAt":"2026-11-06T08:00:00Z","readAt":null}
+data:{"id":"550e8400-e29b-41d4-a716-446655440000","type":"ERRAND_ACCEPTED","errandId":"9f5c3201-aeb9-4a3b-8acd-817043c059d4","message":"Someone has accepted your errand","createdAt":"2026-11-06T08:00:00Z","readAt":null}
 
 :heartbeat
 

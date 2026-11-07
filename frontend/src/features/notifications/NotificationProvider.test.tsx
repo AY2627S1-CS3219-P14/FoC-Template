@@ -170,10 +170,10 @@ describe('NotificationProvider', () => {
     vi.mocked(useAuth).mockReturnValue(alice)
     vi.mocked(openNotificationStream).mockImplementation(() => new Promise(() => {}))
     const completed = {
-      ...item, id: 'completed', type: 'ERRAND_COMPLETED', message: 'The requester confirmed your errand is complete.',
+      ...item, id: 'completed', type: 'ERRAND_COMPLETED', message: 'The requester confirmed your errand is complete',
     }
     const credit = {
-      ...item, id: 'credit', type: 'CREDIT_RECEIVED', message: 'You received 10 credits for your errand.',
+      ...item, id: 'credit', type: 'CREDIT_RECEIVED', message: 'You received 10 credits for your errand',
     }
     const [first, second] = order === 'completion first' ? [completed, credit] : [credit, completed]
     let items = [first]

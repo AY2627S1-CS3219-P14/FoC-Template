@@ -32,13 +32,13 @@ class NotificationEventListenersTest {
         new ErrandEventListener(new ErrandEventParser(), notifications).onEvent(record);
 
         verify(notifications).save(eventId, requesterId, "ERRAND_DELIVERED", orderId,
-            "Your courier marked your errand as delivered.");
+            "Your courier marked your errand as delivered");
     }
 
     @ParameterizedTest
     @CsvSource({
-        "credit.received, RECEIVED, 1, You received 1 credit for your errand.",
-        "credit.released, RELEASED, 10, 10 credits from your errand reservation returned to your available balance."
+        "credit.received, RECEIVED, 1, You received 1 credit for your errand",
+        "credit.released, RELEASED, 10, 10 credits from your errand reservation returned to your available balance"
     })
     void creditAlertsUseCreditRecordIdAndAffectedAccount(
             String topic, String change, long amount, String message) {

@@ -176,6 +176,26 @@ describe('ErrandDetailsPage', () => {
     expect(refreshBalance).toHaveBeenCalledTimes(1)
   })
 
+  it('refreshes and explains when a courier accepts before cancellation', async () => {
+    const openErrand = activeErrand(requesterOpenId)
+    loadErrandDetailsMock.mockResolvedValueOnce(openErrand).mockResolvedValueOnce({
+      ...openErrand,
+      status: 'ACCEPTED',
+      courierName: 'Assigned courier',
+    })
+    cancelErrandMock.mockRejectedValue(new ErrandApiError('Errand state prevents cancellation', 409))
+    renderPage(requesterOpenId)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel errand' }))
+    const dialog = screen.getByRole('dialog', { name: 'Cancel this errand?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel errand' }))
+
+    expect(await screen.findByRole('heading', { name: 'Courier assigned' })).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('A courier accepted this errand before it could be cancelled.')
+    expect(screen.queryByRole('button', { name: 'Cancel errand' })).not.toBeInTheDocument()
+    expect(refreshBalance).not.toHaveBeenCalled()
+  })
+
   it('confirms receipt after the courier handoff', async () => {
     const deliveredErrand = { ...activeErrand(requesterAcceptedId), status: 'DELIVERED' as const }
     loadErrandDetailsMock.mockResolvedValueOnce(deliveredErrand).mockResolvedValueOnce({

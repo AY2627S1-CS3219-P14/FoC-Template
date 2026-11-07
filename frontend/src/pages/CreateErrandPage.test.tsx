@@ -323,6 +323,7 @@ describe('CreateErrandPage', () => {
     expect(await screen.findByText(/Errand created successfully/)).toHaveTextContent(
       createdErrand.id,
     )
+    expect(screen.getByRole('link', { name: 'View errand' })).toHaveAttribute('href', `/errands/${createdErrand.id}`)
     expect(createErrandMock).toHaveBeenCalledWith(
       {
         supplier_id: '22222222-2222-4222-8222-222222222222',

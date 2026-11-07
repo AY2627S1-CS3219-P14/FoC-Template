@@ -17,7 +17,7 @@ const actionContent: Record<
 > = {
   cancel: {
     title: 'Cancel this errand?',
-    description: 'Couriers will no longer be able to accept this request.',
+    description: 'Cancelling closes the request and returns the reserved credits to you.',
     confirmLabel: 'Cancel errand',
     confirmClassName: 'bg-[#a33a32] text-white hover:bg-[#842e28]',
   },

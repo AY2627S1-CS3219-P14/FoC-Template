@@ -240,7 +240,7 @@ function ErrandDetailsContent({
   const { refreshBalance } = useCredits()
   const [activeAction, setActiveAction] = useState<ErrandAction | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [actionError, setActionError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<{ action: ErrandAction; message: string } | null>(null)
   const [isPastDeadline, setIsPastDeadline] = useState(() => Date.parse(errand.expiresAt) <= Date.now())
   const actionControllerRef = useRef<AbortController | null>(null)
 
@@ -303,9 +303,10 @@ function ErrandDetailsContent({
         setActiveAction(null)
         onRefresh()
       }
-      setActionError(
-        error instanceof Error ? error.message : 'Unable to update this errand.',
-      )
+      setActionError({
+        action: activeAction,
+        message: error instanceof Error ? error.message : 'Unable to update this errand.',
+      })
     } finally {
       if (actionControllerRef.current === controller) actionControllerRef.current = null
       if (!controller.signal.aborted) setIsSubmitting(false)
@@ -353,7 +354,9 @@ function ErrandDetailsContent({
       ) : null}
       {!activeAction && actionError ? (
         <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-          {actionError}
+          {actionError.action === 'cancel' && errand.courierName
+            ? 'A courier accepted this errand before it could be cancelled.'
+            : actionError.message}
         </p>
       ) : null}
 
@@ -489,7 +492,7 @@ function ErrandDetailsContent({
           action={activeAction}
           errandName={errand.requiredItem}
           isSubmitting={isSubmitting}
-          errorMessage={actionError}
+          errorMessage={actionError?.message ?? null}
           onClose={() => {
             setActionError(null)
             setActiveAction(null)

@@ -1,11 +1,19 @@
-export type NotificationItem = {
+type NotificationBase = {
   id: string
-  type: string
-  errandId: string
   message: string
   createdAt: string
   readAt: string | null
 }
+
+export type ChatNotificationItem = NotificationBase & {
+  type: 'CHAT_MESSAGE'
+  data: { errandId: string; conversationId: string; messageId: string }
+}
+
+export type NotificationItem = ChatNotificationItem | (NotificationBase & {
+  type: string
+  data: { errandId: string; conversationId?: string; messageId?: string }
+})
 
 export type NotificationConnection = 'connecting' | 'connected' | 'reconnecting' | 'unavailable'
 

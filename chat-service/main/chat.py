@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from main.models import Conversation, Message, WebSocketTicket
 from main.outbox import append_message_created
-from main.schemas import ConversationResponse, MessageResponse
+from main.schemas import ConversationListItem, ConversationResponse, MessageResponse
 
 
 WRITABLE_STATUSES = {"ACCEPTED", "DELIVERED"}
@@ -87,6 +87,42 @@ def get_message(
     if message is None:
         raise HTTPException(404, "Message not found")
     return message
+
+
+def list_conversations(
+    db: Session,
+    user_id: UUID,
+    limit: int,
+) -> list[ConversationListItem]:
+    conversations = list(db.scalars(
+        select(Conversation)
+        .where(
+            or_(Conversation.requester_id == user_id, Conversation.courier_id == user_id),
+            Conversation.courier_id.is_not(None),
+            Conversation.delivery_status != "OPEN",
+        )
+        .order_by(Conversation.created_at.desc(), Conversation.id.desc())
+        .limit(limit)
+    ).all())
+    if not conversations:
+        return []
+
+    latest_by_conversation: dict[UUID, Message] = {}
+    messages = db.scalars(
+        select(Message)
+        .where(Message.conversation_id.in_([item.id for item in conversations]))
+        .order_by(Message.conversation_id, Message.sequence_number.desc())
+    ).all()
+    for message in messages:
+        latest_by_conversation.setdefault(message.conversation_id, message)
+
+    return [ConversationListItem(
+        **conversation_response(conversation).model_dump(),
+        last_message=(
+            MessageResponse.model_validate(latest_by_conversation[conversation.id])
+            if conversation.id in latest_by_conversation else None
+        ),
+    ) for conversation in conversations]
 
 
 def list_messages(

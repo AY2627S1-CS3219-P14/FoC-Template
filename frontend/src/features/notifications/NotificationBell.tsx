@@ -2,6 +2,38 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { groupNotifications } from './notification.groups'
 import { useNotifications } from './useNotifications'
+import { useChatPreview } from '../chat/chat.preview'
+import { getConversation } from '../chat/chat.api'
+import { useAuth } from '../auth/useAuth'
+import type { NotificationItem } from './notification.types'
+
+function NotificationText({ item }: { item: NotificationItem }) {
+  const { currentUserId } = useAuth()
+  const [senderRole, setSenderRole] = useState<string | null>(null)
+  const preview = useChatPreview(
+    item.type === 'CHAT_MESSAGE' ? item.data.conversationId : undefined,
+    item.type === 'CHAT_MESSAGE' ? item.data.messageId : undefined,
+  )
+  useEffect(() => {
+    if (item.type !== 'CHAT_MESSAGE' || !item.data.conversationId) return
+    let active = true
+    void getConversation(item.data.conversationId).then((conversation) => {
+      if (active) setSenderRole(conversation.requesterId === currentUserId ? 'your courier' : 'the requester')
+    }).catch(() => {})
+    return () => { active = false }
+  }, [currentUserId, item])
+  if (item.type !== 'CHAT_MESSAGE') return <>{item.message}</>
+  return <>
+    <span className="block">You received a new message{senderRole ? ` from ${senderRole}` : ''}</span>
+    <span className="mt-1 block truncate font-normal text-[#53645a]">{preview ?? item.message}</span>
+  </>
+}
+
+function destination(item: NotificationItem) {
+  return item.type === 'CHAT_MESSAGE' && item.data.conversationId
+    ? `/chats/${encodeURIComponent(item.data.conversationId)}`
+    : `/errands/${encodeURIComponent(item.data.errandId)}`
+}
 
 export function NotificationBell() {
   const notifications = useNotifications()
@@ -114,7 +146,7 @@ export function NotificationBell() {
               return (
                 <li key={key} className={unread ? 'bg-[#f0f6f2] px-4 py-3' : 'px-4 py-3'}>
                   <Link
-                    to={`/errands/${encodeURIComponent(latest.errandId)}`}
+                    to={destination(latest)}
                     onClick={() => {
                       setOpen(false)
                       if (unread) void updateReadStatus(markCardRead)
@@ -128,7 +160,7 @@ export function NotificationBell() {
                           {(latest.type === 'CREDIT_RECEIVED' ? latest : related).message}
                         </span>
                       </>
-                    ) : latest.message}
+                    ) : <NotificationText item={latest} />}
                   </Link>
                   <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-[#68736c]">
                     <time dateTime={latest.createdAt}>

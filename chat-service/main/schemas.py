@@ -53,6 +53,14 @@ class MessagePage(BaseModel):
     has_more: bool
 
 
+class ConversationListItem(ConversationResponse):
+    last_message: MessageResponse | None
+
+
+class ConversationPage(BaseModel):
+    items: list[ConversationListItem]
+
+
 class TicketResponse(BaseModel):
     ticket: str
     expires_at: datetime

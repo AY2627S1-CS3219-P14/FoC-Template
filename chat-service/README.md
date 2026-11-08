@@ -29,6 +29,7 @@ All REST endpoints except `/health` require the User Service bearer token.
 - `GET /conversations/{id}/messages?after_sequence=10&limit=50`
 - `GET /conversations/{id}/messages?before_sequence=50&limit=50`
 - `GET /conversations/{id}/messages/{message_id}`
+- `GET /conversations?limit=50` lists the caller's conversations with each latest message
 - `POST /conversations/{id}/messages`
 - `POST /conversations/{id}/ws-ticket`
 - `WS /conversations/{id}/ws?ticket=<single-use-ticket>`

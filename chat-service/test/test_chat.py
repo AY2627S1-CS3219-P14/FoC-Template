@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from main.chat import consume_ticket, create_ticket, get_message, list_messages, save_message
+from main.chat import consume_ticket, create_ticket, get_message, list_conversations, list_messages, save_message
 from main.models import Conversation, Message, OutboxEvent
 
 
@@ -105,6 +105,19 @@ def test_message_can_be_retrieved_by_id_only_by_participants(factory, active_con
         with pytest.raises(HTTPException) as inaccessible:
             get_message(db, conversation.id, saved.id, uuid4())
         assert inaccessible.value.status_code == 404
+
+
+def test_user_conversation_list_contains_latest_message(factory, active_conversation):
+    conversation, requester_id, courier_id = active_conversation
+    with factory.begin() as db:
+        save_message(db, conversation.id, requester_id, uuid4(), "first")
+        latest, _ = save_message(db, conversation.id, courier_id, uuid4(), "latest")
+
+    with factory() as db:
+        requester_items = list_conversations(db, requester_id, 50)
+        assert [item.id for item in requester_items] == [conversation.id]
+        assert requester_items[0].last_message.id == latest.id
+        assert list_conversations(db, uuid4(), 50) == []
 
 
 def test_failed_conversation_is_read_only(factory, active_conversation):

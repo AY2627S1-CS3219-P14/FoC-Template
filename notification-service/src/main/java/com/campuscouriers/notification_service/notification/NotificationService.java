@@ -49,4 +49,5 @@ public class NotificationService {
     public void markAllRead(UUID recipientId) {
         repository.markAllRead(recipientId, Instant.now());
     }
+
 }

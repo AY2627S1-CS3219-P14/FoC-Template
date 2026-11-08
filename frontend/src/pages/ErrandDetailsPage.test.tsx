@@ -122,19 +122,19 @@ describe('ErrandDetailsPage', () => {
     let notify!: NotificationListener
     renderPage(requesterAcceptedId, {
       items: [], unreadCount: 0, historyStatus: 'ready', connection: 'connected',
-      refresh: vi.fn(), markRead: vi.fn(), markAllRead: vi.fn(),
+      refresh: vi.fn(), markRead: vi.fn(), markAllRead: vi.fn(), hide: vi.fn(),
       subscribe(listener) { notify = listener; return vi.fn() },
     })
     expect(await screen.findByRole('heading', { name: 'Courier assigned' })).toBeInTheDocument()
 
     const item = {
-      id: 'delivered', type: 'ERRAND_DELIVERED', errandId: courierAcceptedId,
+      id: 'delivered', type: 'ERRAND_DELIVERED', data: { errandId: courierAcceptedId },
       message: 'Delivered', createdAt: '2026-11-08T00:00:00Z', readAt: null,
     }
     act(() => notify({ type: 'notification', item }))
     expect(loadErrandDetailsMock).toHaveBeenCalledOnce()
 
-    act(() => notify({ type: 'notification', item: { ...item, errandId: requesterAcceptedId } }))
+    act(() => notify({ type: 'notification', item: { ...item, data: { errandId: requesterAcceptedId } } }))
     expect(loadErrandDetailsMock).toHaveBeenCalledTimes(2)
     const olderSignal = loadErrandDetailsMock.mock.calls[1][2]
     act(() => notify({ type: 'connected' }))

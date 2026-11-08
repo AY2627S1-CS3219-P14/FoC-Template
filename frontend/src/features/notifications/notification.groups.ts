@@ -13,10 +13,10 @@ export function groupNotifications(items: readonly NotificationItem[]): Notifica
   // History and live items arrive here in newest-first order.
   for (const item of items) {
     if (item.type === 'ERRAND_COMPLETED' || item.type === 'CREDIT_RECEIVED') {
-      const card = completions.get(item.errandId)
+      const card = completions.get(item.data.errandId)
       if (!card) {
-        const newCard = { key: `completion:${item.errandId}`, latest: item }
-        completions.set(item.errandId, newCard)
+        const newCard = { key: `completion:${item.data.errandId}`, latest: item }
+        completions.set(item.data.errandId, newCard)
         cards.push(newCard)
         continue
       }

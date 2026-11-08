@@ -15,6 +15,7 @@ from main.chat import (
     get_conversation,
     get_conversation_for_errand,
     get_message,
+    list_conversations,
     list_messages,
     save_message,
 )
@@ -23,6 +24,7 @@ from main.database import SessionLocal, get_db
 from main.models import Conversation
 from main.schemas import (
     ConversationResponse,
+    ConversationPage,
     MessagePage,
     MessageResponse,
     PendingConversationResponse,
@@ -47,6 +49,18 @@ def health() -> dict:
 
 
 @router.get(
+    "/conversations",
+    response_model=ConversationPage,
+)
+def conversations_for_user(
+    limit: int = Query(default=50, ge=1, le=100),
+    user_id: UUID = Depends(authenticated_user_id),
+    db: Session = Depends(get_db),
+) -> ConversationPage:
+    return ConversationPage(items=list_conversations(db, user_id, limit))
+
+
+@router.get(
     "/errands/{errand_id}/conversation",
     response_model=ConversationResponse | PendingConversationResponse,
 )
@@ -63,6 +77,18 @@ def conversation_for_errand(
         response.status_code = 202
         return PendingConversationResponse()
     return conversation_response(get_conversation_for_errand(db, errand_id, user_id))
+
+
+@router.get(
+    "/conversations/{conversation_id}",
+    response_model=ConversationResponse,
+)
+def conversation_by_id(
+    conversation_id: UUID,
+    user_id: UUID = Depends(authenticated_user_id),
+    db: Session = Depends(get_db),
+) -> ConversationResponse:
+    return conversation_response(get_conversation(db, conversation_id, user_id))
 
 
 @router.get(

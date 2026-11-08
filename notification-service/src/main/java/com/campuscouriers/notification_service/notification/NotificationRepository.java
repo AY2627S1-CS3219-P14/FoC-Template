@@ -12,7 +12,26 @@ import org.springframework.data.repository.query.Param;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
     List<Notification> findByRecipientIdOrderByCreatedAtDescIdDesc(UUID recipientId, Pageable page);
 
-    long countByRecipientIdAndReadAtIsNull(UUID recipientId);
+    // Pair the latest completion and receipt for each errand, as the bell does.
+    @Query(value = """
+        WITH latest_pair_members AS (
+            SELECT DISTINCT ON (errand_id, type) errand_id, read_at
+            FROM notifications
+            WHERE recipient_id = :recipientId AND type IN ('ERRAND_COMPLETED', 'CREDIT_RECEIVED')
+            ORDER BY errand_id, type, created_at DESC, id DESC
+        ),
+        fully_unread_pairs AS (
+            SELECT errand_id
+            FROM latest_pair_members
+            WHERE read_at IS NULL
+            GROUP BY errand_id
+            HAVING COUNT(*) = 2
+        )
+        SELECT COUNT(*) - (SELECT COUNT(*) FROM fully_unread_pairs)
+        FROM notifications
+        WHERE recipient_id = :recipientId AND read_at IS NULL
+        """, nativeQuery = true)
+    long countUnreadCards(@Param("recipientId") UUID recipientId);
 
     boolean existsByIdAndRecipientId(UUID id, UUID recipientId);
 

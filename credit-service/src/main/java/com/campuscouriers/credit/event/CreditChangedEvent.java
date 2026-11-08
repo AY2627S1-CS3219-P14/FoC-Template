@@ -8,9 +8,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 // One credit change, published to the topic for its change type (see topicFor).
-// eventId is the credit record's id, so consumers can skip duplicates.
+// creditRecordId is the credit record's id, so consumers can skip duplicates.
 public record CreditChangedEvent(
-        UUID eventId,
+        UUID creditRecordId,
         String changeType,           // RESERVED, RELEASED, TRANSFERRED or RECEIVED
         UUID orderId,
         UUID userId,                 // the user this change belongs to

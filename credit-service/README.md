@@ -1,4 +1,7 @@
-# Credit Service
+
+
+
+<!-- # Credit Service
 
 Order Service integration and setup are documented in
 [Order/Credit integration](../order-service/CREDIT_INTEGRATION.md).
@@ -17,4 +20,4 @@ Run focused Java contract tests without a local Java/Maven installation:
 
 ```powershell
 docker build --target contract-tests -t foc-order-credit-test-contracts:local ./credit-service
-```
+``` -->

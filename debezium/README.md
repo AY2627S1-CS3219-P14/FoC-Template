@@ -36,6 +36,7 @@ Rows are never deleted by the pipeline; Debezium reads the WAL, so old rows can 
 | `errand.completed` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `completedAt` |
 | `errand.failed` | order-service | errand id | `errandId`, `requesterId`, `creditValue`, `courierId`, `failureReason`, `failedAt` |
 | `supplier.created` / `supplier.updated` | supplier-service | supplier id | `supplierId`, `name`, `categoryId`, `categoryName`, `buildingId`, `buildingName`, `floor`, `description`, `openingTime`, `closingTime`, `imageUrl`, `status` |
+| `credit.reserved` / `credit.released` / `credit.transferred`/ `credit.received`| credit-service | order id |  `creditRecordId`, `changeType`, `orderId`, `userId`, `counterpartyUserId`, `amount`, `reserveAmount`, `availableBalanceAfter`, `occurredAt` |
 
 Timestamps are ISO-8601 strings. Fields whose value is `null` are **omitted** from the message (Debezium drops them
 when expanding the JSON payload), so consumers must treat a missing field as `null`. Topics are created on first use

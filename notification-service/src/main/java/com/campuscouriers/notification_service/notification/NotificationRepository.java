@@ -12,7 +12,26 @@ import org.springframework.data.repository.query.Param;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
     List<Notification> findByRecipientIdOrderByCreatedAtDescIdDesc(UUID recipientId, Pageable page);
 
-    long countByRecipientIdAndReadAtIsNull(UUID recipientId);
+    // Pair the latest completion and receipt for each errand, as the bell does.
+    @Query(value = """
+        WITH latest_pair_members AS (
+            SELECT DISTINCT ON (errand_id, type) errand_id, read_at
+            FROM notifications
+            WHERE recipient_id = :recipientId AND type IN ('ERRAND_COMPLETED', 'CREDIT_RECEIVED')
+            ORDER BY errand_id, type, created_at DESC, id DESC
+        ),
+        fully_unread_pairs AS (
+            SELECT errand_id
+            FROM latest_pair_members
+            WHERE read_at IS NULL
+            GROUP BY errand_id
+            HAVING COUNT(*) = 2
+        )
+        SELECT COUNT(*) - (SELECT COUNT(*) FROM fully_unread_pairs)
+        FROM notifications
+        WHERE recipient_id = :recipientId AND read_at IS NULL
+        """, nativeQuery = true)
+    long countUnreadCards(@Param("recipientId") UUID recipientId);
 
     boolean existsByIdAndRecipientId(UUID id, UUID recipientId);
 
@@ -35,8 +54,10 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Modifying
     @Query(value = """
         INSERT INTO notifications
-            (id, recipient_id, source_event_id, type, errand_id, message, created_at)
-        VALUES (:id, :recipientId, :eventId, :type, :errandId, :message, :createdAt)
+            (id, recipient_id, source_event_id, type, errand_id, conversation_id, message_id,
+             message, created_at)
+        VALUES (:id, :recipientId, :eventId, :type, :errandId, :conversationId, :messageId,
+                :message, :createdAt)
         ON CONFLICT (source_event_id, recipient_id, type) DO NOTHING
         """, nativeQuery = true)
     int insertIfAbsent(@Param("id") UUID id,
@@ -44,6 +65,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
                        @Param("eventId") UUID eventId,
                        @Param("type") String type,
                        @Param("errandId") UUID errandId,
+                       @Param("conversationId") UUID conversationId,
+                       @Param("messageId") UUID messageId,
                        @Param("message") String message,
                        @Param("createdAt") Instant createdAt);
 }

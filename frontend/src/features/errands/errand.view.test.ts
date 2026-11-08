@@ -30,6 +30,7 @@ const baseErrand: ErrandListItem = {
   expires_at: '2026-10-22T12:00:00.000Z',
   created_at: '2026-10-22T08:00:00.000Z',
   accepted_at: '2026-10-22T09:00:00.000Z',
+  delivered_at: null,
   completed_at: null,
   cancelled_at: null,
   failed_at: null,
@@ -77,12 +78,12 @@ describe('errand presentation loaders', () => {
 
     expect(listErrands).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ requesterId: currentUserId }),
+      expect.objectContaining({ requesterId: currentUserId, statuses: ['OPEN', 'ACCEPTED', 'DELIVERED'] }),
       undefined,
     )
     expect(listErrands).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ courierId: currentUserId }),
+      expect.objectContaining({ courierId: currentUserId, statuses: ['ACCEPTED', 'DELIVERED'] }),
       undefined,
     )
     expect(result).toHaveLength(2)
@@ -90,14 +91,33 @@ describe('errand presentation loaders', () => {
     expect(result[1]).toMatchObject({
       id: baseErrand.id,
       role: 'requester',
-      progress: 'awaiting-confirmation',
+      progress: 'accepted',
       pickupLocation: 'Frontier Canteen',
       deliveryLocation: 'S17, Level 3',
     })
   })
 
+  it('keeps delivered errands active for the requester and the courier', async () => {
+    const deliveredErrand = { ...baseErrand, status: 'DELIVERED' as const, delivered_at: '2026-10-22T11:00:00.000Z' }
+    const courierErrand = {
+      ...deliveredErrand,
+      id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      requester_id: courierId,
+      courier_id: currentUserId,
+    }
+    vi.mocked(listErrands)
+      .mockResolvedValueOnce({ total: 1, items: [deliveredErrand] })
+      .mockResolvedValueOnce({ total: 1, items: [courierErrand] })
+
+    await expect(loadMyErrands(currentUserId)).resolves.toMatchObject([
+      { id: deliveredErrand.id, role: 'requester', progress: 'ready-for-collection' },
+      { id: courierErrand.id, role: 'courier', progress: 'awaiting-confirmation' },
+    ])
+  })
+
   it('loads and enriches a role-aware errand detail', async () => {
-    vi.mocked(getErrand).mockResolvedValue(baseErrand)
+    const deliveredAt = '2026-10-22T11:00:00.000Z'
+    vi.mocked(getErrand).mockResolvedValue({ ...baseErrand, status: 'DELIVERED', delivered_at: deliveredAt })
 
     await expect(loadErrandDetails(baseErrand.id, currentUserId)).resolves.toMatchObject({
       id: baseErrand.id,
@@ -107,6 +127,7 @@ describe('errand presentation loaders', () => {
       deliveryBuilding: 'S17',
       requesterName: 'You',
       courierName: 'Assigned courier',
+      deliveredAt,
     })
   })
 

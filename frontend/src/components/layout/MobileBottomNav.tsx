@@ -50,6 +50,10 @@ export function MobileBottomNav() {
         My errands
       </MobileNavItem>
 
+      <MobileNavItem to="/chats" icon={clipboardIcon}>
+        Chats
+      </MobileNavItem>
+
       <MobileNavItem to="/suppliers" icon={clipboardIcon}>
         Suppliers
       </MobileNavItem>

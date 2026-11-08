@@ -144,6 +144,11 @@ class NotificationServiceApplicationTests {
         JsonNode items = json.readTree(history.body()).get("items");
         assertThat(items.size()).isEqualTo(1);
         assertThat(items.get(0).get("id").asString()).isEqualTo(find(secondAliceEvent).getId().toString());
+        assertThat(items.get(0).has("errandId")).isFalse();
+        assertThat(items.get(0).get("data").get("errandId").asString())
+            .isEqualTo(find(secondAliceEvent).getErrandId().toString());
+        assertThat(items.get(0).get("data").has("conversationId")).isFalse();
+        assertThat(items.get(0).get("data").has("messageId")).isFalse();
         assertThat(items.get(0).get("readAt").isNull()).isTrue();
         assertThat(unread(aliceToken)).isEqualTo(2);
 
@@ -158,6 +163,35 @@ class NotificationServiceApplicationTests {
         assertThat(request("POST", "/notifications/read-all", aliceToken).statusCode()).isEqualTo(204);
         assertThat(unread(aliceToken)).isZero();
         assertThat(unread(bobToken)).isEqualTo(1);
+    }
+
+    @Test
+    void countsCompletionAndCreditReceiptAsOneUnreadCardUntilBothAreRead() throws Exception {
+        UUID courier = UUID.randomUUID();
+        UUID otherUser = UUID.randomUUID();
+        UUID errand = UUID.randomUUID();
+        UUID completed = UUID.randomUUID();
+        UUID credit = UUID.randomUUID();
+        UUID delivered = UUID.randomUUID();
+        notifications.save(completed, courier, "ERRAND_COMPLETED", errand, "Completed");
+        notifications.save(credit, courier, "CREDIT_RECEIVED", errand, "Credit received");
+        notifications.save(delivered, courier, "ERRAND_DELIVERED", errand, "Delivered");
+        notifications.save(UUID.randomUUID(), otherUser, "CREDIT_RECEIVED", errand, "Credit received");
+        String courierToken = token(courier);
+
+        var history = request("GET", "/notifications?limit=1", courierToken);
+        assertThat(history.statusCode()).isEqualTo(200);
+        assertThat(json.readTree(history.body()).get("items").size()).isEqualTo(1);
+        assertThat(unread(courierToken)).isEqualTo(2);
+
+        assertThat(request("PATCH", "/notifications/" + find(completed).getId() + "/read",
+            courierToken).statusCode()).isEqualTo(204);
+        assertThat(unread(courierToken)).isEqualTo(2);
+
+        assertThat(request("PATCH", "/notifications/" + find(credit).getId() + "/read",
+            courierToken).statusCode()).isEqualTo(204);
+        assertThat(unread(courierToken)).isEqualTo(1);
+        assertThat(unread(token(otherUser))).isEqualTo(1);
     }
 
     @Test
@@ -310,7 +344,7 @@ class NotificationServiceApplicationTests {
                 assertThat(saved.getReadAt()).isNull();
                 if (topic.equals("errand.completed")) {
                     assertThat(saved.getMessage())
-                        .isEqualTo("The requester confirmed your errand is complete.")
+                        .isEqualTo("The requester confirmed your errand is complete")
                         .doesNotContain("earned", "paid", "credits");
                 }
             });
@@ -375,6 +409,19 @@ class NotificationServiceApplicationTests {
     void nonDuplicateDatabaseErrorsAreNotSwallowed() {
         assertThatThrownBy(() -> notifications.save(UUID.randomUUID(), null,
             "ERRAND_ACCEPTED", UUID.randomUUID(), "Accepted"))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void databaseEnforcesTypeSpecificChatFields() {
+        assertThatThrownBy(() -> notifications.save(
+            UUID.randomUUID(), UUID.randomUUID(), "CHAT_MESSAGE", UUID.randomUUID(),
+            "Missing chat identifiers"))
+            .isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() -> notifications.save(
+            UUID.randomUUID(), UUID.randomUUID(), "ERRAND_ACCEPTED", UUID.randomUUID(),
+            UUID.randomUUID(), UUID.randomUUID(), "Unexpected chat identifiers"))
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 

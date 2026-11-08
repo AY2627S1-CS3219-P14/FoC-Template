@@ -51,6 +51,10 @@ export function Sidebar() {
           My errands
         </SidebarNavItem>
 
+        <SidebarNavItem to="/chats" icon={clipboardIcon}>
+          Chats
+        </SidebarNavItem>
+
         <SidebarNavItem to="/suppliers" icon={clipboardIcon}>
           Suppliers
         </SidebarNavItem>

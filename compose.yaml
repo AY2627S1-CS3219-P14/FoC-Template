@@ -75,12 +75,16 @@ services:
       CREDIT_DB_NAME: ${CREDIT_DB_NAME}
       CREDIT_DB_USERNAME: ${CREDIT_DB_USERNAME}
       CREDIT_DB_PASSWORD: ${CREDIT_DB_PASSWORD}
+      CHAT_DB_NAME: ${CHAT_DB_NAME:-campuscouriers_chat}
+      CHAT_DB_USERNAME: ${CHAT_DB_USERNAME:-chat_service}
+      CHAT_DB_PASSWORD: ${CHAT_DB_PASSWORD:-password}
     depends_on:
       - kafka
       - user-db
       - order-db
       - supplier-db
       - credit-db
+      - chat-db
     networks:
       - default
       - user-net
@@ -185,6 +189,53 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  chat-db:
+    image: postgres:16-alpine
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_DB: ${CHAT_DB_NAME:-campuscouriers_chat}
+      POSTGRES_USER: ${CHAT_DB_USERNAME:-chat_service}
+      POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD:-password}
+    ports:
+      - "${CHAT_DB_PORT:-5436}:5432"
+    volumes:
+      - chat-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${CHAT_DB_USERNAME:-chat_service} -d ${CHAT_DB_NAME:-campuscouriers_chat}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  chat-service:
+    build: ./chat-service
+    image: campuscouriers/chat-service
+    environment:
+      DB_HOST: chat-db
+      DB_PORT: 5432
+      DB_NAME: ${CHAT_DB_NAME:-campuscouriers_chat}
+      DB_USERNAME: ${CHAT_DB_USERNAME:-chat_service}
+      DB_PASSWORD: ${CHAT_DB_PASSWORD:-password}
+      USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
+      JWT_ISSUER: ${JWT_ISSUER:-campuscouriers-user-service}
+      KAFKA_CONSUMER_ENABLED: "true"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      KAFKA_CHAT_GROUP_ID: ${KAFKA_CHAT_GROUP_ID:-chat-service-lifecycle-v1}
+      CHAT_WS_TICKET_TTL_SECONDS: ${CHAT_WS_TICKET_TTL_SECONDS:-30}
+      CHAT_CORS_ALLOWED_ORIGINS: ${CHAT_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    ports:
+      - "${CHAT_SERVICE_PORT:-8003}:8000"
+    depends_on:
+      chat-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      user-service:
+        condition: service_started
+    restart: unless-stopped
+
   supplier-db:
     image: postgres:16-alpine
     command: ["postgres", "-c", "wal_level=logical"]  # Debezium reads the outbox from the WAL
@@ -266,13 +317,46 @@ services:
   notification-db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${NOTIFICATION_DB_NAME}
-      POSTGRES_USER: ${NOTIFICATION_DB_USERNAME}
-      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-campuscouriers_notification}
+      POSTGRES_USER: ${NOTIFICATION_DB_USERNAME:-notification_service}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-password}
     ports:
-      - "5436:5432"
+      - "${NOTIFICATION_DB_PORT:-5437}:5432"
     volumes:
       - notification-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${NOTIFICATION_DB_USERNAME:-notification_service} -d ${NOTIFICATION_DB_NAME:-campuscouriers_notification}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    image: campuscouriers/notification-service
+    environment:
+      SERVER_PORT: 8080
+      DB_HOST: notification-db
+      DB_PORT: 5432
+      DB_NAME: ${NOTIFICATION_DB_NAME:-campuscouriers_notification}
+      DB_USERNAME: ${NOTIFICATION_DB_USERNAME:-notification_service}
+      DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-password}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
+      JWT_ISSUER: ${JWT_ISSUER:-campuscouriers-user-service}
+      NOTIFICATION_CORS_ALLOWED_ORIGINS: ${NOTIFICATION_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-8004}:8080"
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      user-service:
+        condition: service_started
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
@@ -282,6 +366,8 @@ services:
       VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8081}
       VITE_ORDER_API_URL: ${VITE_ORDER_API_URL:-http://localhost:8002}
       VITE_CREDIT_API_URL: ${VITE_CREDIT_API_URL:-http://localhost:8001}
+      VITE_NOTIFICATION_API_URL: ${VITE_NOTIFICATION_API_URL:-http://localhost:8004}
+      VITE_CHAT_API_URL: ${VITE_CHAT_API_URL:-http://localhost:8003}
       VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"
@@ -290,6 +376,8 @@ services:
       - user-service
       - order-service
       - credit-service
+      - chat-service
+      - notification-service
     restart: unless-stopped
 
   # One-off job: creates the first administrator if none exists, then exits (non-zero on failure).
@@ -320,3 +408,4 @@ volumes:
   user-db-data:
   credit-db-data:
   notification-db-data:
+  chat-db-data:

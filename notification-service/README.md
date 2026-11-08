@@ -11,6 +11,7 @@ Authenticated HTTP endpoints expose saved notifications and stream new ones over
 | `errand.failed` | `courierId` | `ERRAND_FAILED` |
 | `credit.received` | `userId` (courier) | `CREDIT_RECEIVED` |
 | `credit.released` | `userId` (requester) | `CREDIT_RELEASED` |
+| `chat.message.created` | `recipientId` | `CHAT_MESSAGE` |
 
 Errand events are plain JSON with `errandId`, `requesterId`, `courierId` (UUIDs),
 and positive integer `creditValue`. Additional payload fields are ignored.
@@ -25,6 +26,10 @@ the positive available-balance change `amount` in the message. The payload's `ev
 identifies the credit record and deduplicates republished records. The Kafka header ID
 identifies the outbox row. Every committed release can generate an alert because the event
 does not distinguish releases completed inline from those completed later.
+
+Chat alerts use the message event's `recipientId` and `errandId`. The saved notification
+uses a generic preview rather than storing chat content. The frontend can suppress the
+global toast and mark the notification read when that errand's chat is already open.
 
 ## Run locally
 
@@ -49,7 +54,7 @@ as described in `../debezium/README.md`.
 | --- | --- |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` |
 | `DB_HOST` | `localhost` |
-| `DB_PORT` | `5436` |
+| `DB_PORT` | `5437` |
 | `DB_NAME` | `campuscouriers_notification` |
 | `DB_USERNAME` | `notification_service` |
 | `DB_PASSWORD` | `password` (local development only) |
@@ -60,7 +65,7 @@ If containerized later, set `KAFKA_BOOTSTRAP_SERVERS=kafka:19092`, `DB_HOST=noti
 
 ## Notification API reference
 
-The local base URL is `http://localhost:8003`. Send `Authorization: Bearer <access-token>`
+The local base URL is `http://localhost:8004`. Send `Authorization: Bearer <access-token>`
 with every request. The service uses the token's subject to scope notifications to the
 signed-in account. A missing, invalid, or expired token returns `401`.
 
@@ -72,7 +77,7 @@ default `http://localhost:5173`) as needed.
 | --- | --- | --- |
 | `GET /notifications?limit=20` | Fetch recent notifications | `200` with `{"items":[...]}` |
 | `GET /notifications/stream` | Subscribe to live notifications | `200` with `Content-Type: text/event-stream` |
-| `GET /notifications/unread-count` | Count all unread notifications for the caller | `200` with `{"count":2}` |
+| `GET /notifications/unread-count` | Count unread notification cards for the caller | `200` with `{"count":2}` |
 | `PATCH /notifications/{id}/read` | Mark one notification as read | `204` with an empty body |
 | `POST /notifications/read-all` | Mark all of the caller's unread notifications as read | `204` with an empty body |
 
@@ -88,8 +93,10 @@ descending, with `id` descending as a tie-breaker. An empty result is `{"items":
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "type": "ERRAND_ACCEPTED",
-      "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4",
       "message": "Someone has accepted your errand.",
+      "data": {
+        "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4"
+      },
       "createdAt": "2026-11-06T08:00:00Z",
       "readAt": null
     }
@@ -112,10 +119,29 @@ data:{}
 
 id:550e8400-e29b-41d4-a716-446655440000
 event:notification
-data:{"id":"550e8400-e29b-41d4-a716-446655440000","type":"ERRAND_ACCEPTED","errandId":"9f5c3201-aeb9-4a3b-8acd-817043c059d4","message":"Someone has accepted your errand.","createdAt":"2026-11-06T08:00:00Z","readAt":null}
+data:{"id":"550e8400-e29b-41d4-a716-446655440000","type":"ERRAND_ACCEPTED","message":"Someone has accepted your errand.","data":{"errandId":"9f5c3201-aeb9-4a3b-8acd-817043c059d4"},"createdAt":"2026-11-06T08:00:00Z","readAt":null}
 
 :heartbeat
 
+```
+
+For `CHAT_MESSAGE`, `data` also contains the conversation and exact message identifiers.
+The client can fetch that message from Chat Service after participant authorization without
+resolving the conversation through the errand or guessing which recent message triggered it:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "CHAT_MESSAGE",
+  "message": "You received a new message.",
+  "data": {
+    "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4",
+    "conversationId": "db30f086-8f1d-4fa8-b6d6-5acfb0b92885",
+    "messageId": "a2cfde13-1264-4c78-8951-3b2ffad4ca0f"
+  },
+  "createdAt": "2026-11-08T08:00:00Z",
+  "readAt": null
+}
 ```
 
 After each `connected` event, fetch history and merge it with live notifications by `id`.
@@ -126,8 +152,9 @@ run one notification-service instance for live delivery.
 
 ### `GET /notifications/unread-count`
 
-The count includes all of the caller's unread notifications, even those outside the
-history window.
+The count includes the caller's unread notifications across all history. The latest
+completion and credit receipt for the same errand form one card, which counts as unread
+until both records are read. Other notifications each count separately.
 
 ```json
 {"count": 2}
@@ -148,7 +175,7 @@ notifications. After either action, refresh history or the unread count as neede
 In PowerShell, set `$token` to a valid access token from the user service, then run:
 
 ```powershell
-$base = 'http://localhost:8003'
+$base = 'http://localhost:8004'
 $auth = "Authorization: Bearer $token"
 curl.exe -H $auth "$base/notifications?limit=20"
 curl.exe -N -H $auth -H 'Accept: text/event-stream' "$base/notifications/stream"
@@ -163,6 +190,11 @@ command in a separate terminal or stop it with Ctrl+C before issuing more reques
 ## Persistence and failure handling
 
 Hibernate `ddl-auto=update` creates the entity table and its unique constraint on startup.
+The `chk_notification_chat_fields` database constraint requires `conversation_id` and
+`message_id` for `CHAT_MESSAGE` rows and forbids both fields for every other notification
+type. PostgreSQL checks this rule on inserts and relevant updates. A startup schema initializer
+adds the constraint to existing databases because Hibernate's `ddl-auto=update` does not
+reliably add newly declared check constraints to an existing table.
 PostgreSQL `INSERT ... ON CONFLICT (source_event_id, recipient_id, type) DO NOTHING`
 handles duplicate and concurrent deliveries without hiding unrelated SQL failures.
 

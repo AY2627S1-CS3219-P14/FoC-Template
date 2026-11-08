@@ -57,7 +57,7 @@ public class NotificationController {
 
     @GetMapping("/unread-count")
     public UnreadCountResponse unreadCount(@AuthenticationPrincipal Jwt jwt) {
-        return new UnreadCountResponse(repository.countByRecipientIdAndReadAtIsNull(
+        return new UnreadCountResponse(repository.countUnreadCards(
             UUID.fromString(jwt.getSubject())));
     }
 

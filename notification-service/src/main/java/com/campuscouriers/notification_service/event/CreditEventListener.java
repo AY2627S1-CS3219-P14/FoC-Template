@@ -28,8 +28,8 @@ public class CreditEventListener {
         long amount = payload.positiveLong("amount");
         String credits = amount + (amount == 1 ? " credit" : " credits");
         String message = expectedChange.equals("RECEIVED")
-            ? "You received " + credits + " for your errand."
-            : credits + " from your errand reservation returned to your available balance.";
+            ? "You received " + credits + " for your errand"
+            : credits + " from your errand reservation returned to your available balance";
         // The payload ID belongs to the credit record. A new outbox row can have a different header ID.
         notifications.save(payload.uuid("eventId"), payload.uuid("userId"),
             "CREDIT_" + expectedChange, payload.uuid("orderId"), message);

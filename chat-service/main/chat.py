@@ -73,6 +73,22 @@ def get_conversation(db: Session, conversation_id: UUID, user_id: UUID) -> Conve
     return require_participant(db.get(Conversation, conversation_id), user_id)
 
 
+def get_message(
+    db: Session,
+    conversation_id: UUID,
+    message_id: UUID,
+    user_id: UUID,
+) -> Message:
+    get_conversation(db, conversation_id, user_id)
+    message = db.scalar(select(Message).where(
+        Message.id == message_id,
+        Message.conversation_id == conversation_id,
+    ))
+    if message is None:
+        raise HTTPException(404, "Message not found")
+    return message
+
+
 def list_messages(
     db: Session,
     conversation_id: UUID,

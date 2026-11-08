@@ -10,10 +10,11 @@ public record NotificationResponse(UUID id, String type, String message, Notific
     static NotificationResponse from(Notification notification) {
         return new NotificationResponse(notification.getId(), notification.getType(),
             notification.getMessage(),
-            new NotificationData(notification.getErrandId(), notification.getConversationId()),
+            new NotificationData(notification.getErrandId(), notification.getConversationId(),
+                notification.getMessageId()),
             notification.getCreatedAt(), notification.getReadAt());
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record NotificationData(UUID errandId, UUID conversationId) {}
+    public record NotificationData(UUID errandId, UUID conversationId, UUID messageId) {}
 }

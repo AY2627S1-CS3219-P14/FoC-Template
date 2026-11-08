@@ -125,17 +125,19 @@ data:{"id":"550e8400-e29b-41d4-a716-446655440000","type":"ERRAND_ACCEPTED","mess
 
 ```
 
-For `CHAT_MESSAGE`, `data` also contains the conversation identifier so the client can
-navigate directly to the chat without resolving it through the errand first:
+For `CHAT_MESSAGE`, `data` also contains the conversation and exact message identifiers.
+The client can fetch that message from Chat Service after participant authorization without
+resolving the conversation through the errand or guessing which recent message triggered it:
 
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "type": "CHAT_MESSAGE",
-  "message": "You received a new delivery message.",
+  "message": "You received a new message.",
   "data": {
     "errandId": "9f5c3201-aeb9-4a3b-8acd-817043c059d4",
-    "conversationId": "db30f086-8f1d-4fa8-b6d6-5acfb0b92885"
+    "conversationId": "db30f086-8f1d-4fa8-b6d6-5acfb0b92885",
+    "messageId": "a2cfde13-1264-4c78-8951-3b2ffad4ca0f"
   },
   "createdAt": "2026-11-08T08:00:00Z",
   "readAt": null
@@ -187,6 +189,11 @@ command in a separate terminal or stop it with Ctrl+C before issuing more reques
 ## Persistence and failure handling
 
 Hibernate `ddl-auto=update` creates the entity table and its unique constraint on startup.
+The `chk_notification_chat_fields` database constraint requires `conversation_id` and
+`message_id` for `CHAT_MESSAGE` rows and forbids both fields for every other notification
+type. PostgreSQL checks this rule on inserts and relevant updates. A startup schema initializer
+adds the constraint to existing databases because Hibernate's `ddl-auto=update` does not
+reliably add newly declared check constraints to an existing table.
 PostgreSQL `INSERT ... ON CONFLICT (source_event_id, recipient_id, type) DO NOTHING`
 handles duplicate and concurrent deliveries without hiding unrelated SQL failures.
 

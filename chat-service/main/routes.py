@@ -14,6 +14,7 @@ from main.chat import (
     create_ticket,
     get_conversation,
     get_conversation_for_errand,
+    get_message,
     list_messages,
     save_message,
 )
@@ -62,6 +63,21 @@ def conversation_for_errand(
         response.status_code = 202
         return PendingConversationResponse()
     return conversation_response(get_conversation_for_errand(db, errand_id, user_id))
+
+
+@router.get(
+    "/conversations/{conversation_id}/messages/{message_id}",
+    response_model=MessageResponse,
+)
+def message_by_id(
+    conversation_id: UUID,
+    message_id: UUID,
+    user_id: UUID = Depends(authenticated_user_id),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    return MessageResponse.model_validate(
+        get_message(db, conversation_id, message_id, user_id),
+    )
 
 
 @router.get(

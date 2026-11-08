@@ -20,20 +20,20 @@ public class NotificationService {
     // This proxy commits before returning to the Kafka listener.
     @Transactional
     public boolean save(UUID eventId, UUID recipientId, String type, UUID errandId, String message) {
-        return save(eventId, recipientId, type, errandId, null, message);
+        return save(eventId, recipientId, type, errandId, null, null, message);
     }
 
     @Transactional
     public boolean save(UUID eventId, UUID recipientId, String type, UUID errandId,
-                        UUID conversationId, String message) {
+                        UUID conversationId, UUID messageId, String message) {
         UUID id = UUID.randomUUID();
         Instant createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
         boolean inserted = repository.insertIfAbsent(id, recipientId, eventId,
-            type, errandId, conversationId, message, createdAt) == 1;
+            type, errandId, conversationId, messageId, message, createdAt) == 1;
         if (inserted) {
             events.publishEvent(new NotificationSaved(recipientId,
                 new NotificationResponse(id, type, message,
-                    new NotificationResponse.NotificationData(errandId, conversationId),
+                    new NotificationResponse.NotificationData(errandId, conversationId, messageId),
                     createdAt, null)));
         }
         return inserted;

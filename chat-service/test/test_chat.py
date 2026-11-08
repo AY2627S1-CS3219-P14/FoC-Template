@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from main.chat import consume_ticket, create_ticket, list_messages, save_message
+from main.chat import consume_ticket, create_ticket, get_message, list_messages, save_message
 from main.models import Conversation, Message, OutboxEvent
 
 
@@ -91,6 +91,20 @@ def test_non_participant_cannot_read_or_send(factory, active_conversation):
         with pytest.raises(HTTPException) as send_error:
             save_message(db, conversation.id, stranger, uuid4(), "hello")
         assert send_error.value.status_code == 404
+
+
+def test_message_can_be_retrieved_by_id_only_by_participants(factory, active_conversation):
+    conversation, requester_id, _ = active_conversation
+    with factory.begin() as db:
+        saved, _ = save_message(db, conversation.id, requester_id, uuid4(), "preview me")
+
+    with factory() as db:
+        retrieved = get_message(db, conversation.id, saved.id, requester_id)
+        assert retrieved.id == saved.id
+        assert retrieved.content == "preview me"
+        with pytest.raises(HTTPException) as inaccessible:
+            get_message(db, conversation.id, saved.id, uuid4())
+        assert inaccessible.value.status_code == 404
 
 
 def test_failed_conversation_is_read_only(factory, active_conversation):

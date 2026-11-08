@@ -38,6 +38,7 @@ class NotificationEventListenersTest {
     @Test
     void chatMessageUsesRecipientAndOutboxHeader() {
         UUID eventId = UUID.randomUUID();
+        UUID messageId = UUID.randomUUID();
         UUID errandId = UUID.randomUUID();
         UUID conversationId = UUID.randomUUID();
         UUID recipientId = UUID.randomUUID();
@@ -45,14 +46,15 @@ class NotificationEventListenersTest {
             {"messageId":"%s","conversationId":"%s","errandId":"%s",
              "senderId":"%s","recipientId":"%s","sequenceNumber":12,
              "createdAt":"2026-11-08T08:00:00Z"}
-            """.formatted(UUID.randomUUID(), conversationId, errandId,
+            """.formatted(messageId, conversationId, errandId,
                 UUID.randomUUID(), recipientId));
         record.headers().add("eventId", eventId.toString().getBytes(StandardCharsets.UTF_8));
 
         new ChatMessageEventListener(new ChatMessageEventParser(), notifications).onEvent(record);
 
         verify(notifications).save(eventId, recipientId, "CHAT_MESSAGE", errandId, conversationId,
-            "You received a new delivery message.");
+            messageId,
+            "You received a new message.");
     }
 
     @Test

@@ -282,6 +282,7 @@ services:
       VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8081}
       VITE_ORDER_API_URL: ${VITE_ORDER_API_URL:-http://localhost:8002}
       VITE_CREDIT_API_URL: ${VITE_CREDIT_API_URL:-http://localhost:8001}
+      VITE_NOTIFICATION_API_URL: ${VITE_NOTIFICATION_API_URL:-http://localhost:8003}
       VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"

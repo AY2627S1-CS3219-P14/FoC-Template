@@ -21,14 +21,14 @@ public class ErrandEventListener {
         // Save commits before this listener returns; RECORD mode then commits the offset.
         switch (record.topic()) {
             case "errand.accepted" -> notifications.save(event.eventId(), event.requesterId(),
-                "ERRAND_ACCEPTED", event.errandId(), "Someone has accepted your errand.");
+                "ERRAND_ACCEPTED", event.errandId(), "Someone has accepted your errand");
             case "errand.delivered" -> notifications.save(event.eventId(), event.requesterId(),
-                "ERRAND_DELIVERED", event.errandId(), "Your courier marked your errand as delivered.");
+                "ERRAND_DELIVERED", event.errandId(), "Your courier marked your errand as delivered");
             case "errand.completed" -> notifications.save(event.eventId(), event.courierId(),
                 "ERRAND_COMPLETED", event.errandId(),
-                "The requester confirmed your errand is complete.");
+                "The requester confirmed your errand is complete");
             case "errand.failed" -> notifications.save(event.eventId(), event.courierId(),
-                "ERRAND_FAILED", event.errandId(), "The requester reported a failure with your errand.");
+                "ERRAND_FAILED", event.errandId(), "The requester reported a failure with your errand");
             default -> throw new InvalidNotificationEventException("Unsupported event topic");
         }
     }

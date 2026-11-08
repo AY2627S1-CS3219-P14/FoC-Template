@@ -18,6 +18,7 @@ export type ErrandDetails = {
   createdAt: string
   expiresAt: string
   acceptedAt: string | null
+  deliveredAt: string | null
   completedAt: string | null
   cancelledAt: string | null
   failedAt: string | null

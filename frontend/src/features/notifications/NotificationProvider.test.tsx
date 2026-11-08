@@ -30,7 +30,7 @@ const alice = {
 const item: NotificationItem = {
   id: 'first',
   type: 'ERRAND_DELIVERED',
-  errandId: 'errand',
+  data: { errandId: 'errand' },
   message: 'Delivered',
   createdAt: '2026-11-08T00:00:00Z',
   readAt: null,

@@ -9,7 +9,7 @@ export function useErrandNotificationRevision(errandId?: string) {
 
   useEffect(() => subscribe?.((signal) => {
     if (signal.type === 'connected' || (
-      errandTypes.has(signal.item.type) && (!errandId || signal.item.errandId === errandId)
+      errandTypes.has(signal.item.type) && (!errandId || signal.item.data.errandId === errandId)
     )) {
       setRevision((value) => value + 1)
     }

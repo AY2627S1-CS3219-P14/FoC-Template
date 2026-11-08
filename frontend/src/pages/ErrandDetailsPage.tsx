@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import creditIcon from '../assets/errand-credit.svg'
 import routeMarkers from '../assets/errand-route.svg'
 import {
@@ -19,6 +19,32 @@ import type { ErrandStatus } from '../features/errands/errand.types'
 import { useAuth } from '../features/auth/useAuth'
 import { useCredits } from '../features/credits/useCredits'
 import { useErrandNotificationRevision } from '../features/notifications/useErrandNotificationRevision'
+import { getConversationForErrand } from '../features/chat/chat.api'
+
+function ChatLink({ errandId }: { errandId: string }) {
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+  async function openChat() {
+    setLoading(true)
+    setError(false)
+    try {
+      const conversation = await getConversationForErrand(errandId)
+      if (conversation) navigate(`/chats/${conversation.id}`)
+      else setError(true)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+  return <div className="mt-4">
+    <button type="button" disabled={loading} onClick={() => void openChat()} className="h-10 w-full rounded-lg border border-[#175c45] px-4 text-sm font-semibold text-[#175c45] hover:bg-[#f0f6f2] disabled:opacity-60">
+      {loading ? 'Opening chat…' : 'Open chat'}
+    </button>
+    {error ? <p className="mt-2 text-xs text-[#a33a32]">Chat is not available yet. Please try again.</p> : null}
+  </div>
+}
 
 const statusPresentation: Record<
   ErrandStatus,
@@ -429,6 +455,9 @@ function ErrandDetailsContent({
           <p className="mt-2 text-sm leading-6 text-[#68736c]">
             {statusCopy.description}
           </p>
+          {errand.courierName ? (
+            <ChatLink errandId={errand.id} />
+          ) : null}
           <dl className="mt-5 space-y-4 border-t border-[#e6eae7] pt-5">
             <DetailRow label="CREATED" value={formatDateTime(errand.createdAt)} />
             {errand.acceptedAt ? (

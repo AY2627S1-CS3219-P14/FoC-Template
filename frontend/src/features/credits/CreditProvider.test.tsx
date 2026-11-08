@@ -41,7 +41,7 @@ describe('CreditProvider', () => {
     render(
       <NotificationContext.Provider value={{
         items: [], unreadCount: 0, historyStatus: 'ready', connection: 'connected',
-        refresh: vi.fn(), markRead: vi.fn(), markAllRead: vi.fn(),
+        refresh: vi.fn(), markRead: vi.fn(), markAllRead: vi.fn(), hide: vi.fn(),
         subscribe(listener) { notify = listener; return vi.fn() },
       }}>
         <CreditProvider><Consumer /></CreditProvider>
@@ -49,7 +49,7 @@ describe('CreditProvider', () => {
     )
     expect(await screen.findByText('30')).toBeInTheDocument()
     const item = {
-      id: 'credit', type: 'CREDIT_RECEIVED', errandId: 'errand',
+      id: 'credit', type: 'CREDIT_RECEIVED', data: { errandId: 'errand' },
       message: 'Received 10 credits', createdAt: '2026-11-08T00:00:00Z', readAt: null,
     }
     act(() => notify({ type: 'notification', item: { ...item, type: 'ERRAND_COMPLETED' } }))

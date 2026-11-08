@@ -4,7 +4,7 @@ import type { NotificationItem } from './notification.types'
 
 const baseUrl = (
   import.meta.env.VITE_NOTIFICATION_API_URL ??
-  (import.meta.env.DEV ? 'http://localhost:8003' : '')
+  (import.meta.env.DEV ? 'http://localhost:8004' : '')
 ).trim().replace(/\/+$/, '')
 
 export const notificationHistoryLimit = 20
@@ -12,9 +12,14 @@ export const notificationHistoryLimit = 20
 function isNotification(value: unknown): value is NotificationItem {
   if (!value || typeof value !== 'object') return false
   const item = value as Partial<NotificationItem>
+  const data = item.data as Partial<NotificationItem['data']> | undefined
   return typeof item.id === 'string' && item.id.length > 0
     && typeof item.type === 'string'
-    && typeof item.errandId === 'string' && item.errandId.length > 0
+    && Boolean(data) && typeof data?.errandId === 'string' && data.errandId.length > 0
+    && (item.type !== 'CHAT_MESSAGE' || (
+      typeof data.conversationId === 'string' && data.conversationId.length > 0
+      && typeof data.messageId === 'string' && data.messageId.length > 0
+    ))
     && typeof item.message === 'string'
     && typeof item.createdAt === 'string' && Number.isFinite(Date.parse(item.createdAt))
     && (item.readAt === null || typeof item.readAt === 'string')

@@ -9,6 +9,7 @@ export type NotificationContextValue = {
   refresh: () => Promise<void>
   markRead: (ids: readonly string[]) => Promise<void>
   markAllRead: () => Promise<void>
+  hide: (ids: readonly string[]) => void
   subscribe: (listener: NotificationListener) => () => void
 }
 

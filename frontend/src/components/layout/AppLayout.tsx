@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router'
 import { CreditProvider } from '../../features/credits/CreditProvider'
 import { NotificationProvider } from '../../features/notifications/NotificationProvider'
+import { ChatNotificationBanners } from '../../features/notifications/ChatNotificationBanners'
 import { AppHeader } from './AppHeader'
 import { MobileBottomNav } from './MobileBottomNav'
 import { Sidebar } from './Sidebar'
@@ -10,6 +11,7 @@ export function AppLayout() {
     <NotificationProvider>
       <CreditProvider>
         <div className="min-h-screen bg-[#f5f7f4] text-[#17211d]">
+          <ChatNotificationBanners />
           <AppHeader />
           <div className="lg:grid lg:grid-cols-[236px_1fr]">
             <Sidebar />

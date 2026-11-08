@@ -144,6 +144,11 @@ class NotificationServiceApplicationTests {
         JsonNode items = json.readTree(history.body()).get("items");
         assertThat(items.size()).isEqualTo(1);
         assertThat(items.get(0).get("id").asString()).isEqualTo(find(secondAliceEvent).getId().toString());
+        assertThat(items.get(0).has("errandId")).isFalse();
+        assertThat(items.get(0).get("data").get("errandId").asString())
+            .isEqualTo(find(secondAliceEvent).getErrandId().toString());
+        assertThat(items.get(0).get("data").has("conversationId")).isFalse();
+        assertThat(items.get(0).get("data").has("messageId")).isFalse();
         assertThat(items.get(0).get("readAt").isNull()).isTrue();
         assertThat(unread(aliceToken)).isEqualTo(2);
 
@@ -404,6 +409,19 @@ class NotificationServiceApplicationTests {
     void nonDuplicateDatabaseErrorsAreNotSwallowed() {
         assertThatThrownBy(() -> notifications.save(UUID.randomUUID(), null,
             "ERRAND_ACCEPTED", UUID.randomUUID(), "Accepted"))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void databaseEnforcesTypeSpecificChatFields() {
+        assertThatThrownBy(() -> notifications.save(
+            UUID.randomUUID(), UUID.randomUUID(), "CHAT_MESSAGE", UUID.randomUUID(),
+            "Missing chat identifiers"))
+            .isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() -> notifications.save(
+            UUID.randomUUID(), UUID.randomUUID(), "ERRAND_ACCEPTED", UUID.randomUUID(),
+            UUID.randomUUID(), UUID.randomUUID(), "Unexpected chat identifiers"))
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 

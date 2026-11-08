@@ -21,13 +21,22 @@ function mergeItems(previous: NotificationItem[], incoming: NotificationItem[]) 
     .slice(0, notificationHistoryLimit)
 }
 
+function loadHiddenIds(key: string) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) ?? '[]') as unknown
+    return new Set(Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : [])
+  } catch {
+    return new Set<string>()
+  }
+}
+
 export function NotificationProvider({ children }: PropsWithChildren) {
   const { status, currentUserId } = useAuth()
   if (status !== 'authenticated' || !currentUserId) return <>{children}</>
-  return <NotificationSession key={currentUserId}>{children}</NotificationSession>
+  return <NotificationSession key={currentUserId} userId={currentUserId}>{children}</NotificationSession>
 }
 
-function NotificationSession({ children }: PropsWithChildren) {
+function NotificationSession({ children, userId }: PropsWithChildren<{ userId: string }>) {
   const [items, setItems] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState<number | null>(null)
   const [historyStatus, setHistoryStatus] = useState<NotificationContextValue['historyStatus']>('loading')
@@ -36,6 +45,8 @@ function NotificationSession({ children }: PropsWithChildren) {
   const historyRequest = useRef<AbortController | null>(null)
   const countRequest = useRef<AbortController | null>(null)
   const listeners = useRef(new Set<NotificationListener>())
+  const hiddenStorageKey = `hidden-chat-notifications:${userId}`
+  const hiddenIds = useRef(loadHiddenIds(hiddenStorageKey))
 
   const subscribe = useCallback((listener: NotificationListener) => {
     const subscribers = listeners.current
@@ -68,7 +79,7 @@ function NotificationSession({ children }: PropsWithChildren) {
     try {
       const history = await getNotifications(signal)
       if (signal.aborted) return
-      setItems((previous) => mergeItems(previous, history))
+      setItems((previous) => mergeItems(previous, history.filter((item) => !hiddenIds.current.has(item.id))))
       setHistoryStatus('ready')
     } catch {
       if (!signal.aborted) setHistoryStatus('error')
@@ -96,6 +107,12 @@ function NotificationSession({ children }: PropsWithChildren) {
     await markAllNotificationsRead(signal)
     if (!signal.aborted) await refresh()
   }, [refresh])
+
+  const hide = useCallback((ids: readonly string[]) => {
+    ids.forEach((id) => hiddenIds.current.add(id))
+    localStorage.setItem(hiddenStorageKey, JSON.stringify([...hiddenIds.current].slice(-500)))
+    setItems((current) => current.filter((item) => !ids.includes(item.id)))
+  }, [hiddenStorageKey])
 
   useEffect(() => {
     const session = new AbortController()
@@ -132,8 +149,8 @@ function NotificationSession({ children }: PropsWithChildren) {
   }, [refresh, refreshUnreadCount])
 
   const value = useMemo<NotificationContextValue>(
-    () => ({ items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead, subscribe }),
-    [items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead, subscribe],
+    () => ({ items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead, hide, subscribe }),
+    [items, unreadCount, historyStatus, connection, refresh, markRead, markAllRead, hide, subscribe],
   )
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
 }

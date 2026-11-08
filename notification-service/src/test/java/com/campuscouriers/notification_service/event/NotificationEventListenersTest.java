@@ -35,6 +35,40 @@ class NotificationEventListenersTest {
             "Your courier marked your errand as delivered");
     }
 
+    @Test
+    void chatMessageUsesRecipientAndOutboxHeader() {
+        UUID eventId = UUID.randomUUID();
+        UUID messageId = UUID.randomUUID();
+        UUID errandId = UUID.randomUUID();
+        UUID conversationId = UUID.randomUUID();
+        UUID recipientId = UUID.randomUUID();
+        var record = record("chat.message.created", """
+            {"messageId":"%s","conversationId":"%s","errandId":"%s",
+             "senderId":"%s","recipientId":"%s","sequenceNumber":12,
+             "createdAt":"2026-11-08T08:00:00Z"}
+            """.formatted(messageId, conversationId, errandId,
+                UUID.randomUUID(), recipientId));
+        record.headers().add("eventId", eventId.toString().getBytes(StandardCharsets.UTF_8));
+
+        new ChatMessageEventListener(new ChatMessageEventParser(), notifications).onEvent(record);
+
+        verify(notifications).save(eventId, recipientId, "CHAT_MESSAGE", errandId, conversationId,
+            messageId,
+            "You received a new message.");
+    }
+
+    @Test
+    void malformedChatMessageDoesNotCreateNotification() {
+        var record = record("chat.message.created", "{} ");
+        record.headers().add("eventId",
+            UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> new ChatMessageEventListener(
+            new ChatMessageEventParser(), notifications).onEvent(record))
+            .isInstanceOf(InvalidNotificationEventException.class);
+        verifyNoInteractions(notifications);
+    }
+
     @ParameterizedTest
     @CsvSource({
         "credit.received, RECEIVED, 1, You received 1 credit for your errand",

@@ -17,7 +17,7 @@ spring:
       ack-mode: record
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5436}/${DB_NAME:campuscouriers_notification}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5437}/${DB_NAME:campuscouriers_notification}
     username: ${DB_USERNAME:notification_service}
     password: ${DB_PASSWORD:password}
   jpa:
@@ -26,7 +26,7 @@ spring:
       ddl-auto: update
 
 server:
-  port: 8003
+  port: ${SERVER_PORT:8004}
 
 notification:
   auth:

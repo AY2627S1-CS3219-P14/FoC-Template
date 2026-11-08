@@ -11,8 +11,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.Check;
 
 @Entity
+@Check(name = "chk_notification_chat_fields", constraints = """
+    (type = 'CHAT_MESSAGE' AND conversation_id IS NOT NULL AND message_id IS NOT NULL)
+    OR
+    (type <> 'CHAT_MESSAGE' AND conversation_id IS NULL AND message_id IS NULL)
+    """)
 @Table(name = "notifications",
     uniqueConstraints = @UniqueConstraint(
         name = "uk_notification_event_recipient_type",
@@ -36,6 +42,12 @@ public class Notification {
     @Column(name = "errand_id", nullable = false)
     private UUID errandId;
 
+    @Column(name = "conversation_id")
+    private UUID conversationId;
+
+    @Column(name = "message_id")
+    private UUID messageId;
+
     @Column(nullable = false, columnDefinition = "text")
     private String message;
 
@@ -50,11 +62,13 @@ public class Notification {
     }
 
     public Notification(UUID recipientId, UUID sourceEventId, String type,
-                        UUID errandId, String message) {
+                        UUID errandId, UUID conversationId, UUID messageId, String message) {
         this.recipientId = recipientId;
         this.sourceEventId = sourceEventId;
         this.type = type;
         this.errandId = errandId;
+        this.conversationId = conversationId;
+        this.messageId = messageId;
         this.message = message;
     }
 
@@ -63,6 +77,8 @@ public class Notification {
     public UUID getSourceEventId() { return sourceEventId; }
     public String getType() { return type; }
     public UUID getErrandId() { return errandId; }
+    public UUID getConversationId() { return conversationId; }
+    public UUID getMessageId() { return messageId; }
     public String getMessage() { return message; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getReadAt() { return readAt; }

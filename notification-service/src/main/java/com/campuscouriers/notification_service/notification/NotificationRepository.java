@@ -54,8 +54,10 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Modifying
     @Query(value = """
         INSERT INTO notifications
-            (id, recipient_id, source_event_id, type, errand_id, message, created_at)
-        VALUES (:id, :recipientId, :eventId, :type, :errandId, :message, :createdAt)
+            (id, recipient_id, source_event_id, type, errand_id, conversation_id, message_id,
+             message, created_at)
+        VALUES (:id, :recipientId, :eventId, :type, :errandId, :conversationId, :messageId,
+                :message, :createdAt)
         ON CONFLICT (source_event_id, recipient_id, type) DO NOTHING
         """, nativeQuery = true)
     int insertIfAbsent(@Param("id") UUID id,
@@ -63,6 +65,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
                        @Param("eventId") UUID eventId,
                        @Param("type") String type,
                        @Param("errandId") UUID errandId,
+                       @Param("conversationId") UUID conversationId,
+                       @Param("messageId") UUID messageId,
                        @Param("message") String message,
                        @Param("createdAt") Instant createdAt);
 }

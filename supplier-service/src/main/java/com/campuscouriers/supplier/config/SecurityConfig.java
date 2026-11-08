@@ -25,12 +25,21 @@ public class SecurityConfig {
                 .cors(cors -> { })
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(HttpMethod.GET,
+                                "/suppliers/deactivated", "/categories/deactivated",
+                                "/buildings/deactivated")
+                        .hasAuthority("Administrator")
+                        .requestMatchers(HttpMethod.GET,
                                 "/suppliers/**", "/categories/**", "/buildings/**")
                         .authenticated()
                         .requestMatchers(HttpMethod.POST,
                                 "/suppliers", "/categories", "/buildings")
                         .hasAuthority("Administrator")
-                        .requestMatchers(HttpMethod.PUT, "/suppliers/**")
+                        .requestMatchers(HttpMethod.POST,
+                                "/categories/*/deactivate", "/categories/*/reactivate",
+                                "/buildings/*/deactivate", "/buildings/*/reactivate")
+                        .hasAuthority("Administrator")
+                        .requestMatchers(HttpMethod.PUT,
+                                "/suppliers/**", "/categories/**", "/buildings/**")
                         .hasAuthority("Administrator")
                         .requestMatchers(HttpMethod.PATCH,
                                 "/suppliers/*/deactivate", "/suppliers/*/reactivate")

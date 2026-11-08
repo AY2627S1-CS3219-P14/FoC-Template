@@ -8,6 +8,7 @@ import com.campuscouriers.supplier.entity.SupplierStatus;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
 import com.campuscouriers.supplier.exception.GlobalExceptionHandler;
 import com.campuscouriers.supplier.exception.ReferenceNotFoundException;
+import com.campuscouriers.supplier.exception.InactiveReferencesException;
 import com.campuscouriers.supplier.service.SupplierService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +90,17 @@ class SupplierControllerTest {
         mockMvc.perform(get("/suppliers").param("size", "101"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Size must be between 1 and 100"));
+    }
+
+    @Test
+    void findDeactivated_returnsInactivePage() throws Exception {
+        when(supplierService.findDeactivated(null, null, null, 0, 20, "name,asc"))
+                .thenReturn(new SupplierPageResponse(
+                        List.of(), new PageMetadata(0, 20, 0, 0, false, false)));
+
+        mockMvc.perform(get("/suppliers/deactivated"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty());
     }
 
     @Test
@@ -273,6 +285,18 @@ class SupplierControllerTest {
         mockMvc.perform(patch("/suppliers/{id}/reactivate", supplierId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void reactivate_withInactiveCategoryAndBuilding_returnsBothReferences() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        doThrow(new InactiveReferencesException(List.of("category", "building")))
+                .when(supplierService).reactivate(supplierId);
+
+        mockMvc.perform(patch("/suppliers/{id}/reactivate", supplierId))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.inactiveReferences[0]").value("category"))
+                .andExpect(jsonPath("$.inactiveReferences[1]").value("building"));
     }
 
     private SupplierResponse response(

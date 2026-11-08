@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +52,17 @@ class CategoryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(id.toString()))
                 .andExpect(jsonPath("$.items[0].name").value("Food"));
+    }
+
+    @Test
+    void findDeactivated_returnsRetiredItems() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(categoryService.findDeactivated()).thenReturn(new ItemListResponse<>(List.of(
+                new CategoryResponse(id, "Old Food", CategoryStatus.RETIRED))));
+
+        mockMvc.perform(get("/categories/deactivated"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("RETIRED"));
     }
 
     @Test
@@ -102,5 +114,23 @@ class CategoryControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.detail").value("A category named 'Food' already exists"));
+    }
+
+    @Test
+    void detailUpdateDeactivateAndReactivate_areExposed() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(categoryService.findById(id)).thenReturn(new CategoryResponse(id, "Food", CategoryStatus.ACTIVE));
+        when(categoryService.update(any(), any())).thenReturn(new CategoryResponse(id, "Dining", CategoryStatus.ACTIVE));
+        when(categoryService.deactivate(id)).thenReturn(new CategoryResponse(id, "Dining", CategoryStatus.RETIRED));
+        when(categoryService.reactivate(id)).thenReturn(new CategoryResponse(id, "Dining", CategoryStatus.ACTIVE));
+
+        mockMvc.perform(get("/categories/{id}", id)).andExpect(status().isOk());
+        mockMvc.perform(put("/categories/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Dining\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Dining"));
+        mockMvc.perform(post("/categories/{id}/deactivate", id))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("RETIRED"));
+        mockMvc.perform(post("/categories/{id}/reactivate", id))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 }

@@ -83,6 +83,75 @@ mvn spring-boot:run
 
 The service starts at [http://localhost:8080](http://localhost:8080).
 
+## API endpoints
+
+All endpoints require a valid bearer token. Read endpoints are available to
+authenticated users unless marked **Administrator only**. Create, update, and
+lifecycle endpoints require the `Administrator` authority.
+
+### Suppliers
+
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| `GET` | `/suppliers` | Authenticated | Lists active suppliers. Supports `q`, `categoryId`, `buildingId`, `page`, `size`, and `sort` query parameters. |
+| `GET` | `/suppliers/deactivated` | Administrator only | Lists inactive suppliers with the same search, filter, pagination, and sorting parameters as the active list. |
+| `GET` | `/suppliers/{id}` | Authenticated | Retrieves an active supplier by ID. An inactive supplier is not returned by this endpoint. |
+| `POST` | `/suppliers` | Administrator only | Creates an active supplier. Its category and building must both be active. Supplier names are unique per building, case-insensitively, across active and inactive records. |
+| `PUT` | `/suppliers/{id}` | Administrator only | Replaces an active or inactive supplier's editable details. The selected category and building must be active. |
+| `PATCH` | `/suppliers/{id}/deactivate` | Administrator only | Marks a supplier inactive. |
+| `PATCH` | `/suppliers/{id}/reactivate` | Administrator only | Reactivates a supplier only when its referenced category and building are both active; otherwise returns `409 Conflict` with every inactive reference in `inactiveReferences`. |
+
+Supplier list defaults are `page=0`, `size=20`, and `sort=name,asc`.
+Supported sort values are `name,asc` and `name,desc`; page size must be between
+1 and 100.
+
+### Categories
+
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| `GET` | `/categories` | Authenticated | Lists active categories alphabetically. These are the categories available for supplier selection and filtering. |
+| `GET` | `/categories/deactivated` | Administrator only | Lists deactivated categories alphabetically. Deactivated categories are represented internally and in responses with status `RETIRED`. |
+| `GET` | `/categories/{id}` | Authenticated | Retrieves a category by ID, including a deactivated category. |
+| `POST` | `/categories` | Administrator only | Creates an active category. Names must be unique case-insensitively across active and deactivated categories. |
+| `PUT` | `/categories/{id}` | Administrator only | Renames an active or deactivated category using the same validation and uniqueness rules as creation. Suppliers referencing it immediately display the new name. |
+| `POST` | `/categories/{id}/deactivate` | Administrator only | Deactivates a category only when no active suppliers reference it; otherwise returns `409 Conflict`. |
+| `POST` | `/categories/{id}/reactivate` | Administrator only | Reactivates a deactivated category. |
+
+### Buildings
+
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| `GET` | `/buildings` | Authenticated | Lists active buildings alphabetically. These are the buildings available for supplier selection and filtering. |
+| `GET` | `/buildings/deactivated` | Administrator only | Lists deactivated buildings alphabetically. Deactivated buildings are represented internally and in responses with status `RETIRED`. |
+| `GET` | `/buildings/{id}` | Authenticated | Retrieves a building by ID, including a deactivated building. |
+| `POST` | `/buildings` | Administrator only | Creates an active building. Names must be unique case-insensitively across active and deactivated buildings. |
+| `PUT` | `/buildings/{id}` | Administrator only | Renames an active or deactivated building using the same validation and uniqueness rules as creation. Suppliers referencing it immediately display the new name. |
+| `POST` | `/buildings/{id}/deactivate` | Administrator only | Deactivates a building only when no active suppliers reference it; otherwise returns `409 Conflict`. |
+| `POST` | `/buildings/{id}/reactivate` | Administrator only | Reactivates a deactivated building. |
+
+### Common responses
+
+- `400 Bad Request`: malformed input, invalid pagination, or validation failure.
+- `401 Unauthorized`: missing or invalid authentication.
+- `403 Forbidden`: the authenticated caller lacks administrator access.
+- `404 Not Found`: the requested resource does not exist or an active-only
+  supplier lookup targets an inactive supplier.
+- `409 Conflict`: duplicate normalized name, inactive referenced category or
+  building, or an attempt to deactivate a category/building that still has
+  active suppliers.
+
+When supplier creation, update, or reactivation finds inactive references, the
+problem response reports all of them rather than stopping at the first one. For
+example:
+
+```json
+{
+  "status": 409,
+  "detail": "The following selected references are not active: category, building",
+  "inactiveReferences": ["category", "building"]
+}
+```
+
 ## Seed the initial supplier data
 
 The importer reads `src/main/resources/seed/supplier-seed-data.csv` and runs at

@@ -69,3 +69,14 @@ output "secrets_manager_secrets" {
     aws_secretsmanager_secret.user_bootstrap_admin.name,
   ]
 }
+
+# --- RDS -------------------------------------------------------------------------------------------
+output "rds_address" {
+  description = "RDS hostname. Put it in k8s/app/database-endpoints.yaml and k8s/messaging/database-endpoints.yaml."
+  value       = aws_db_instance.main.address
+}
+
+output "rds_master_secret_arn" {
+  description = "Secrets Manager secret (created by RDS) holding the master username and password."
+  value       = aws_db_instance.main.master_user_secret[0].secret_arn
+}

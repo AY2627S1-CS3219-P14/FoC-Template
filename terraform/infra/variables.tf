@@ -101,3 +101,34 @@ variable "node_max_size" {
   type    = number
   default = 5
 }
+
+# --- RDS -------------------------------------------------------------------------------------------
+variable "db_instance_class" {
+  description = "RDS instance size. db.t4g.small = 2 vCPU (burstable), 2 GiB RAM."
+  type        = string
+  default     = "db.t4g.small"
+}
+
+variable "db_multi_az" {
+  description = "Keep a synchronous standby in the second AZ that takes over automatically. Doubles the cost."
+  type        = bool
+  default     = false
+}
+
+variable "db_backup_retention_days" {
+  description = "Days of automatic backups (point-in-time restore). 0 turns backups off."
+  type        = number
+  default     = 1
+}
+
+variable "db_deletion_protection" {
+  description = "true: RDS refuses to delete the instance (also blocks terraform destroy)."
+  type        = bool
+  default     = false
+}
+
+variable "db_skip_final_snapshot" {
+  description = "true: destroying the instance deletes the data with no final snapshot. Set false once the data matters."
+  type        = bool
+  default     = true
+}

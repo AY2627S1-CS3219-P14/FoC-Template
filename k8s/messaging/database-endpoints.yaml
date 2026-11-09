@@ -9,7 +9,7 @@ metadata:
   namespace: campuscouriers-messaging
 spec:
   type: ExternalName
-  externalName: campuscouriers.replace-me.ap-southeast-1.rds.amazonaws.com # TODO: RDS endpoint
+  externalName:  # TODO: RDS endpoint
 ---
 apiVersion: v1
 kind: Service
@@ -18,7 +18,7 @@ metadata:
   namespace: campuscouriers-messaging
 spec:
   type: ExternalName
-  externalName: campuscouriers.replace-me.ap-southeast-1.rds.amazonaws.com # TODO: RDS endpoint
+  externalName:  # TODO: RDS endpoint
 ---
 apiVersion: v1
 kind: Service
@@ -27,4 +27,4 @@ metadata:
   namespace: campuscouriers-messaging
 spec:
   type: ExternalName
-  externalName: campuscouriers.replace-me.ap-southeast-1.rds.amazonaws.com # TODO: RDS endpoint
+  externalName:  # TODO: RDS endpoint

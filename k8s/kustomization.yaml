@@ -11,6 +11,7 @@ resources:
   # messaging
   - messaging/storageclass.yaml
   - messaging/database-endpoints.yaml
+  - messaging/external-secrets.yaml
   - messaging/kafka.yaml
   - messaging/kafka-connect.yaml
   - messaging/network-policies.yaml

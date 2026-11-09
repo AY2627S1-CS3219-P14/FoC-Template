@@ -24,6 +24,9 @@ data "aws_iam_policy_document" "external_secrets" {
     # Secrets Manager adds a random 6-character suffix to every secret ARN, hence the trailing *
     resources = [
       "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:${local.secrets_prefix}*",
+      # The RDS master password. RDS names this secret itself ("rds!db-..."), so it doesn't match
+      # the prefix above; only the db-init Job in k8s/ops uses it.
+      aws_db_instance.main.master_user_secret[0].secret_arn,
     ]
   }
 }

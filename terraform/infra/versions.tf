@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 3.3"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.9" # ephemeral random_password: generated passwords that never reach state
+    }
   }
 
   # State lives in the S3 bucket created by terraform/bootstrap. A backend block can't use

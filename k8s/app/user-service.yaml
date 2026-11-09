@@ -2,8 +2,9 @@
 # This file is the fully commented reference; the other services follow the same layout.
 
 # --- Identity --------------------------------------------------------------------------------------
-# Each service gets its own ServiceAccount so that, later, it can be given its own IAM role
-# (IRSA / EKS Pod Identity) without the other services sharing it.
+# Each service gets its own ServiceAccount so that, if it ever needs AWS access, it can be given its
+# own IAM role without the other services sharing it (IRSA, see terraform/infra/irsa.tf):
+# add the role to irsa_service_accounts there, then annotate this ServiceAccount:
 apiVersion: v1
 kind: ServiceAccount
 metadata:

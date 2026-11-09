@@ -41,3 +41,22 @@ output "nat_public_ips" {
   description = "Outgoing traffic from pods appears to come from these IPs (useful for allow-lists)."
   value       = aws_eip.nat[*].public_ip
 }
+
+# --- EKS -------------------------------------------------------------------------------------------
+output "cluster_name" {
+  value = aws_eks_cluster.main.name
+}
+
+output "cluster_endpoint" {
+  value = aws_eks_cluster.main.endpoint
+}
+
+output "cluster_security_group_id" {
+  description = "Security group of the control plane and nodes. RDS will allow port 5432 from it."
+  value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+}
+
+output "kubeconfig_command" {
+  description = "Run this to point kubectl at the cluster."
+  value       = "aws eks update-kubeconfig --name ${aws_eks_cluster.main.name} --region ${var.aws_region} --alias ${aws_eks_cluster.main.name}"
+}

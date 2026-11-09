@@ -65,7 +65,7 @@ k8s/
 | AWS account id, region | `kustomization.yaml`, `jobs/kustomization.yaml` |
 | `api.example.com` | `app/ingress.yaml` |
 | `https://app.example.com` (CORS) | ConfigMap in each `app/*-service.yaml` |
-| Public subnet CIDRs | `app/network-policies.yaml` |
+| Public subnet CIDRs (already match `terraform output public_subnet_cidrs`; update if `vpc_cidr` changes) | `app/network-policies.yaml` |
 
 ## Deploy
 

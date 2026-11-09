@@ -69,6 +69,13 @@ questions. The LLM selects the closest catalog supplier/building
 when the message describes a pickup or destination location; it returns `null`
 when the request gives no such location.
 
+### Delivery instructions
+
+The LLM writes `delivery_description` as courier instructions from the message
+and always ends it with a request to message the requester on arrival. If the
+LLM leaves that out, the backend appends "Please message me when you arrive."
+(kept within the 500-character limit).
+
 ### Deadlines
 
 The LLM decides which time in the message is the deadline (so "level 2" is not

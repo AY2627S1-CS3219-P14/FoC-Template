@@ -30,6 +30,12 @@ HISTORY_CONTEXT_SIZE = 100
 DEFAULT_BASE_CREDITS = 5
 MAX_DEADLINE = timedelta(days=7)
 UTC = ZoneInfo("UTC")
+DESCRIPTION_MAX_LENGTH = 500
+ARRIVAL_NOTE = "Please message me when you arrive."
+ARRIVAL_NOTE_PATTERN = re.compile(
+    r"\b(?:message|text|call|ping|contact|notify|let me know|whatsapp|telegram)\b",
+    re.IGNORECASE,
+)
 # How far after a deadline marker ("by", "before", ...) to look for clock times.
 MARKER_LOOKAHEAD = 48
 
@@ -189,6 +195,16 @@ def _parse_explicit_deadline(value: str | None, message: str, now: datetime) -> 
     return deadline
 
 
+def _with_arrival_note(description: str | None) -> str:
+    """Courier instructions always ask the courier to message on arrival."""
+    description = (description or "").strip()
+    if ARRIVAL_NOTE_PATTERN.search(description):
+        return description[:DESCRIPTION_MAX_LENGTH]
+    room = DESCRIPTION_MAX_LENGTH - len(ARRIVAL_NOTE) - 1
+    description = description[:room].rstrip()
+    return f"{description} {ARRIVAL_NOTE}" if description else ARRIVAL_NOTE
+
+
 def _history_context(
     items: list[dict],
     suppliers: list[SupplierCandidate],
@@ -246,9 +262,7 @@ def _response(
     )
     item = extraction.required_item.strip() if extraction.required_item else None
     floor = extraction.delivery_floor.strip() if extraction.delivery_floor else None
-    description = (
-        extraction.delivery_description.strip() if extraction.delivery_description else None
-    )
+    description = _with_arrival_note(extraction.delivery_description)
     deadline = _parse_explicit_deadline(extraction.expires_at, message, now)
 
     selected_indices = sorted(

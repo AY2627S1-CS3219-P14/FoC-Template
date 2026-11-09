@@ -188,8 +188,30 @@ def test_missing_fields_return_as_null_without_clarification():
     assert result.expires_at is None
     assert result.required_item is None
     assert result.delivery_floor is None
-    assert result.delivery_description is None
+    assert result.delivery_description == routes.ARRIVAL_NOTE
     assert not hasattr(result, "clarification_questions")
+
+
+# --- delivery instructions --------------------------------------------------
+
+
+def test_arrival_note_is_added_when_llm_omits_it():
+    result = routes._response(
+        extraction(delivery_description="Meet at the lift"),
+        "milo to COM3", SUPPLIERS, BUILDINGS, [], 0, local(10),
+    )
+    assert result.delivery_description == "Meet at the lift Please message me when you arrive."
+
+
+def test_existing_contact_request_is_not_duplicated():
+    description = "Meet at the lift. Text me when you're downstairs."
+    assert routes._with_arrival_note(description) == description
+
+
+def test_arrival_note_fits_order_service_limit():
+    result = routes._with_arrival_note("x" * 500)
+    assert len(result) <= routes.DESCRIPTION_MAX_LENGTH
+    assert result.endswith(routes.ARRIVAL_NOTE)
 
 
 # --- deadlines ---------------------------------------------------------------
@@ -412,6 +434,7 @@ def test_draft_endpoint_uses_auth_and_returns_resolved_catalog_values(monkeypatc
     assert body["historical_base_credit"] == 5
     assert body["credit_value"] == 5
     assert body["completed_history_count"] == 2
+    assert body["delivery_description"].endswith("Please message me when you arrive.")
     # "level 2" in the message must not become a 02:00 deadline; the LLM's +4h
     # value has no matching clock or duration, so the deadline stays unset.
     assert body["expires_at"] is None

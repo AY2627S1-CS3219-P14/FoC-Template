@@ -60,3 +60,12 @@ output "kubeconfig_command" {
   description = "Run this to point kubectl at the cluster."
   value       = "aws eks update-kubeconfig --name ${aws_eks_cluster.main.name} --region ${var.aws_region} --alias ${aws_eks_cluster.main.name}"
 }
+
+# --- Platform --------------------------------------------------------------------------------------
+output "secrets_manager_secrets" {
+  description = "Secrets to fill in with `aws secretsmanager put-secret-value` (see README)."
+  value = [
+    aws_secretsmanager_secret.user_service_jwt.name,
+    aws_secretsmanager_secret.user_bootstrap_admin.name,
+  ]
+}

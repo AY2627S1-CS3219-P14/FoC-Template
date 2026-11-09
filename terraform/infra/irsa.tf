@@ -19,7 +19,9 @@ locals {
 
   # Which ServiceAccount may use which role: "<namespace>:<serviceaccount>". Add one line per role.
   irsa_service_accounts = {
-    ebs_csi = "kube-system:ebs-csi-controller-sa"
+    ebs_csi                      = "kube-system:ebs-csi-controller-sa"
+    aws_load_balancer_controller = "kube-system:aws-load-balancer-controller"
+    external_secrets             = "external-secrets:external-secrets"
   }
 }
 

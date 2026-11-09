@@ -40,11 +40,12 @@ k8s/
 
 ## Before you deploy
 
-### Cluster add-ons
+### Cluster add-ons (all installed by `terraform/infra`)
 - **AWS Load Balancer Controller**: turns `ingress.yaml` into an ALB.
+- **External Secrets Operator**: builds Kubernetes Secrets from AWS Secrets Manager (`app/external-secrets.yaml`, `platform/cluster-secret-store.yaml`).
 - **metrics-server**: provides the CPU numbers the autoscalers (HPAs) use.
 - **Amazon EBS CSI driver**: creates the EBS disks for Kafka.
-- **VPC CNI with network policy enabled** (`enableNetworkPolicy: "true"` in the add-on config): without it, NetworkPolicies are silently ignored.
+- **VPC CNI with network policy enabled**: without it, NetworkPolicies are silently ignored.
 
 ### AWS resources
 - **ECR**: push the four service images (see `images:` in `kustomization.yaml`).
@@ -73,16 +74,14 @@ k8s/
 # 1. Namespaces
 kubectl apply -f k8s/namespaces.yaml
 
-# 2. Secrets (never commit these; in the Terraform phase, External Secrets Operator syncs them from Secrets Manager)
+# 2. Secrets
+#    user-service-jwt and user-bootstrap-admin come from AWS Secrets Manager via External Secrets
+#    (fill them in first: terraform/README.md, "Secrets"). The DB credentials below are still created
+#    by hand until the RDS step moves them to Secrets Manager too. Never commit real values.
 for svc in user supplier credit order; do
   kubectl create secret generic ${svc}-db-credentials -n campuscouriers-app \
     --from-literal=DB_USERNAME=${svc}_service --from-literal=DB_PASSWORD='<password>'
 done
-kubectl create secret generic user-service-jwt -n campuscouriers-app \
-  --from-file=private.pem=user-service/keys/private.pem --from-file=public.pem=user-service/keys/public.pem
-kubectl create secret generic user-bootstrap-admin -n campuscouriers-app \
-  --from-literal=BOOTSTRAP_ADMIN_NAME='<name>' --from-literal=BOOTSTRAP_ADMIN_EMAIL='<email>' \
-  --from-literal=BOOTSTRAP_ADMIN_PASSWORD='<password>'
 kubectl create secret generic debezium-db-credentials -n campuscouriers-messaging \
   --from-literal=USER_DB_NAME=campuscouriers_user         --from-literal=USER_DB_USERNAME=user_service \
   --from-literal=USER_DB_PASSWORD='<password>' \

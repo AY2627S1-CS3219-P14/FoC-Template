@@ -6,6 +6,8 @@ kind: Kustomization
 
 resources:
   - namespaces.yaml
+  # platform (needs the External Secrets Operator from terraform/infra installed first)
+  - platform/cluster-secret-store.yaml
   # messaging
   - messaging/storageclass.yaml
   - messaging/database-endpoints.yaml
@@ -14,6 +16,7 @@ resources:
   - messaging/network-policies.yaml
   # app
   - app/database-endpoints.yaml
+  - app/external-secrets.yaml
   - app/user-service.yaml
   - app/supplier-service.yaml
   - app/credit-service.yaml

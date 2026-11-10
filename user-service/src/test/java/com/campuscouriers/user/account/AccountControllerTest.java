@@ -1,6 +1,8 @@
 package com.campuscouriers.user.account;
 
+import com.campuscouriers.user.account.dto.AccountPageResponse;
 import com.campuscouriers.user.account.dto.AccountResponse;
+import com.campuscouriers.user.account.dto.AccountSummaryResponse;
 import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
@@ -28,10 +30,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.util.List;
 import java.util.UUID;
 
 import static com.campuscouriers.user.TestConstants.VALID_EMAIL;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -340,6 +344,78 @@ class AccountControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(emailBody(NEW_EMAIL)))
                     .andExpect(status().isMethodNotAllowed());
+
+            verifyNoInteractions(accountService);
+        }
+    }
+
+    @Nested
+    @DisplayName("List Accounts: GET /api/v1/accounts")
+    class ListAccountsTests {
+
+        private final AccountPageResponse onePage = new AccountPageResponse(
+                List.of(new AccountSummaryResponse(targetId, VALID_EMAIL, "Alice Tan", AccountType.Student)),
+                new AccountPageResponse.PageInfo(0, 20, 1, 1, false, false));
+
+        @Test
+        void listAccounts_withoutParameters_usesDefaultsAndReturnsThePage() throws Exception {
+            when(accountService.listAccounts(null, null, 0, 20, administrator)).thenReturn(onePage);
+
+            mockMvc.perform(get("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, "Bearer " + ADMIN_TOKEN))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[0].id").value(targetId.toString()))
+                    .andExpect(jsonPath("$.items[0].email").value(VALID_EMAIL))
+                    .andExpect(jsonPath("$.items[0].name").value("Alice Tan"))
+                    .andExpect(jsonPath("$.items[0].type").value("Student"))
+                    .andExpect(jsonPath("$.page.totalElements").value(1))
+                    .andExpect(jsonPath("$.page.hasNext").value(false));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"Student, Student", "student, Student", "Administrator, Administrator", "administrator, Administrator"})
+        void listAccounts_withFilters_passesThemToTheService(String value, AccountType expected) throws Exception {
+            when(accountService.listAccounts("alice", expected, 2, 10, administrator)).thenReturn(onePage);
+
+            mockMvc.perform(get("/api/v1/accounts")
+                            .param("search", "alice").param("type", value).param("page", "2").param("size", "10")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + ADMIN_TOKEN))
+                    .andExpect(status().isOk());
+
+            verify(accountService).listAccounts("alice", expected, 2, 10, administrator);
+        }
+
+        @ParameterizedTest
+        @CsvSource({"type, Teacher", "page, -1", "size, 0", "size, 101", "page, abc"})
+        void listAccounts_withInvalidParameter_returns400(String name, String value) throws Exception {
+            mockMvc.perform(get("/api/v1/accounts").param(name, value)
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + ADMIN_TOKEN))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(accountService);
+        }
+
+        @Test
+        void listAccounts_withOverlongSearch_returns400() throws Exception {
+            mockMvc.perform(get("/api/v1/accounts").param("search", "a".repeat(101))
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + ADMIN_TOKEN))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(accountService);
+        }
+
+        @Test
+        void listAccounts_asStudent_returns403() throws Exception {
+            when(accountService.listAccounts(null, null, 0, 20, student))
+                    .thenThrow(new InsufficientPermissionException());
+
+            mockMvc.perform(get("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, "Bearer " + STUDENT_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void listAccounts_withoutAccessToken_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/accounts"))
+                    .andExpect(status().isUnauthorized());
 
             verifyNoInteractions(accountService);
         }

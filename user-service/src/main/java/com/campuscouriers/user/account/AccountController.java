@@ -1,15 +1,21 @@
 package com.campuscouriers.user.account;
 
+import com.campuscouriers.user.account.dto.AccountPageResponse;
 import com.campuscouriers.user.account.dto.AccountResponse;
 import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.account.dto.UpdateAccountTypeRequest;
 import com.campuscouriers.user.account.dto.UpdateEmailRequest;
+import com.campuscouriers.user.entity.AccountType;
 import com.campuscouriers.user.exception.EmailAlreadyRegisteredException;
 import com.campuscouriers.user.exception.InsufficientPermissionException;
 import com.campuscouriers.user.exception.InvalidAccountException;
 import com.campuscouriers.user.exception.LastAdministratorException;
 import com.campuscouriers.user.security.access.AccessTokenClaims;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,7 +23,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-// Only PATCH is mapped; other methods on /{accountId} and /{accountId}/email are rejected by Spring MVC with 405
+// GET lists accounts (Administrators only). Only PATCH is mapped on /{accountId} and /{accountId}/email;
+// other methods there are rejected by Spring MVC with 405
 @RestController
 @RequestMapping("/api/v1/accounts")
 public class AccountController {
@@ -26,6 +33,19 @@ public class AccountController {
 
     public AccountController(AccountService accountService) {
         this.accountService = accountService;
+    }
+
+    // Invalid parameters are rejected with 400 by Spring's built-in method validation
+    @GetMapping
+    public AccountPageResponse listAccounts(
+            @RequestParam(required = false) @Size(max = 100) String search,
+            @RequestParam(required = false) @Pattern(regexp = "Student|student|Administrator|administrator") String type,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @AuthenticationPrincipal AccessTokenClaims claims) {
+        AccountType accountType = type == null ? null
+                : type.equalsIgnoreCase("student") ? AccountType.Student : AccountType.Administrator;
+        return accountService.listAccounts(search, accountType, page, size, claims);
     }
 
     @PatchMapping("/{accountId}")

@@ -12,10 +12,16 @@ import type { Supplier } from '../features/suppliers/supplier.types'
 import { listErrands } from '../features/errands/errand.api'
 import { getProfile } from '../features/auth/profile.api'
 import type { ErrandListItem } from '../features/errands/errand.types'
+import { AccountApiError, listAccounts, updateAccountType, type AccountSummary } from '../features/admin/account.api'
 
 vi.mock('../components/layout/AccountMenu', () => ({ AccountMenu: () => <button>Account menu</button> }))
 vi.mock('../features/errands/errand.api', () => ({ listErrands: vi.fn() }))
 vi.mock('../features/auth/profile.api', () => ({ getProfile: vi.fn() }))
+vi.mock('../features/auth/useAuth', () => ({ useAuth: () => ({ currentUserId: 'admin-1', currentUserType: 'Administrator' }) }))
+vi.mock('../features/admin/account.api', async importOriginal => ({
+  ...await importOriginal<typeof import('../features/admin/account.api')>(),
+  listAccounts: vi.fn(), updateAccountType: vi.fn(),
+}))
 
 vi.mock('../features/suppliers/supplier.api', async importOriginal => ({
   ...await importOriginal<typeof import('../features/suppliers/supplier.api')>(),
@@ -211,5 +217,67 @@ describe('Admin dashboard supplier integration', () => {
     dashboard('/admin/suppliers')
     expect(await screen.findByText('Floor 1')).toBeInTheDocument()
     expect(screen.queryByText('Admin Dashboard / Suppliers')).not.toBeInTheDocument()
+  })
+})
+
+describe('Admin dashboard user management', () => {
+  const admin: AccountSummary = { id: 'admin-1', email: 'ada@u.nus.edu', name: 'Ada Admin', type: 'Administrator' }
+  const student: AccountSummary = { id: 'student-1', email: 'alice@u.nus.edu', name: 'Alice Tan', type: 'Student' }
+  const otherAdmin: AccountSummary = { id: 'admin-2', email: 'ben@u.nus.edu', name: null, type: 'Administrator' }
+  const accountPage = (items: AccountSummary[]) => ({ items, page: { number: 0, size: 10, totalElements: items.length, totalPages: 1, hasNext: false, hasPrevious: false } })
+
+  beforeEach(() => {
+    vi.mocked(listAccounts).mockResolvedValue(accountPage([admin, student, otherAdmin]))
+    vi.mocked(updateAccountType).mockResolvedValue({ id: student.id, email: student.email, type: 'Administrator' })
+  })
+
+  it('lists accounts with their role, and offers no action on your own account', async () => {
+    dashboard('/admin/users')
+    const aliceRow = (await screen.findByText('Alice Tan')).closest('tr')!
+    expect(listAccounts).toHaveBeenCalledWith({ search: '', type: undefined, page: 0, size: 10 }, expect.any(AbortSignal))
+    expect(within(aliceRow).getByRole('button', { name: 'Make administrator' })).toBeInTheDocument()
+    expect(within(screen.getByText('ada@u.nus.edu').closest('tr')!).getByText('You')).toBeInTheDocument()
+    expect(within(screen.getByText('ben@u.nus.edu').closest('tr')!).getByText('No name set')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove administrator' })).toBeInTheDocument()
+    expect(screen.getByText('3 accounts')).toBeInTheDocument()
+  })
+
+  it('promotes a student after confirmation, then reloads the list', async () => {
+    dashboard('/admin/users')
+    fireEvent.click(await screen.findByRole('button', { name: 'Make administrator' }))
+    const dialog = screen.getByRole('dialog', { name: 'Make Alice Tan an administrator?' })
+    expect(updateAccountType).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Make administrator' }))
+
+    expect(await screen.findByText(/Alice Tan is now an administrator/)).toBeInTheDocument()
+    expect(updateAccountType).toHaveBeenCalledWith('student-1', 'Administrator')
+    await waitFor(() => expect(listAccounts).toHaveBeenCalledTimes(2))
+  })
+
+  it('demotes an administrator and shows a refusal from the service in the dialog', async () => {
+    vi.mocked(updateAccountType).mockRejectedValue(new AccountApiError('At least one administrator must remain.', 409))
+    dashboard('/admin/users')
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove administrator' }))
+    const dialog = screen.getByRole('dialog', { name: 'Remove administrator access from ben@u.nus.edu?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remove administrator' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('At least one administrator must remain.')
+    expect(updateAccountType).toHaveBeenCalledWith('admin-2', 'Student')
+  })
+
+  it('searches and filters on the server', async () => {
+    dashboard('/admin/users')
+    await screen.findByText('Alice Tan')
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'Student' } })
+    fireEvent.change(screen.getByLabelText('Search by name or email'), { target: { value: 'alice' } })
+
+    await waitFor(() => expect(listAccounts).toHaveBeenLastCalledWith(
+      { search: 'alice', type: 'Student', page: 0, size: 10 }, expect.any(AbortSignal)))
+  })
+
+  it('shows a load error', async () => {
+    vi.mocked(listAccounts).mockRejectedValue(new AccountApiError('Could not connect to the User Service.', 0))
+    dashboard('/admin/users')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not connect to the User Service.')
   })
 })

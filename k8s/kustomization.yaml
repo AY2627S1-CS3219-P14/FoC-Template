@@ -93,16 +93,16 @@ replacements:
 images:
   - name: campuscouriers/user-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/user-service
-    newTag: 88ca99a6c06a
+    newTag: ae4114ce1c8d
   - name: campuscouriers/supplier-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/supplier-service
     newTag: 88ca99a6c06a
   - name: campuscouriers/credit-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/credit-service
-    newTag: 88ca99a6c06a
+    newTag: 83d64c1b237c
   - name: campuscouriers/order-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/order-service
-    newTag: 88ca99a6c06a
+    newTag: 83d64c1b237c
   - name: campuscouriers/notification-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/notification-service
     newTag: 88ca99a6c06a

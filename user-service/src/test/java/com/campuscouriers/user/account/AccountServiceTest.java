@@ -1,6 +1,8 @@
 package com.campuscouriers.user.account;
 
+import com.campuscouriers.user.account.dto.AccountPageResponse;
 import com.campuscouriers.user.account.dto.AccountResponse;
+import com.campuscouriers.user.account.dto.AccountSummaryResponse;
 import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
@@ -20,8 +22,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +52,56 @@ public class AccountServiceTest {
             new AccessTokenClaims(callerId, "admin@u.nus.edu", AccountType.Administrator);
     private final AccessTokenClaims student =
             new AccessTokenClaims(callerId, "bob@u.nus.edu", AccountType.Student);
+
+    @DisplayName("Only Administrators may list accounts; the search is turned into a safe LIKE pattern")
+    @Nested
+    class ListAccountsTests {
+
+        private final Page<AccountSummaryResponse> emptyPage = Page.empty(PageRequest.of(0, 20));
+
+        @Test
+        void listAccounts_asStudent_throwsWithoutQueryingTheRepository() {
+            assertThatThrownBy(() -> accountService.listAccounts(null, null, 0, 20, student))
+                    .isInstanceOf(InsufficientPermissionException.class);
+
+            verifyNoInteractions(accountRepository);
+        }
+
+        @Test
+        void listAccounts_withoutFilters_matchesEveryAccountOfEitherType() {
+            when(accountRepository.searchSummaries(any(), any(), any())).thenReturn(emptyPage);
+
+            accountService.listAccounts(null, null, 0, 20, administrator);
+
+            verify(accountRepository).searchSummaries("%%", EnumSet.allOf(AccountType.class), PageRequest.of(0, 20));
+        }
+
+        @Test
+        void listAccounts_withSearchAndType_trimsLowercasesAndFilters() {
+            when(accountRepository.searchSummaries(any(), any(), any())).thenReturn(emptyPage);
+
+            accountService.listAccounts("  Alice ", AccountType.Student, 3, 10, administrator);
+
+            verify(accountRepository).searchSummaries("%alice%", EnumSet.of(AccountType.Student), PageRequest.of(3, 10));
+        }
+
+        @Test
+        void listAccounts_mapsThePageMetadata() {
+            AccountSummaryResponse row = new AccountSummaryResponse(targetId, VALID_EMAIL, "Alice", AccountType.Student);
+            when(accountRepository.searchSummaries(any(), any(), any()))
+                    .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(1, 1), 3));
+
+            AccountPageResponse response = accountService.listAccounts(null, null, 1, 1, administrator);
+
+            assertThat(response.items()).containsExactly(row);
+            assertThat(response.page()).isEqualTo(new AccountPageResponse.PageInfo(1, 1, 3, 3, true, true));
+        }
+
+        @Test
+        void escapeLike_escapesWildcardsAndTheEscapeCharacter() {
+            assertThat(AccountService.escapeLike("100%_a!b")).isEqualTo("100!%!_a!!b");
+        }
+    }
 
     @DisplayName("Only Administrators may change account types, and never their own")
     @Nested

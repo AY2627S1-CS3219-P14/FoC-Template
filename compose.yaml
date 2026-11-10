@@ -471,8 +471,9 @@ services:
       USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
       JWT_ISSUER: ${JWT_ISSUER:-campuscouriers-user-service}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-5-20250929}
-      CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-512}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+      CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-2048}
+      CLAUDE_EFFORT: ${CLAUDE_EFFORT:-low}
     ports:
       - "${RAG_SERVICE_PORT:-8005}:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

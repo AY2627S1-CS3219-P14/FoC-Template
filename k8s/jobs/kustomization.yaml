@@ -23,7 +23,7 @@ images:
     newTag: 13b609abdf18
   - name: campuscouriers/supplier-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/supplier-service
-    newTag: 13b609abdf18
+    newTag: ed1dc9e5677e
   - name: campuscouriers/order-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/order-service
     newTag: 13b609abdf18

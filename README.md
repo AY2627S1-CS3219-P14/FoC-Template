@@ -1,3 +1,11 @@
+<!--
+AI Assistance Disclosure
+Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-11
+Scope (AI-16): Compiled the attribution documentation.
+Usage log: AI_USAGE_LOG.md
+Author review: Pending confirmation by Elliot Yong.
+-->
+
 # CS3219 — Software Design and Architecture (AY2627 Sem 1)
 
 ## CampusCouriers
@@ -51,3 +59,9 @@ Services publish events through a **transactional outbox** relayed to Kafka by D
   one-service-per-folder skeleton** for core implementation.
 
 ---
+
+## AI assistance disclosure
+
+Elliot Yong used OpenAI Codex for frontend implementation, debugging, refactoring, tests, and documentation. GitHub Copilot code review and Autofix contributed to specific fixes and configuration changes.
+
+The [AI usage log](AI_USAGE_LOG.md) is a partial record of verified assistance for this contributor. It lists the tools, dates, exact available prompts, key responses, and file locations. File headers identify the edits recorded for each file. The log records the attribution for `frontend/package.json` because strict JSON has no comment syntax.

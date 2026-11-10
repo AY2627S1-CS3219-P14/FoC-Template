@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-08
+ * Scope (AI-06): Implemented and tested the requested account initials menu.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import { userApiBaseUrl } from './auth.api'
 import { authenticatedFetch } from './auth.fetch'
 

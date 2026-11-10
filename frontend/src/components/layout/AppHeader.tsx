@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-03
+ * Scope (AI-02): Adjusted existing UI styling to match the supplied Figma mockup.
+ * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-08
+ * Scope (AI-06): Implemented and tested the requested account initials menu.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import { Link } from 'react-router'
 import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'

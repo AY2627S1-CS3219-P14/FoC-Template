@@ -1,3 +1,15 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-09-26
+ * Scope (AI-01): Implemented the requested supplier card fields and grid.
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-03
+ * Scope (AI-02): Adjusted existing UI styling to match the supplied Figma mockup.
+ * Tool and date: GitHub Copilot Autofix (model unrecorded), 2026-09-24
+ * Scope (AI-09): Set the supplier image alternative text.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import type { Supplier } from '../../features/suppliers/supplier.types'
 
 type SupplierCardProps = {

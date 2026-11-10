@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-08
+ * Scope (AI-07): Implemented and tested mark-as-read on notification clicks.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import { useAuth } from '../auth/useAuth'
 import {

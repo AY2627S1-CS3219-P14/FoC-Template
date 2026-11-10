@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: GitHub Copilot Autofix (model unrecorded), 2026-10-22
+ * Scope (AI-11): Fixed the Escape handler during errand submission.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import { useEffect, useRef } from 'react'
 import creditIcon from '../../assets/errand-credit.svg'
 import routeMarkers from '../../assets/errand-route.svg'

@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-03
+ * Scope (AI-02): Adjusted existing UI styling to match the supplied Figma mockup.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import type { ComponentPropsWithoutRef } from 'react'
 import searchIcon from '../../assets/search.svg'
 

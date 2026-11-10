@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-08
+ * Scope (AI-08): Removed trailing full stops from alert text and updated examples and tests.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 package com.campuscouriers.notification_service;
 
 import static org.assertj.core.api.Assertions.assertThat;

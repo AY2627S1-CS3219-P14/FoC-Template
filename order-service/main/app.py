@@ -31,6 +31,12 @@ app.add_middleware(
     expose_headers=["Idempotency-Key"],
 )
 
+@app.get("/health", include_in_schema=False)
+def health() -> dict[str, str]:
+    """Liveness/readiness check for Kubernetes probes and the ALB (not routed through the Ingress)."""
+    return {"status": "ok"}
+
+
 app.include_router(create_errand_router)
 app.include_router(accept_errand_router)
 app.include_router(deliver_errand_router)

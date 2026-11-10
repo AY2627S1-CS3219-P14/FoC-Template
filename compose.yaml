@@ -189,6 +189,29 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  ai-errand-assistant-service:
+    build: ./ai-errand-assistant-service
+    image: campuscouriers/ai-errand-assistant-service
+    environment:
+      USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
+      SUPPLIER_SERVICE_URL: ${SUPPLIER_SERVICE_DOCKER_URL:-http://supplier-service:8080}
+      ORDER_SERVICE_URL: ${ORDER_SERVICE_DOCKER_URL:-http://order-service:8000}
+      JWT_ISSUER: ${JWT_ISSUER:-campuscouriers-user-service}
+      CORS_ALLOWED_ORIGINS: ${AI_ASSISTANT_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-Asia/Singapore}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      AI_DRAFT_RATE_LIMIT: ${AI_DRAFT_RATE_LIMIT:-10}
+      AI_DRAFT_RATE_WINDOW_SECONDS: ${AI_DRAFT_RATE_WINDOW_SECONDS:-60}
+      CATALOG_CACHE_SECONDS: ${CATALOG_CACHE_SECONDS:-60}
+    ports:
+      - "${AI_ASSISTANT_SERVICE_PORT:-8005}:8000"
+    depends_on:
+      - user-service
+      - supplier-service
+      - order-service
+    restart: unless-stopped
+
   chat-db:
     image: postgres:16-alpine
     command: ["postgres", "-c", "wal_level=logical"]
@@ -368,6 +391,7 @@ services:
       VITE_CREDIT_API_URL: ${VITE_CREDIT_API_URL:-http://localhost:8001}
       VITE_NOTIFICATION_API_URL: ${VITE_NOTIFICATION_API_URL:-http://localhost:8004}
       VITE_CHAT_API_URL: ${VITE_CHAT_API_URL:-http://localhost:8003}
+      VITE_AI_ASSISTANT_API_URL: ${VITE_AI_ASSISTANT_API_URL:-http://localhost:8005}
       VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"
@@ -378,6 +402,7 @@ services:
       - credit-service
       - chat-service
       - notification-service
+      - ai-errand-assistant-service
     restart: unless-stopped
 
   # One-off job: creates the first administrator if none exists, then exits (non-zero on failure).

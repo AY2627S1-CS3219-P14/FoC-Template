@@ -60,6 +60,10 @@ export function Sidebar() {
         <SidebarNavItem to="/suppliers" icon={suppliersIcon}>
           Suppliers
         </SidebarNavItem>
+
+        <SidebarNavItem to="/credit-history" icon={clipboardIcon}>
+          Credit transaction history
+        </SidebarNavItem>
       </nav>
 
       <div className="mt-7 rounded-[18px] bg-[#0d3c2d] p-4 text-white">

@@ -33,6 +33,12 @@ the old pods keep serving, but other bugs go live). Keep testing in pull request
    terraform -chdir=terraform/infra apply
    ```
 
+   The role trusts only tokens whose subject is `<github_oidc_subject_prefix>:ref:refs/heads/main`
+   (`terraform/infra/variables.tf`). This repository uses GitHub's "immutable" subject, which
+   includes numeric IDs (`repo:AY2627S1-CS3219-P14@323944968/FoC-Template@1356783930`). If the
+   workflow fails with *Not authorized to perform sts:AssumeRoleWithWebIdentity*, compare that
+   variable with `sub_claim_prefix` from `gh api repos/<owner>/<repo>/actions/oidc/customization/sub`.
+
 2. Add three repository variables (**Settings → Secrets and variables → Actions → Variables**). They
    aren't secret: the role can only be used by this repository's `main` branch.
 

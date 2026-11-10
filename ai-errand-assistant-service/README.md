@@ -63,12 +63,19 @@ questions. The LLM selects the closest catalog supplier/building
 when the message describes a pickup or destination location; it returns `null`
 when the request gives no such location.
 
+`delivery_floor` is kept only if the message states that floor as a word of its
+own ("level 2", "L2", "#02-10", "2nd floor", "B1"); a number fused to a unit, such
+as "1h" or "5pm", never counts. Otherwise it is `null`. When a location field is
+`null`, the frontend keeps whatever the form already holds.
+
 ### Delivery instructions
 
 The LLM writes `delivery_description` as courier instructions from the message
 and always ends it with a request to message the requester on arrival. If the
 LLM leaves that out, the backend appends "Please message me when you arrive."
-(kept within the 500-character limit).
+(kept within the 500-character limit). Any sentence that names a catalog
+supplier or building the message did not mention is removed, so the instructions
+never point the courier to a place the user did not choose.
 
 ### Deadlines
 
@@ -83,8 +90,11 @@ mistaken for 2 o'clock). The backend then checks the LLM did not invent one:
   09:00–20:59. The LLM decides the date from the wording ("tmr", "friday", "on the 11th";
   if no day is given it uses today), and the deadline is left unset if it has
   already passed.
-- **Relative deadlines** ("within 30 minutes", "in 2 hours"): the time is computed
-  by the backend as now + duration rather than taken from the LLM.
+- **Relative deadlines** ("in 1h", "within 30 mins", "an hour from now", "in half an
+  hour"): the LLM reads the duration in any wording and returns it as
+  `deadline_in_minutes`; the backend computes the deadline as now + that many
+  minutes, so the LLM never does the time arithmetic. A clock deadline takes
+  priority if both are returned.
 
 A date without a clock time, or an inferred deadline, is left unset. Deadlines
 are interpreted in `BUSINESS_TIMEZONE` (default `Asia/Singapore`) and must be

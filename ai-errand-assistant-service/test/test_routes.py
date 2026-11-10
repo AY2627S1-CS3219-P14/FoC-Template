@@ -95,7 +95,7 @@ def test_credits_offered_by_user_take_priority_over_history():
     result = routes._response(
         extraction(
             requested_credits=10,
-            expires_at=(now + timedelta(minutes=20)).isoformat(),
+            deadline_in_minutes=20,
             similar_history_indices=[0, 1],
         ),
         "get iced milo to com2 level 2 within 20 minutes for 10 credits",
@@ -137,10 +137,7 @@ def test_past_urgency_premium_is_removed_before_applying_current_urgency():
     assert relaxed.credit_value == 6
 
     urgent = routes._response(
-        extraction(
-            expires_at=(now + timedelta(minutes=30)).isoformat(),
-            similar_history_indices=[0, 1],
-        ),
+        extraction(deadline_in_minutes=30, similar_history_indices=[0, 1]),
         "iced milo from the Deck to COM3 within 30 minutes",
         SUPPLIERS, BUILDINGS, context, 2, now,
     )
@@ -467,24 +464,48 @@ def test_deadline_without_clock_or_duration_is_unset():
     assert routes._parse_explicit_deadline(None, "deliver it by 5pm", now) is None
 
 
-def test_relative_deadline_is_computed_by_backend_not_llm():
+def test_relative_deadline_is_computed_by_backend_from_llm_minutes():
     now = local(10)
-    # The LLM returns a time 3 hours away; the message says 30 minutes.
-    deadline = routes._parse_explicit_deadline(
-        "2026-11-09T13:00:00+08:00", "deliver it within 30 minutes", now
-    )
-    assert deadline == (now + timedelta(minutes=30)).astimezone(UTC)
-
-    assert routes._parse_explicit_deadline(
-        "2026-11-09T12:00:00+08:00", "deliver it in 2 hrs", now
-    ) == (now + timedelta(hours=2)).astimezone(UTC)
+    assert routes._relative_deadline(60, now) == (now + timedelta(hours=1)).astimezone(UTC)
+    assert routes._relative_deadline(30, now) == (now + timedelta(minutes=30)).astimezone(UTC)
 
 
-def test_relative_deadline_beyond_seven_days_is_ignored():
+@pytest.mark.parametrize("minutes", [None, 0, -5, 7 * 24 * 60 + 1, 99999999999999])
+def test_invalid_or_too_distant_relative_deadline_is_ignored(minutes):
+    assert routes._relative_deadline(minutes, local(10)) is None
+
+
+def test_relative_deadline_without_clock_time_is_not_taken_from_expires_at():
+    # A relative phrase has no clock time to verify, so a computed expires_at is rejected.
     now = local(10)
     assert routes._parse_explicit_deadline(
-        "2026-11-09T12:00:00+08:00", "deliver it within 99999999999999 minutes", now
+        "2026-11-09T11:00:00+08:00", "get iced milo in 1h", now
     ) is None
+
+
+def test_in_1h_sets_deadline_and_urgency():
+    # "get iced milo in 1h": the LLM returns 60 minutes; the deadline is now + 1h,
+    # and the 5-credit default gets the 1.5x two-hour urgency multiplier.
+    now = local(10)
+    result = routes._response(
+        extraction(
+            supplier_id=None, delivery_building_id=None, delivery_floor=None,
+            deadline_in_minutes=60,
+        ),
+        "get iced milo in 1h", SUPPLIERS, BUILDINGS, [], 0, now,
+    )
+    assert result.expires_at == (now + timedelta(hours=1)).astimezone(UTC)
+    assert result.credit_value == 8
+    assert "Applied 1.5x for the deadline." in result.credit_reason
+
+
+def test_clock_deadline_takes_priority_over_relative_minutes():
+    now = local(10)
+    result = routes._response(
+        extraction(expires_at="2026-11-09T17:00:00+08:00", deadline_in_minutes=30),
+        "milo to COM3 by 5pm", SUPPLIERS, BUILDINGS, [], 0, now,
+    )
+    assert result.expires_at == local(17).astimezone(UTC)
 
 
 # --- endpoint ----------------------------------------------------------------
@@ -636,3 +657,72 @@ def test_health_needs_no_auth():
         response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+# --- unstated locations --------------------------------------------------------
+
+ARISE = UUID("88888888-8888-4888-8888-888888888888")
+ARISE_AND_SHINE = [SupplierCandidate(id=ARISE, name="Arise and Shine", building="Frontier")]
+
+
+def test_floor_not_stated_in_message_is_dropped():
+    # "1" from "in 1h" is a duration, not a floor.
+    result = routes._response(
+        extraction(supplier_id=None, delivery_building_id=None, delivery_floor="1"),
+        "get iced milo in 1h", SUPPLIERS, BUILDINGS, [], 0, local(10),
+    )
+    assert result.delivery_floor is None
+
+
+@pytest.mark.parametrize("message,floor", [
+    ("milo to COM3 level 2", "2"),
+    ("milo to COM3 L2", "L2"),
+    ("milo to COM3 lvl 2", "Level 2"),
+    ("milo to COM3 #02-10", "2"),
+    ("milo to COM3 2nd floor", "2"),
+    ("milo to COM3 B1", "B1"),
+    ("milo to COM3 ground floor", "Ground"),
+])
+def test_floor_stated_in_message_is_kept(message, floor):
+    result = routes._response(
+        extraction(delivery_floor=floor), message, SUPPLIERS, BUILDINGS, [], 0, local(10),
+    )
+    assert result.delivery_floor == floor
+
+
+@pytest.mark.parametrize("message", ["milo to COM3 by 5pm", "2 milos to COM3", "milo to COM3 for 2cr"])
+def test_times_quantities_and_credits_are_not_floors(message):
+    result = routes._response(
+        extraction(delivery_floor="5" if "5pm" in message else "2"),
+        message, SUPPLIERS, BUILDINGS, [], 0, local(10),
+    )
+    # A bare "2" in "2 milos" is a word of its own, so only fused numbers are rejected.
+    expected = "2" if message.startswith("2 milos") else None
+    assert result.delivery_floor == expected
+
+
+def test_description_drops_supplier_the_user_never_named():
+    result = routes._response(
+        extraction(
+            supplier_id=ARISE,
+            delivery_building_id=None,
+            delivery_floor=None,
+            delivery_description=(
+                "Hi there! Please pick up an iced milo from Arise and Shine and deliver it to me. "
+                "Please message me when you arrive."
+            ),
+        ),
+        "get iced milo in 1h", ARISE_AND_SHINE, BUILDINGS, [], 0, local(10),
+    )
+    assert result.supplier_id is None
+    assert "Arise" not in result.delivery_description
+    assert result.delivery_description == "Hi there! Please message me when you arrive."
+
+
+def test_description_keeps_places_the_user_named():
+    description = "Please pick up an iced milo from Arise and Shine and bring it to COM3."
+    result = routes._response(
+        extraction(supplier_id=ARISE, delivery_description=description),
+        "iced milo from arise and shine to com3", ARISE_AND_SHINE, BUILDINGS, [], 0, local(10),
+    )
+    assert result.delivery_description == f"{description} {routes.ARRIVAL_NOTE}"

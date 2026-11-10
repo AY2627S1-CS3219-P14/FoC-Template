@@ -201,42 +201,48 @@ export function CreateErrandPage() {
   }
 
   function applyAiDraft(aiDraft: AiErrandDraft) {
-    // The dropdowns hold UUIDs. If the assistant's choice is not one of the options,
-    // reset to "" so the dropdown shows "Select a supplier" / "Select a building".
+    // A field is only overwritten when the assistant filled it; when the message named
+    // no location (null), the current value is kept. The dropdowns hold UUIDs: if the
+    // assistant returns an ID that is not one of the options, reset to "" so the
+    // dropdown shows "Select a supplier" / "Select a building".
     const supplierId =
-      aiDraft.supplier_id && suppliers.some((supplier) => supplier.id === aiDraft.supplier_id)
-        ? aiDraft.supplier_id
-        : ''
+      aiDraft.supplier_id === null
+        ? draft.supplierId
+        : suppliers.some((supplier) => supplier.id === aiDraft.supplier_id)
+          ? aiDraft.supplier_id
+          : ''
     const deliveryBuildingId =
-      aiDraft.delivery_building_id &&
-      deliveryBuildings.some((building) => building.id === aiDraft.delivery_building_id)
-        ? aiDraft.delivery_building_id
-        : ''
-    const expiresAt = aiDraft.expires_at ? new Date(aiDraft.expires_at) : null
-
-    // Other fields are only overwritten when the assistant filled them; keep the user's input.
-    setDraft((current) => ({
+      aiDraft.delivery_building_id === null
+        ? draft.deliveryBuildingId
+        : deliveryBuildings.some((building) => building.id === aiDraft.delivery_building_id)
+          ? aiDraft.delivery_building_id
+          : ''
+    const parsedExpiry = aiDraft.expires_at ? new Date(aiDraft.expires_at) : null
+    const next: ErrandDraft = {
       supplierId,
-      requiredItem: aiDraft.required_item ?? current.requiredItem,
+      requiredItem: aiDraft.required_item ?? draft.requiredItem,
       deliveryBuildingId,
-      deliveryFloor: aiDraft.delivery_floor ?? current.deliveryFloor,
-      deliveryDescription: aiDraft.delivery_description ?? current.deliveryDescription,
+      deliveryFloor: aiDraft.delivery_floor ?? draft.deliveryFloor,
+      deliveryDescription: aiDraft.delivery_description ?? draft.deliveryDescription,
       expiresAt:
-        expiresAt && !Number.isNaN(expiresAt.getTime())
-          ? toLocalDateTimeValue(expiresAt)
-          : current.expiresAt,
+        parsedExpiry && !Number.isNaN(parsedExpiry.getTime())
+          ? toLocalDateTimeValue(parsedExpiry)
+          : draft.expiresAt,
       creditValue: String(aiDraft.credit_value),
-    }))
+    }
+
+    setDraft(next)
     setErrors({})
     setSubmitError(null)
     setCreatedErrandId(null)
 
+    // Only fields that are still empty after applying the draft need the user's input.
     const missing = [
-      !supplierId && 'pickup supplier',
-      !aiDraft.required_item && 'items',
-      !deliveryBuildingId && 'delivery building',
-      !aiDraft.delivery_floor && 'floor',
-      !expiresAt && 'deadline',
+      !next.supplierId && 'pickup supplier',
+      !next.requiredItem.trim() && 'items',
+      !next.deliveryBuildingId && 'delivery building',
+      !next.deliveryFloor.trim() && 'floor',
+      !next.expiresAt && 'deadline',
     ].filter(Boolean)
     setAiDraftNotice(
       `Filled in by the AI assistant. Please review before creating. ${aiDraft.credit_reason}` +

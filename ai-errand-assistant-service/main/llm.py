@@ -30,15 +30,24 @@ supplier from the item alone. If the message names only a building or area that 
 several suppliers (for example a food court), return null for supplier_id; do not
 pick one of them. Read common shorthand such as "tmr" or "tmrw" as tomorrow.
 
+Never invent a location. delivery_floor: only when the message states a floor or level
+(for example "level 2", "L3", "#02-10", "2nd floor"), else null; numbers that belong to
+times, durations, quantities or credits ("1h", "5pm", "2 milos") are not floors.
+
 delivery_description: short, friendly instructions for the courier written from the
 requester's point of view, covering anything useful from the message (where to meet,
-item preferences, etc.). It must ALWAYS end with a request to message the requester
+item preferences, etc.). Mention only places the message itself names: never name a
+supplier, building or floor the user did not write, even one you matched from the
+catalogs. If the message names no places, do not mention any. It must ALWAYS end with a request to message the requester
 on arrival (for example "Please message me when you arrive."), even if the user did
 not ask for it. Keep it under 400 characters.
 
 Interpret times in the {BUSINESS_TIMEZONE.key} timezone. The current time is {now.isoformat()}.
 Only return expires_at when the message states a deadline with a clock time (for
-example, "by 5pm" or "at 5pm") or a relative duration (for example, "within 30 minutes"). If a
+example, "by 5pm" or "at 5pm"). If the deadline is instead a duration from now, in any
+wording ("in 1h", "within 30 mins", "an hour from now", "in half an hour", "in 2 hrs"),
+return expires_at as null and return the duration as the integer deadline_in_minutes
+(for example 60 for "in 1h"); otherwise return deadline_in_minutes as null. If a
 clock deadline has no date, assume today's date in the configured timezone. If that
 time has already passed today, return null; do not move it to tomorrow. A date with
 no clock time is not a deadline. Times written in 24-hour form are exact: a
@@ -59,7 +68,8 @@ yourself; the backend does that when the user states no amount.
 
 Return these keys exactly:
 supplier_id, required_item, delivery_building_id, delivery_floor,
-delivery_description, expires_at, similar_history_indices, requested_credits."""
+delivery_description, expires_at, deadline_in_minutes, similar_history_indices,
+requested_credits."""
 
 
 def _openai_config() -> tuple[str, str]:

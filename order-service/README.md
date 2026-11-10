@@ -9,6 +9,7 @@ This folder contains one FastAPI order service:
 - `main/complete_errand.py`: `POST /errand/complete` lets the requester confirm completion of a delivered, unexpired errand and transfers reserved credits to the courier.
 - `main/fail_errand.py`: `POST /errand/fail` lets the requester report failure of a delivered, unexpired errand with a required reason and releases its credit reservation.
 - `main/get_errands.py`: `GET /errands` lists available open errands and the caller's own/assigned errands, or all errands for administrators.
+- `main/recommendations/`: `GET /errands/recommended` ranks open errands for the caller's dashboard.
 - `main/app.py`: registers the route modules in one FastAPI application.
 
 ## Install dependencies
@@ -228,6 +229,25 @@ an atomic safeguard against supplier deactivation racing with creation.
 No schema migration is needed. Run `python -m pytest -q test/test_get_errands.py`.
 The expiry worker/background trigger and Supplier Service integration remain future
 work. The separate sibling integration-test suite has not been changed.
+
+## Recommended errands
+
+`GET /errands/recommended?size=5` (size 1-20, bearer token required) returns the
+dashboard's "Recommended for you" list. The code is in `main/recommendations/`:
+`scoring.py` holds the ranking rules and `routes.py` the endpoint.
+
+Candidates are errands the caller could accept now: available, not their own, and
+more than 10 minutes from expiry. Each is scored with simple rules:
+
+- +3 if the caller has completed a delivery from the same supplier;
+- +2 if it goes to a building the caller has delivered to or requested to;
+- up to +2 for credit value (scaled to the 25-credit maximum);
+- +1 if it expires within two hours.
+
+Ties go to higher credit, then the earlier deadline. A new user with no history is
+ranked by credit and urgency only. Each item has the usual errand fields plus a
+`recommendation_reason` naming the strongest signal. Tests:
+`python -m pytest -q test/test_recommend_errands.py`.
 
 See [CREDIT_INTEGRATION.md](CREDIT_INTEGRATION.md) for required configuration,
 migration 0005, idempotency/recovery behaviour and repeatable Docker tests.

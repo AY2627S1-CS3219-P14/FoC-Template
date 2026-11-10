@@ -41,7 +41,7 @@ describe('MyErrandsPage', () => {
     expect(screen.getByRole('heading', { name: 'My errands' })).toBeInTheDocument()
     expect(await screen.findByText('4 active')).toBeInTheDocument()
     expect(screen.getByText('Awaiting confirmation')).toBeInTheDocument()
-    expect(screen.getByText('Waiting for requester')).toBeInTheDocument()
+    expect(screen.getByText('Ready for pickup')).toBeInTheDocument()
     expect(screen.getAllByText('Requester')).toHaveLength(2)
     expect(screen.getAllByText('Courier')).toHaveLength(2)
   })

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 
-export type ErrandAction = 'cancel' | 'complete' | 'fail'
+export type ErrandAction = 'cancel' | 'deliver' | 'complete' | 'fail'
 
 type ErrandActionDialogProps = {
   action: ErrandAction
@@ -17,19 +17,25 @@ const actionContent: Record<
 > = {
   cancel: {
     title: 'Cancel this errand?',
-    description: 'Couriers will no longer be able to accept this request.',
+    description: 'Cancelling closes the request and returns the reserved credits to you.',
     confirmLabel: 'Cancel errand',
     confirmClassName: 'bg-[#a33a32] text-white hover:bg-[#842e28]',
   },
+  deliver: {
+    title: 'Mark this errand ready for pickup?',
+    description: 'Confirm once the items are at the agreed delivery location and ready for the requester to collect.',
+    confirmLabel: 'Mark ready for pickup',
+    confirmClassName: 'bg-[#d8f06b] text-[#0d3c2d] hover:bg-[#cce85b]',
+  },
   complete: {
-    title: 'Confirm this delivery?',
-    description: 'Only confirm after you have received the requested items.',
-    confirmLabel: 'Confirm delivery',
+    title: 'Confirm receipt?',
+    description: 'Confirm once you have received the items. This transfers the reserved credits to the courier.',
+    confirmLabel: 'Confirm receipt',
     confirmClassName: 'bg-[#d8f06b] text-[#0d3c2d] hover:bg-[#cce85b]',
   },
   fail: {
     title: 'Report a problem',
-    description: 'Tell us why this errand could not be completed.',
+    description: 'Tell us what went wrong. Reporting a problem closes the errand and returns the reserved credits to you.',
     confirmLabel: 'Report problem',
     confirmClassName: 'bg-[#a33a32] text-white hover:bg-[#842e28]',
   },

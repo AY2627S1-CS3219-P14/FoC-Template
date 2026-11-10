@@ -10,6 +10,8 @@ import {
   applyDeliveryBuildingNames,
   loadErrandDashboardBuildings,
   loadOpenErrandDashboard,
+  loadRecommendedErrands,
+  nameDeliveryBuildings,
   type OpenErrandDashboardData,
 } from '../features/errands/errand.dashboard'
 import type { MyErrandItem } from '../features/errands/my-errands.types'
@@ -22,6 +24,7 @@ import type {
   ErrandDashboardItem,
   ErrandExpiryFilter,
   ErrandSort,
+  RecommendedErrandDashboardItem,
 } from '../features/errands/errand.types'
 import type { SupplierReference } from '../features/suppliers/supplier.types'
 
@@ -38,6 +41,10 @@ export function DashboardPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [buildingErrorMessage, setBuildingErrorMessage] = useState<string | null>(null)
   const [buildingRetryCount, setBuildingRetryCount] = useState(0)
+  const [recommendedErrands, setRecommendedErrands] = useState<
+    RecommendedErrandDashboardItem[]
+  >([])
+  const [recommendedError, setRecommendedError] = useState<string | null>(null)
   const [pendingErrand, setPendingErrand] = useState<ErrandDashboardItem | null>(null)
   const [activeErrands, setActiveErrands] = useState<MyErrandItem[]>([])
   const [activeErrandsLoading, setActiveErrandsLoading] = useState(Boolean(currentUserId))
@@ -93,6 +100,26 @@ export function DashboardPage() {
   }, [credit, deliveryBuildingId, expiry, retryCount, sort, notificationRevision])
 
   useEffect(() => {
+    const controller = new AbortController()
+
+    loadRecommendedErrands(controller.signal)
+      .then((errands) => {
+        if (controller.signal.aborted) return
+        setRecommendedErrands(errands)
+        setRecommendedError(null)
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        setRecommendedErrands([])
+        setRecommendedError(
+          error instanceof Error ? error.message : 'Unable to load recommendations.',
+        )
+      })
+
+    return () => controller.abort()
+  }, [retryCount, notificationRevision])
+
+  useEffect(() => {
     if (!currentUserId) return
 
     const controller = new AbortController()
@@ -128,6 +155,10 @@ export function DashboardPage() {
         ? applyDeliveryBuildingNames(dashboardData, deliveryBuildings)
         : null,
     [dashboardData, deliveryBuildings],
+  )
+  const displayRecommended = useMemo(
+    () => nameDeliveryBuildings(recommendedErrands, deliveryBuildings),
+    [recommendedErrands, deliveryBuildings],
   )
   const visibleErrands = displayData?.items ?? []
   const availableCount = displayData?.total ?? 0
@@ -248,6 +279,38 @@ export function DashboardPage() {
           currentUserId ? activeErrandsError : 'Your access token does not contain a user ID.'
         }
       />
+
+      {displayRecommended.length > 0 ? (
+        // Same column grid as the open errands below (main column + 18rem side
+        // panel), so recommended cards are the same width as open errand cards.
+        <section
+          aria-labelledby="recommended-errands-heading"
+          className="mt-5 grid gap-7 sm:mt-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:gap-6"
+        >
+          <div>
+            <h2
+              id="recommended-errands-heading"
+              className="text-[1.375rem] font-medium tracking-[-0.02em] text-[#17211d] sm:text-2xl"
+            >
+              Recommended for you
+            </h2>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              {displayRecommended.map((errand) => (
+                <div key={errand.id} className="flex flex-col gap-2">
+                  <p className="text-xs font-medium tracking-[0.04em] text-[#175c45]">
+                    {errand.recommendation_reason}
+                  </p>
+                  <ErrandCard errand={errand} onAccept={setPendingErrand} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : recommendedError ? (
+        <p role="status" className="mt-5 text-sm text-[#68736c] sm:mt-6">
+          Recommendations are unavailable right now.
+        </p>
+      ) : null}
 
       <div className="mt-5 sm:mt-6">
         <ErrandFilters

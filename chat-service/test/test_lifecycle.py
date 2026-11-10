@@ -83,3 +83,29 @@ def test_duplicate_event_is_ignored(factory):
         assert len(db.scalars(select(Conversation)).all()) == 1
         assert len(db.scalars(select(ProcessedEvent)).all()) == 1
 
+
+def test_expired_event_uses_resulting_status_and_expiry_time(factory):
+    expired_at = datetime.now(timezone.utc)
+
+    for resulting_status in ("EXPIRED", "FAILED"):
+        event = payload(
+            errandId=str(uuid4()),
+            resultingStatus=resulting_status,
+            expiredAt=expired_at.isoformat(),
+        )
+        with factory.begin() as db:
+            assert apply_lifecycle_event(
+                db, f"expired-{resulting_status.lower()}", "errand.expired", event
+            )
+
+    with factory() as db:
+        conversations = {
+            conversation.delivery_status: conversation
+            for conversation in db.scalars(select(Conversation)).all()
+        }
+        assert set(conversations) == {"EXPIRED", "FAILED"}
+        assert conversations["EXPIRED"].closed_at.replace(tzinfo=timezone.utc) == expired_at
+        assert conversations["FAILED"].closed_at.replace(tzinfo=timezone.utc) == expired_at
+        assert conversations["EXPIRED"].chat_closes_at is None
+        assert conversations["FAILED"].chat_closes_at is None
+

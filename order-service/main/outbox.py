@@ -38,6 +38,11 @@ class ErrandAcceptedEvent(ErrandEvent):
     accepted_at: datetime
 
 
+class ErrandDeliveredEvent(ErrandEvent):
+    courier_id: UUID
+    delivered_at: datetime
+
+
 class ErrandCancelledEvent(ErrandEvent):
     cancelled_at: datetime
 
@@ -56,6 +61,7 @@ class ErrandFailedEvent(ErrandEvent):
 EVENT_TYPES: dict[type[ErrandEvent], str] = {
     ErrandCreatedEvent: "errand.created",
     ErrandAcceptedEvent: "errand.accepted",
+    ErrandDeliveredEvent: "errand.delivered",
     ErrandCancelledEvent: "errand.cancelled",
     ErrandCompletedEvent: "errand.completed",
     ErrandFailedEvent: "errand.failed",

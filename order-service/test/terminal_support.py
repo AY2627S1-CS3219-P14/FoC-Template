@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from main import complete_errand, fail_errand
+from main import complete_errand, fail_errand, credit_operations
 from main.app import app
 from main.database import Base
 from main.models import Errand, ErrandStatus
@@ -38,9 +38,12 @@ def terminal_endpoint(request, monkeypatch):
     factory = sessionmaker(bind=engine)
     monkeypatch.setattr(module, "SessionLocal", factory)
     credit = Mock(return_value=True)
-    monkeypatch.setattr(module, effect_name, credit)
-    fields = seed(factory, status=ErrandStatus.ACCEPTED,
-                  courier_id=uuid4(), accepted_at=datetime.now(timezone.utc))
+    credit_client = Mock()
+    setattr(credit_client, "complete" if action == "complete" else "release", credit)
+    monkeypatch.setattr(credit_operations, "CreditClient", lambda token: credit_client)
+    fields = seed(factory, status=ErrandStatus.DELIVERED,
+                  courier_id=uuid4(), accepted_at=datetime.now(timezone.utc),
+                  delivered_at=datetime.now(timezone.utc))
     claims = {"sub": str(fields["requester_id"]), "type": "Student"}
     previous = app.dependency_overrides.copy()
     app.dependency_overrides[module.verified_claims] = lambda: claims
@@ -64,10 +67,10 @@ def post(client, action, target_id, **changes):
     )
 
 
-def assert_accepted(factory, errand_id):
+def assert_delivered(factory, errand_id):
     with factory() as db:
         stored = db.get(Errand, errand_id)
-        assert stored.status == ErrandStatus.ACCEPTED
+        assert stored.status == ErrandStatus.DELIVERED
         assert stored.completed_at is None
         assert stored.failed_at is None
         assert stored.failure_reason is None

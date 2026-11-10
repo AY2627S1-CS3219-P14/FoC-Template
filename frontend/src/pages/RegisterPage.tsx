@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { AuthShell } from '../components/auth/AuthShell'
 import { register } from '../features/auth/auth.api'
 
-const NUS_EMAIL_PATTERN = String.raw`^[A-Za-z0-9._%+-]+@(?:.+\.|yale-|duke-)?nus\.edu(?:\.sg)?$`
+const NUS_EMAIL_PATTERN = String.raw`^[A-Za-z0-9._%+\-]+@(?:.+\.|yale-|duke-)?nus\.edu(?:\.sg)?$`
 const PASSWORD_PATTERN = String.raw`^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{16,128}$`
 
 export function RegisterPage() {

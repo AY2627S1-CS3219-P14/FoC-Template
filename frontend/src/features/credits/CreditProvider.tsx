@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
+import { useNotifications } from '../notifications/useNotifications'
 import { getAvailableBalance } from './credit.api'
 import { CreditContext, type CreditContextValue, type CreditStatus } from './credit.context'
 
 export function CreditProvider({ children }: PropsWithChildren) {
+  const subscribe = useNotifications()?.subscribe
   const [availableBalance, setAvailableBalance] = useState<number | null>(null)
   const [status, setStatus] = useState<CreditStatus>('loading')
   const [error, setError] = useState<string | null>(null)
@@ -47,6 +49,14 @@ export function CreditProvider({ children }: PropsWithChildren) {
       requestControllerRef.current?.abort()
     }
   }, [refreshBalance])
+
+  useEffect(() => subscribe?.((signal) => {
+    if (signal.type === 'connected'
+        || signal.item.type === 'CREDIT_RECEIVED'
+        || signal.item.type === 'CREDIT_RELEASED') {
+      void refreshBalance()
+    }
+  }), [refreshBalance, subscribe])
 
   const value = useMemo<CreditContextValue>(
     () => ({ availableBalance, status, error, refreshBalance }),

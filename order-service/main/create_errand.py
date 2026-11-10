@@ -5,15 +5,18 @@ from uuid import UUID, uuid4
 
 import jwt
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
 from starlette.concurrency import run_in_threadpool
 
 from main.database import SessionLocal
-from main.models import Errand, ErrandStatus
+from main.credit_client import CreditClient
+from main.credit_operations import creation_operation
+from main.models import CreditOperation, Errand, ErrandStatus
 from main.outbox import ErrandCreatedEvent, append_errand_event
+from sqlalchemy import select
 
 
 router = APIRouter()
@@ -81,14 +84,9 @@ async def verify_supplier(supplier_id: str, access_token: str) -> bool:
 
 
 
-async def verify_credit_value(credit_value: int, requester_id: str) -> bool:
-    # TODO: Verify the available balance through Credit Service.
-    return True
-
-
-async def reserve_credits(credit_value: int, requester_id: str) -> bool:
-    # TODO: Atomically reserve credits through Credit Service.
-    return True
+async def verify_credit_value(credit_value: int, access_token: str) -> bool:
+    balance = await run_in_threadpool(CreditClient(access_token).available_balance)
+    return balance >= credit_value
 
 
 def verified_claims(
@@ -127,12 +125,15 @@ def validate_expiry(expires_at: datetime, now: datetime) -> None:
     )
 
 
-def insert_errand(request: CreateErrandRequest, requester_id: UUID) -> CreateErrandResponse:
+def insert_errand(
+    request: CreateErrandRequest, requester_id: UUID,
+    errand_id: UUID | None = None, reservation_id: UUID | None = None, db=None,
+) -> CreateErrandResponse:
     now = datetime.now(timezone.utc)
     validate_expiry(request.expires_at, now)
 
     errand = Errand(
-        id=uuid4(),
+        id=errand_id or uuid4(),
         status=ErrandStatus.OPEN,
         requester_id=requester_id,
         courier_id=None,
@@ -144,12 +145,13 @@ def insert_errand(request: CreateErrandRequest, requester_id: UUID) -> CreateErr
         delivery_description=request.delivery_description,
         expires_at=request.expires_at.astimezone(timezone.utc),
         created_at=now,
+        credit_reservation_id=reservation_id,
     )
-    with SessionLocal.begin() as db:
-        db.add(errand)
-        db.flush()
+    def save(session):
+        session.add(errand)
+        session.flush()
         response = CreateErrandResponse.model_validate(errand)
-        append_errand_event(db, ErrandCreatedEvent(
+        append_errand_event(session, ErrandCreatedEvent(
             errand_id=response.id,
             requester_id=response.requester_id,
             credit_value=response.credit_value,
@@ -157,7 +159,88 @@ def insert_errand(request: CreateErrandRequest, requester_id: UUID) -> CreateErr
             expires_at=response.expires_at,
             created_at=response.created_at,
         ))
-    return response
+        return response
+    if db is not None:
+        return save(db)
+    with SessionLocal.begin() as session:
+        return save(session)
+
+
+def find_creation(requester_id, key, payload):
+    with SessionLocal() as db:
+        operation = db.scalar(select(CreditOperation).where(
+            CreditOperation.requester_id == requester_id,
+            CreditOperation.request_key == key,
+        ))
+        if operation is None:
+            return None
+        if operation.action != "CREATE" or operation.payload != payload:
+            raise HTTPException(409, "Idempotency-Key was already used for a different request")
+        return operation.id
+
+
+def cleanup_creation(operation_id, token):
+    with SessionLocal.begin() as db:
+        operation = db.scalar(select(CreditOperation).where(
+            CreditOperation.id == operation_id,
+        ).with_for_update())
+        if operation.state == "COMPENSATING":
+            CreditClient(token).release(
+                operation.reservation_id, operation.errand_id, operation.payload["credit_value"],
+            )
+            operation.state = "ABORTED"
+    raise HTTPException(409, "Creation was aborted and reserved credits released; use a new Idempotency-Key")
+
+
+def finish_creation(operation_id, request, requester_id, token):
+    reservation = None
+    try:
+        with SessionLocal.begin() as db:
+            operation = db.scalar(select(CreditOperation).where(
+                CreditOperation.id == operation_id,
+            ).with_for_update())
+            if operation.state == "SUCCEEDED":
+                return CreateErrandResponse.model_validate(db.get(Errand, operation.errand_id))
+            if operation.state == "ABORTED":
+                raise HTTPException(409, "Creation was aborted; use a new Idempotency-Key")
+            if operation.state == "PENDING":
+                # A repeat POST with the same orderId recovers a reservation
+                # even if the previous HTTP response was lost.
+                reservation = CreditClient(token).reserve(requester_id, operation.errand_id, request.credit_value)
+                operation.reservation_id = reservation.reservation_id
+                try:
+                    validate_expiry(request.expires_at, datetime.now(timezone.utc))
+                except HTTPException:
+                    operation.state = "COMPENSATING"
+                else:
+                    response = insert_errand(
+                        request, requester_id, operation.errand_id, reservation.reservation_id, db,
+                    )
+                    operation.state = "SUCCEEDED"
+                    # Commit before returning success to the caller.
+            else:
+                response = None
+            succeeded = operation.state == "SUCCEEDED"
+        if succeeded:
+            return response
+    except Exception as exc:
+        if reservation is None:
+            raise
+        # A successful external reservation cannot be undone by DB rollback.
+        # Persist cleanup intent; if DB is down the original PENDING intent
+        # still lets the same request/key recover its reservation later.
+        try:
+            with SessionLocal.begin() as db:
+                operation = db.scalar(select(CreditOperation).where(
+                    CreditOperation.id == operation_id,
+                ).with_for_update())
+                if db.get(Errand, operation.errand_id) is not None:
+                    return CreateErrandResponse.model_validate(db.get(Errand, operation.errand_id))
+                operation.reservation_id = reservation.reservation_id
+                operation.state = "COMPENSATING"
+        except Exception:
+            raise HTTPException(503, "Creation outcome is pending; retry with the same Idempotency-Key") from exc
+    return cleanup_creation(operation_id, token)
 
 
 @router.post(
@@ -167,13 +250,22 @@ def insert_errand(request: CreateErrandRequest, requester_id: UUID) -> CreateErr
 )
 async def create_errand_request(
     request: CreateErrandRequest,
+    response: Response,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     claims: dict = Depends(verified_claims),
+    idempotency_key: str | None = Header(default=None, min_length=1, max_length=120),
 ) -> CreateErrandResponse:
     try:
         requester_id = UUID(claims["sub"])
     except (KeyError, ValueError, TypeError, AttributeError) as exc:
         raise HTTPException(status_code=401, detail="Access token contains an invalid user ID") from exc
+
+    key = "CREATE:" + (idempotency_key or str(uuid4()))
+    response.headers["Idempotency-Key"] = key.removeprefix("CREATE:")
+    payload = request.model_dump(mode="json")
+    existing = await run_in_threadpool(find_creation, requester_id, key, payload)
+    if existing is not None:
+        return await run_in_threadpool(finish_creation, existing, request, requester_id, credentials.credentials)
 
     validate_expiry(request.expires_at, datetime.now(timezone.utc))
 
@@ -184,17 +276,14 @@ async def create_errand_request(
     if not supplier_valid:
         raise HTTPException(status_code=422, detail="Supplier does not exist or is unavailable")
 
-    sufficient_credit = await verify_credit_value(request.credit_value, str(requester_id))
+    sufficient_credit = await verify_credit_value(request.credit_value, credentials.credentials)
     if not sufficient_credit:
         raise HTTPException(status_code=409, detail="Insufficient credit balance")
 
     # External checks may take time: verify expiry again before reservation.
     validate_expiry(request.expires_at, datetime.now(timezone.utc))
 
-    credits_reserved = await reserve_credits(request.credit_value, str(requester_id))
-    if not credits_reserved:
-        raise HTTPException(status_code=409, detail="Could not reserve credits")
-
+    operation_id = await run_in_threadpool(creation_operation, SessionLocal, requester_id, key, payload)
     return await run_in_threadpool(
-        insert_errand, request, requester_id,
+        finish_creation, operation_id, request, requester_id, credentials.credentials,
     )

@@ -1,6 +1,6 @@
 import type { LoginCredentials, LoginResponse, RegisterCredentials } from './auth.types'
 
-const userApiBaseUrl = (import.meta.env.VITE_USER_API_URL ?? '').trim().replace(/\/+$/, '')
+export const userApiBaseUrl = (import.meta.env.VITE_USER_API_URL ?? '').trim().replace(/\/+$/, '')
 
 type ProblemDetails = {
   detail?: string

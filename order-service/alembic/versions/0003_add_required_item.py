@@ -26,8 +26,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_constraint("required_item_nonblank", "errands", type_="check")
     op.drop_column("errands", "required_item")
-# AI Assistance Disclosure:
-# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
-# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules; architecture and decision-rationale assistance is not attributed.
-# Author review: I reviewed, adapted, and tested the code for the project requirements.
-

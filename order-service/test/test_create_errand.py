@@ -367,8 +367,3 @@ def test_database_rejects_missing_or_blank_item(database_session_factory, payloa
                 expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
                 created_at=datetime.now(timezone.utc),
             ))
-# AI Assistance Disclosure:
-# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
-# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules; architecture and decision-rationale assistance is not attributed.
-# Author review: I reviewed, adapted, and tested the code for the project requirements.
-

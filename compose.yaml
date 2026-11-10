@@ -1,8 +1,3 @@
-# AI Assistance Disclosure:
-# Tool: OpenAI Codex, date: 2026-11-11
-# Scope: Debugged the duplicate RAG and AI assistant host-port mapping and updated the RAG port.
-# Author review: I checked the service mappings and Compose configuration.
-
 # Shared by the long-running user service and its bootstrap-only job
 x-user-service-env: &user-service-env
   SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/${USER_DB_NAME}

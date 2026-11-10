@@ -15,6 +15,7 @@ export type ErrandDraftErrors = Partial<Record<ErrandDraftField, string>>
 export type ErrandStatus =
   | 'OPEN'
   | 'ACCEPTED'
+  | 'DELIVERED'
   | 'COMPLETED'
   | 'EXPIRED'
   | 'CANCELLED'
@@ -75,6 +76,7 @@ export type ErrandListItem = {
   expires_at: string
   created_at: string
   accepted_at: string | null
+  delivered_at: string | null
   completed_at: string | null
   cancelled_at: string | null
   failed_at: string | null

@@ -5,6 +5,7 @@ import {
   cancelErrand,
   completeErrand,
   createErrand,
+  deliverErrand,
   ErrandApiError,
   failErrand,
   getErrand,
@@ -47,6 +48,7 @@ const listedErrands: ErrandListResponse = {
     {
       ...createdErrand,
       accepted_at: null,
+      delivered_at: null,
       completed_at: null,
       cancelled_at: null,
       failed_at: null,
@@ -321,6 +323,16 @@ describe('errand lifecycle actions', () => {
       body: JSON.stringify({ errand_id: '550e8400-e29b-41d4-a716-446655440000' }),
       signal: undefined,
     })
+  })
+
+  it('marks an errand ready for pickup with an empty success response', async () => {
+    authenticatedFetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+
+    await expect(deliverErrand(createdErrand.id)).resolves.toBeUndefined()
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/errand\/deliver$/),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ errand_id: createdErrand.id }) }),
+    )
   })
 
   it('includes the failure reason when reporting an errand', async () => {

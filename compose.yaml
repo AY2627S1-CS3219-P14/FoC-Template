@@ -394,6 +394,7 @@ services:
       VITE_CREDIT_API_URL: ${VITE_CREDIT_API_URL:-http://localhost:8001}
       VITE_NOTIFICATION_API_URL: ${VITE_NOTIFICATION_API_URL:-http://localhost:8004}
       VITE_CHAT_API_URL: ${VITE_CHAT_API_URL:-http://localhost:8003}
+      VITE_AI_ASSISTANT_API_URL: ${VITE_AI_ASSISTANT_API_URL:-http://localhost:8005}
       VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"
@@ -404,6 +405,7 @@ services:
       - credit-service
       - chat-service
       - notification-service
+      - ai-errand-assistant-service
     restart: unless-stopped
 
   # One-off job: creates the first administrator if none exists, then exits (non-zero on failure).

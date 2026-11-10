@@ -110,7 +110,7 @@ describe('ErrandDetailsPage', () => {
     expect(screen.queryByRole('button', { name: 'Cancel errand' })).not.toBeInTheDocument()
   })
 
-  it('refetches the visible errand on its alert and ignores an older response after reconnect', async () => {
+  it.each(['ERRAND_DELIVERED', 'ERRAND_EXPIRED'])('refreshes on %s and ignores stale responses', async (type) => {
     const accepted = activeErrand(requesterAcceptedId)
     let resolveOlder!: (details: typeof accepted) => void
     loadErrandDetailsMock
@@ -128,7 +128,7 @@ describe('ErrandDetailsPage', () => {
     expect(await screen.findByRole('heading', { name: 'Courier assigned' })).toBeInTheDocument()
 
     const item = {
-      id: 'delivered', type: 'ERRAND_DELIVERED', data: { errandId: courierAcceptedId },
+      id: 'alert', type, data: { errandId: courierAcceptedId },
       message: 'Delivered', createdAt: '2026-11-08T00:00:00Z', readAt: null,
     }
     act(() => notify({ type: 'notification', item }))

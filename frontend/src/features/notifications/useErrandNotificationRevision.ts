@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNotifications } from './useNotifications'
 
-const errandTypes = new Set(['ERRAND_ACCEPTED', 'ERRAND_DELIVERED', 'ERRAND_COMPLETED', 'ERRAND_FAILED'])
+const errandTypes = new Set([
+  'ERRAND_ACCEPTED', 'ERRAND_DELIVERED', 'ERRAND_COMPLETED', 'ERRAND_FAILED', 'ERRAND_EXPIRED',
+])
 
 export function useErrandNotificationRevision(errandId?: string) {
   const subscribe = useNotifications()?.subscribe

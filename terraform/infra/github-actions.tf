@@ -29,11 +29,13 @@ data "aws_iam_policy_document" "github_deploy_assume" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Exact match: pushes to main and manual runs on main only
+    # Exact match: pushes to main and manual runs on main only. The repository uses GitHub's
+    # "immutable" subject, which adds the owner's and repository's numeric IDs, so a renamed or
+    # re-created repository with the same name can't use this role.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = ["${var.github_oidc_subject_prefix}:ref:refs/heads/main"]
     }
   }
 }

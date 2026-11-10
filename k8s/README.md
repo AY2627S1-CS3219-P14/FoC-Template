@@ -133,6 +133,39 @@ Replicas climb from 2 toward 5 as CPU passes 70%. About 5 minutes after the load
 
 PodDisruptionBudget demo: `kubectl drain <node> --ignore-daemonsets --delete-emptydir-data`. Kubernetes evicts pods one at a time and never leaves a service with zero ready pods.
 
+## API keys (AI features)
+
+Third-party API keys never go in git, in `app/config/*.env`, in `VITE_*` variables (those are
+built into the public frontend) or in Terraform. They live in AWS Secrets Manager, and External
+Secrets copies them into a Kubernetes Secret that only the service using them reads:
+
+| Key | Secrets Manager secret (JSON) | Kubernetes Secret | Used by |
+|---|---|---|---|
+| `OPENAI_API_KEY` | `campuscouriers/openai-api-key` `{"OPENAI_API_KEY": "sk-..."}` | `ai-assistant-openai` | ai-errand-assistant-service |
+
+Terraform creates the secret empty (`terraform/infra/external-secrets.tf`). To store or rotate a key:
+
+1. **AWS console** → Secrets Manager → `campuscouriers/openai-api-key` → *Retrieve secret value* →
+   *Edit* (or *Set secret value* the first time) → key `OPENAI_API_KEY`, value: the key → Save.
+   The console keeps the key out of your shell history. (CLI alternative: put the JSON in a file,
+   run `aws secretsmanager put-secret-value --secret-id campuscouriers/openai-api-key --secret-string file://openai.json`,
+   then delete the file.)
+2. Sync it now instead of waiting up to 15 minutes, then restart the service so it reads it:
+
+   ```
+   kubectl annotate externalsecret ai-assistant-openai -n campuscouriers-app force-sync="$(date +%s)" --overwrite
+   kubectl get secret ai-assistant-openai -n campuscouriers-app      # exists once synced
+   kubectl rollout restart deployment/ai-errand-assistant-service -n campuscouriers-app
+   ```
+
+Until the key is set, the service runs normally and AI drafts answer `503 OpenAI API key is not
+configured`. For local development, the key goes in the repository-root `.env` (gitignored), which
+`compose.yaml` passes to the container.
+
+Adding another key later: create an empty `aws_secretsmanager_secret` under the `campuscouriers/`
+prefix in Terraform (External Secrets can already read that prefix), add an `ExternalSecret` to
+`app/external-secrets.yaml`, and reference its Secret with `envFrom.secretRef` in the Deployment.
+
 ## Notes
 - **Changing settings:** edit `app/config/<service>.env` (or `domain.yaml`) and `kubectl apply -k k8s`. The ConfigMap gets a new hash-suffixed name, so the affected Deployments roll by themselves. Old ConfigMaps stay behind (harmless); clean up with `kubectl delete configmap -n campuscouriers-app <old name>`. **Secrets don't do this:** after a secret changes in Secrets Manager, environment variables only update on restart (`kubectl rollout restart deployment/<name> -n campuscouriers-app`, or `-n campuscouriers-messaging deployment/kafka-connect` for the Debezium logins); mounted files (the JWT keys) update by themselves.
 - **notification-service and chat-service run exactly one pod.** Their live connections (Server-Sent Events, WebSockets) live in one pod's memory, and an event or message only reaches browsers connected to the pod that handled it. More pods would silently drop some live updates. Scaling them needs a shared broadcast (e.g. Redis pub/sub or PostgreSQL LISTEN/NOTIFY) in their code first.

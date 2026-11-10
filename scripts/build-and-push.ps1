@@ -21,7 +21,7 @@
 # PositionalBinding off: a stray argument is an error, instead of silently becoming -Region/-Project
 [CmdletBinding(PositionalBinding = $false)]
 param(
-  [string[]]$Services = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service"),
+  [string[]]$Services = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service"),
   [ValidatePattern("^[a-z]{2}(-[a-z]+)+-\d$")]
   [string]$Region = "ap-southeast-1",
   [string]$Project = "campuscouriers",
@@ -34,7 +34,7 @@ $root = Split-Path $PSScriptRoot -Parent
 
 # Accept "-Services a,b" and "-Services a, b" alike: under `powershell -File` a comma list arrives
 # as one string (or several), not as an array
-$allServices = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service")
+$allServices = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service")
 $Services = @($Services | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $unknown = @($Services | Where-Object { $allServices -notcontains $_ })
 if ($unknown.Count) { throw "Unknown service(s): $($unknown -join ', '). Choose from: $($allServices -join ', ')" }

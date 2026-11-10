@@ -32,7 +32,7 @@ spec:
       - key: app.kubernetes.io/name
         operator: In
         values: ["user-service", "supplier-service", "credit-service", "order-service",
-                 "notification-service", "chat-service"]
+                 "notification-service", "chat-service", "ai-errand-assistant-service"]
   policyTypes: ["Ingress"]
   ingress:
     - from:
@@ -61,11 +61,11 @@ spec:
               - key: app.kubernetes.io/name
                 operator: In
                 values: ["supplier-service", "credit-service", "order-service",
-                         "notification-service", "chat-service"]
+                         "notification-service", "chat-service", "ai-errand-assistant-service"]
       ports:
         - port: http
 ---
-# 4. supplier-service is called by credit-service and order-service
+# 4. supplier-service is called by credit-service, order-service and ai-errand-assistant-service (catalog)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -82,7 +82,7 @@ spec:
             matchExpressions:
               - key: app.kubernetes.io/name
                 operator: In
-                values: ["credit-service", "order-service"]
+                values: ["credit-service", "order-service", "ai-errand-assistant-service"]
       ports:
         - port: http
 ---
@@ -102,5 +102,25 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: order-service
+      ports:
+        - port: http
+---
+# 6. order-service is called by ai-errand-assistant-service (the caller's past errands, for drafts).
+#    Browser requests still arrive through the ALB (policy 2).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ai-assistant-to-order-service
+  namespace: campuscouriers-app
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: order-service
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ai-errand-assistant-service
       ports:
         - port: http

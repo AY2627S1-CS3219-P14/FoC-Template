@@ -14,7 +14,8 @@ OPENAI_API_KEY=<your-key>
 ```
 
 Keep the key in `.env`; do not commit it or expose it as a frontend `VITE_`
-variable. Start the service:
+variable. In the cloud deployment the key comes from AWS Secrets Manager instead
+(`campuscouriers/openai-api-key`); see `k8s/README.md`, "API keys". Start the service:
 
 ```powershell
 docker compose up -d --build ai-errand-assistant-service

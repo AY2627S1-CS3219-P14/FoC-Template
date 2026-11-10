@@ -90,6 +90,15 @@ resource "aws_secretsmanager_secret" "user_bootstrap_admin" {
   recovery_window_in_days = 0
 }
 
+# OpenAI API key for ai-errand-assistant-service. Terraform creates only the empty secret: the key is
+# issued by OpenAI, and storing it here would put it in the Terraform state. Store the value by hand
+# (k8s/README.md, "API keys"); k8s/app/external-secrets.yaml syncs it into the cluster.
+resource "aws_secretsmanager_secret" "openai_api_key" {
+  name                    = "${local.secrets_prefix}openai-api-key"
+  description             = "OpenAI API key for ai-errand-assistant-service. JSON key: OPENAI_API_KEY"
+  recovery_window_in_days = 7 # can't be regenerated, so allow recovery after an accidental delete
+}
+
 # Shared key order-service sends to credit-service (header X-Order-Service-Key) to prove a credit
 # reservation really comes from order-service. Generated like the DB passwords: ephemeral +
 # write-only, so it never appears in the state file. To rotate: bump secret_string_wo_version, apply,

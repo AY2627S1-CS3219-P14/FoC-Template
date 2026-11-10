@@ -220,6 +220,7 @@ jobs:
           VITE_CREDIT_API_URL: ${{ steps.version.outputs.api_url }}
           VITE_NOTIFICATION_API_URL: ${{ steps.version.outputs.api_url }}
           VITE_CHAT_API_URL: ${{ steps.version.outputs.api_url }}
+          VITE_AI_ASSISTANT_API_URL: ${{ steps.version.outputs.api_url }}
           VITE_MOCK_AUTH: "false"
         run: |
           corepack enable

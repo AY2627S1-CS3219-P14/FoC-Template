@@ -26,7 +26,7 @@ observed out of order.
 
 All REST endpoints except `/health` require the User Service bearer token.
 
-- `GET /errands/{errand_id}/conversation`
+- `GET /conversations/by-errand/{errand_id}`
 - `GET /conversations/{id}/messages?after_sequence=10&limit=50`
 - `GET /conversations/{id}/messages?before_sequence=50&limit=50`
 - `GET /conversations/{id}/messages/{message_id}`

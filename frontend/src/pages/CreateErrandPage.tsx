@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { AiErrandAssistant } from '../components/errands/AiErrandAssistant'
 import { CreditOfferCard } from '../components/errands/CreditOfferCard'
 import { FormField } from '../components/ui/FormField'
+import type { AiErrandDraft } from '../features/ai-assistant/ai-assistant.api'
 import { createErrand, ErrandApiError } from '../features/errands/errand.api'
 import { useCredits } from '../features/credits/useCredits'
 import type {
@@ -115,6 +117,7 @@ export function CreateErrandPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [createdErrandId, setCreatedErrandId] = useState<string | null>(null)
+  const [aiDraftNotice, setAiDraftNotice] = useState<string | null>(null)
   const submitControllerRef = useRef<AbortController | null>(null)
 
   const selectedSupplier = suppliers.find((supplier) => supplier.id === draft.supplierId)
@@ -185,6 +188,50 @@ export function CreateErrandPage() {
     setErrors((current) => ({ ...current, [field]: undefined }))
     setSubmitError(null)
     setCreatedErrandId(null)
+  }
+
+  function applyAiDraft(aiDraft: AiErrandDraft) {
+    // The dropdowns hold UUIDs. If the assistant's choice is not one of the options,
+    // reset to "" so the dropdown shows "Select a supplier" / "Select a building".
+    const supplierId =
+      aiDraft.supplier_id && suppliers.some((supplier) => supplier.id === aiDraft.supplier_id)
+        ? aiDraft.supplier_id
+        : ''
+    const deliveryBuildingId =
+      aiDraft.delivery_building_id &&
+      deliveryBuildings.some((building) => building.id === aiDraft.delivery_building_id)
+        ? aiDraft.delivery_building_id
+        : ''
+    const expiresAt = aiDraft.expires_at ? new Date(aiDraft.expires_at) : null
+
+    // Other fields are only overwritten when the assistant filled them; keep the user's input.
+    setDraft((current) => ({
+      supplierId,
+      requiredItem: aiDraft.required_item ?? current.requiredItem,
+      deliveryBuildingId,
+      deliveryFloor: aiDraft.delivery_floor ?? current.deliveryFloor,
+      deliveryDescription: aiDraft.delivery_description ?? current.deliveryDescription,
+      expiresAt:
+        expiresAt && !Number.isNaN(expiresAt.getTime())
+          ? toLocalDateTimeValue(expiresAt)
+          : current.expiresAt,
+      creditValue: String(aiDraft.credit_value),
+    }))
+    setErrors({})
+    setSubmitError(null)
+    setCreatedErrandId(null)
+
+    const missing = [
+      !supplierId && 'pickup supplier',
+      !aiDraft.required_item && 'items',
+      !deliveryBuildingId && 'delivery building',
+      !aiDraft.delivery_floor && 'floor',
+      !expiresAt && 'deadline',
+    ].filter(Boolean)
+    setAiDraftNotice(
+      `Filled in by the AI assistant. Please review before creating. ${aiDraft.credit_reason}` +
+        (missing.length > 0 ? ` Please fill in: ${missing.join(', ')}.` : ''),
+    )
   }
 
   function retryOptionsRequest() {
@@ -266,6 +313,23 @@ export function CreateErrandPage() {
           <h2 className="text-xl font-medium tracking-[-0.015em] text-[#17211d] sm:text-2xl">
             What do you need?
           </h2>
+
+          {aiDraftNotice ? (
+            <div
+              className="mt-5 flex items-start justify-between gap-3 rounded-xl bg-[#ddf3e7] px-4 py-3 text-sm text-[#175c45]"
+              role="status"
+            >
+              <p>{aiDraftNotice}</p>
+              <button
+                type="button"
+                onClick={() => setAiDraftNotice(null)}
+                aria-label="Dismiss AI assistant notice"
+                className="cursor-pointer text-lg leading-none"
+              >
+                &times;
+              </button>
+            </div>
+          ) : null}
 
           {optionsError ? (
             <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3" role="alert">
@@ -493,6 +557,8 @@ export function CreateErrandPage() {
           ) : null}
         </aside>
       </form>
+
+      <AiErrandAssistant onDraft={applyAiDraft} disabled={!optionsReady} />
     </section>
   )
 }

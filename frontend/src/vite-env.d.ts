@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_NOTIFICATION_API_URL?: string
   readonly VITE_CHAT_API_URL?: string
   readonly VITE_RAG_API_URL?: string
+  readonly VITE_AI_ASSISTANT_API_URL?: string
   readonly VITE_MOCK_AUTH?: string
 }
 

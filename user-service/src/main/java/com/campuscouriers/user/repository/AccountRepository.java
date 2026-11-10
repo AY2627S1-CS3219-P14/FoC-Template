@@ -1,13 +1,17 @@
 package com.campuscouriers.user.repository;
 
+import com.campuscouriers.user.account.dto.AccountSummaryResponse;
 import com.campuscouriers.user.entity.Account;
 import com.campuscouriers.user.entity.AccountType;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +21,26 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     boolean existsByEmail(String email);
     Optional<Account> findByEmail(String email);
     boolean existsByType(AccountType type);
+
+    // Accounts with their profile name, for the administrator account list. pattern is a lower-case
+    // LIKE pattern matched against the email and the name; "!" escapes literal % and _ in it.
+    // Profile has no back-reference from Account, so it is joined explicitly (left join: no profile = null name)
+    @Query(value = """
+            select new com.campuscouriers.user.account.dto.AccountSummaryResponse(a.id, a.email, p.name, a.type)
+            from Account a left join Profile p on p.account = a
+            where a.type in :types
+              and (lower(a.email) like :pattern escape '!' or lower(coalesce(p.name, '')) like :pattern escape '!')
+            order by lower(a.email), a.id
+            """,
+            countQuery = """
+            select count(a)
+            from Account a left join Profile p on p.account = a
+            where a.type in :types
+              and (lower(a.email) like :pattern escape '!' or lower(coalesce(p.name, '')) like :pattern escape '!')
+            """)
+    Page<AccountSummaryResponse> searchSummaries(@Param("pattern") String pattern,
+                                                 @Param("types") Collection<AccountType> types,
+                                                 Pageable pageable);
 
     // SELECT ... ORDER BY id FOR UPDATE: rows are locked in ascending id order, so concurrent callers serialize
     @Lock(LockModeType.PESSIMISTIC_WRITE)

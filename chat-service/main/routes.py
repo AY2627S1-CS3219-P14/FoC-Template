@@ -61,7 +61,7 @@ def conversations_for_user(
 
 
 @router.get(
-    "/errands/{errand_id}/conversation",
+    "/conversations/by-errand/{errand_id}",
     response_model=ConversationResponse | PendingConversationResponse,
 )
 def conversation_for_errand(

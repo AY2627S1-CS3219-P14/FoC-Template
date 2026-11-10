@@ -56,6 +56,10 @@ export function MobileBottomNav() {
         Chats
       </MobileNavItem>
 
+      <MobileNavItem to="/assistant" icon={chatIcon}>
+        Assistant
+      </MobileNavItem>
+
       <MobileNavItem to="/suppliers" icon={suppliersIcon}>
         Suppliers
       </MobileNavItem>

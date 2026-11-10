@@ -368,6 +368,7 @@ services:
       VITE_CREDIT_API_URL: ${VITE_CREDIT_API_URL:-http://localhost:8001}
       VITE_NOTIFICATION_API_URL: ${VITE_NOTIFICATION_API_URL:-http://localhost:8004}
       VITE_CHAT_API_URL: ${VITE_CHAT_API_URL:-http://localhost:8003}
+      VITE_RAG_API_URL: ${VITE_RAG_API_URL:-http://localhost:8003}
       VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
     ports:
       - "5173:5173"
@@ -441,6 +442,7 @@ services:
       DATABASE_URL: postgresql://${RAG_DB_USERNAME:-rag_user}:${RAG_DB_PASSWORD:-rag_password}@rag-database:5432/${RAG_DB_NAME:-rag_db}
       EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
       RAG_TOP_K: ${RAG_TOP_K:-5}
+      RAG_CORS_ALLOWED_ORIGINS: ${RAG_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-5-20250929}
       CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-512}

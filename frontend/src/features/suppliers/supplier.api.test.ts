@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { authenticatedFetch } from '../auth/auth.fetch'
-import { getSupplier } from './supplier.api'
+import { createSupplier, getSupplier, reactivateSupplier, SupplierApiError } from './supplier.api'
 import type { Supplier } from './supplier.types'
 
 vi.mock('../auth/auth.fetch', () => ({
@@ -48,5 +48,34 @@ describe('getSupplier', () => {
         signal,
       },
     )
+  })
+})
+
+describe('administrator supplier requests', () => {
+  beforeEach(() => authenticatedFetchMock.mockReset())
+
+  it('creates a supplier with the backend request contract', async () => {
+    authenticatedFetchMock.mockResolvedValue(new Response(JSON.stringify(supplier), { status: 201 }))
+    const request = {
+      name: 'Techno Edge', categoryId: 'category-food', buildingId: 'building-engineering',
+      floor: null, description: null, openingTime: null, closingTime: null, imageUrl: null,
+    }
+    await expect(createSupplier(request)).resolves.toEqual(supplier)
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(expect.stringMatching(/\/suppliers$/), {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+  })
+
+  it('preserves all inactive references from a reactivation conflict', async () => {
+    authenticatedFetchMock.mockResolvedValue(new Response(JSON.stringify({
+      detail: 'The following selected references are not active: category, building',
+      inactiveReferences: ['category', 'building'],
+    }), { status: 409, headers: { 'Content-Type': 'application/problem+json' } }))
+
+    const error = await reactivateSupplier(supplier.id).catch(value => value)
+    expect(error).toBeInstanceOf(SupplierApiError)
+    expect(error.inactiveReferences).toEqual(['category', 'building'])
   })
 })

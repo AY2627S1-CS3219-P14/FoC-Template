@@ -29,6 +29,7 @@ describe('AppHeader', () => {
     useAuthMock.mockReturnValue({
       status: 'authenticated',
       currentUserId: 'user-id',
+      currentUserType: 'Student',
       signIn: vi.fn(),
       signOut,
     })
@@ -94,5 +95,18 @@ describe('AppHeader', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Log out' }))
     expect(signOut).toHaveBeenCalledOnce()
     await waitFor(() => expect(account).toHaveAttribute('aria-expanded', 'false'))
+  })
+
+  it('shows administrators a dedicated dashboard link beside the account menu', () => {
+    useAuthMock.mockReturnValue({
+      status: 'authenticated', currentUserId: 'admin-id', currentUserType: 'Administrator',
+      signIn: vi.fn(), signOut,
+    })
+    useCreditsMock.mockReturnValue({
+      availableBalance: 0, status: 'ready', error: null, refreshBalance,
+    })
+    renderHeader()
+
+    expect(screen.getByRole('link', { name: /Admin dashboard|Admin/ })).toHaveAttribute('href', '/admin')
   })
 })

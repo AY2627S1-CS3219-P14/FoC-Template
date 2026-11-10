@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getAccessTokenSubject } from './auth.token'
+import { getAccessTokenSubject, getAccessTokenType } from './auth.token'
 
 function createUnsignedToken(payload: object) {
   const encode = (value: object) =>
@@ -22,5 +22,14 @@ describe('getAccessTokenSubject', () => {
     expect(getAccessTokenSubject('not-a-token')).toBeNull()
     expect(getAccessTokenSubject(createUnsignedToken({ type: 'Student' }))).toBeNull()
     expect(getAccessTokenSubject(createUnsignedToken({ sub: 42 }))).toBeNull()
+  })
+})
+
+describe('getAccessTokenType', () => {
+  it('reads supported account types and rejects unknown claims', () => {
+    expect(getAccessTokenType(createUnsignedToken({ type: 'Administrator' }))).toBe('Administrator')
+    expect(getAccessTokenType(createUnsignedToken({ type: 'Student' }))).toBe('Student')
+    expect(getAccessTokenType(createUnsignedToken({ type: 'Other' }))).toBeNull()
+    expect(getAccessTokenType('not-a-token')).toBeNull()
   })
 })

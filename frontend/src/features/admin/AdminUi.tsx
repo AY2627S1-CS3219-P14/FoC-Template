@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: Anthropic Claude (model unrecorded), 2026-11-10
+ * Scope (AI-28): Generated the account list endpoint, admin users page and their tests.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Melodi Joy Halim.
+ */
+
 import { useEffect, useRef, type ReactNode } from 'react'
 import { PAGE_SIZE } from './admin.utils'
 

@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+ * Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Melodi Joy Halim.
+ */
+
 package com.campuscouriers.credit.config;
 
 import org.springframework.context.annotation.Bean;

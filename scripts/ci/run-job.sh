@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10
+# Scope (AI-27): Generated the deploy workflow, CI helper scripts and deploy-role Terraform I specified.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # Runs one Job from k8s/jobs (with the image tags currently in k8s/jobs/kustomization.yaml) and waits
 # for it: exit 0 when it succeeds, 1 when it fails or times out. Its logs are printed either way.
 #

@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+# Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # Registers the Debezium connectors with Kafka Connect, then exits. Same script and connector files
 # as compose.yaml's connect-init. Both come from the "debezium-connectors" ConfigMap, built straight
 # from the debezium/ folder (see k8s/README.md), so there is only one copy of each.

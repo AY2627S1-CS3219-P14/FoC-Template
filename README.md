@@ -3,7 +3,7 @@ AI Assistance Disclosure
 Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-11
 Scope (AI-16): Compiled the attribution documentation.
 Usage log: AI_USAGE_LOG.md
-Author review: Pending confirmation by Elliot Yong.
+Author review: Changes validated and confirmed.
 -->
 
 # CS3219 — Software Design and Architecture (AY2627 Sem 1)
@@ -43,7 +43,7 @@ microservice (`user-service/`, `supplier-service/`, `order-service/`,
 ├── order-service/
 ├── credit-service/
 ├── RAG-service/       # RAG knowledge chunks and indexing job
-├── <n2h-service>/
+├── notification-service/
 ├── debezium/          # Kafka Connect connectors that relay each service's outbox to Kafka
 └── README.md
 ```

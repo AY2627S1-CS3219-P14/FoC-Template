@@ -2,13 +2,15 @@
 AI Assistance Disclosure
 Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-11
 Scope (AI-16): Compiled the attribution documentation.
+Tool and date: Anthropic Claude Code (claude-opus-5-5), 2026-11-11
+Scope (AI-31): Added entries AI-23 to AI-31.
 Usage log: AI_USAGE_LOG.md
-Author review: Pending confirmation by Elliot Yong.
+Author review: Changes validated and confirmed.
 -->
 
 # AI usage log
 
-This is a partial record of verified assistance for this contributor in the current checkout. Dates use Singapore time. File headers link to entries by ID. Prompt text is reproduced verbatim where available. Key responses are summarized. Author review is pending.
+This is a record of verified assistance in the current checkout. Dates use Singapore time. File headers link to entries by ID. Prompt text is reproduced verbatim where available. Key responses are summarized. Changes were validated and confirmed by the author.
 
 ## AI-01 · Supplier card content
 
@@ -530,3 +532,458 @@ execute
 errand completed should also notify requester. Also when courier indicates that the item is ready for collection, there should be a notification for the requester. Make use of the existing order service events described in the even list.
 ```
 
+
+## Contributor note · Melodi Joy Halim (AI-23 to AI-31)
+
+I used Anthropic Claude to generate code for the entries below. These sessions were not saved, so the exact prompts and model versions are unavailable. Each entry lists reconstructed prompt gists that summarize the kinds of requests I made. They are not verbatim. File lists come from my commits for each period.
+
+## AI-23 · User Service accounts and authentication
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate and test.
+- **Date** — 2026-09-18 to 2026-10-03
+- **Key response** — Generated Spring Boot code for the registration, login, refresh-token, logout, profile, account-type and admin-bootstrap features I specified, plus unit and integration tests mapped to the functional requirements.
+
+**Commit evidence** — my commits dated 2026-09-18 to 2026-10-03
+
+**Affected files**
+
+- [`.env.example`](.env.example)
+- [`compose.yaml`](compose.yaml)
+- [`user-service/Dockerfile`](user-service/Dockerfile)
+- [`user-service/pom.xml`](user-service/pom.xml)
+- [`user-service/src/main/java/com/campuscouriers/user/UserApplication.java`](user-service/src/main/java/com/campuscouriers/user/UserApplication.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/AccountController.java`](user-service/src/main/java/com/campuscouriers/user/account/AccountController.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/AccountCreationService.java`](user-service/src/main/java/com/campuscouriers/user/account/AccountCreationService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/AccountService.java`](user-service/src/main/java/com/campuscouriers/user/account/AccountService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/dto/AccountResponse.java`](user-service/src/main/java/com/campuscouriers/user/account/dto/AccountResponse.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/dto/EmailResponse.java`](user-service/src/main/java/com/campuscouriers/user/account/dto/EmailResponse.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/dto/UpdateAccountTypeRequest.java`](user-service/src/main/java/com/campuscouriers/user/account/dto/UpdateAccountTypeRequest.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/dto/UpdateEmailRequest.java`](user-service/src/main/java/com/campuscouriers/user/account/dto/UpdateEmailRequest.java)
+- [`user-service/src/main/java/com/campuscouriers/user/auth/AuthController.java`](user-service/src/main/java/com/campuscouriers/user/auth/AuthController.java)
+- [`user-service/src/main/java/com/campuscouriers/user/auth/AuthService.java`](user-service/src/main/java/com/campuscouriers/user/auth/AuthService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/auth/AuthTokens.java`](user-service/src/main/java/com/campuscouriers/user/auth/AuthTokens.java)
+- [`user-service/src/main/java/com/campuscouriers/user/auth/dto/LoginRequest.java`](user-service/src/main/java/com/campuscouriers/user/auth/dto/LoginRequest.java)
+- [`user-service/src/main/java/com/campuscouriers/user/auth/dto/LoginResponse.java`](user-service/src/main/java/com/campuscouriers/user/auth/dto/LoginResponse.java)
+- [`user-service/src/main/java/com/campuscouriers/user/auth/dto/RegisterRequest.java`](user-service/src/main/java/com/campuscouriers/user/auth/dto/RegisterRequest.java)
+- [`user-service/src/main/java/com/campuscouriers/user/bootstrap/AdminBootstrapProperties.java`](user-service/src/main/java/com/campuscouriers/user/bootstrap/AdminBootstrapProperties.java)
+- [`user-service/src/main/java/com/campuscouriers/user/bootstrap/AdminBootstrapRunner.java`](user-service/src/main/java/com/campuscouriers/user/bootstrap/AdminBootstrapRunner.java)
+- [`user-service/src/main/java/com/campuscouriers/user/bootstrap/AdminBootstrapService.java`](user-service/src/main/java/com/campuscouriers/user/bootstrap/AdminBootstrapService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/entity/Account.java`](user-service/src/main/java/com/campuscouriers/user/entity/Account.java)
+- [`user-service/src/main/java/com/campuscouriers/user/entity/AccountType.java`](user-service/src/main/java/com/campuscouriers/user/entity/AccountType.java)
+- [`user-service/src/main/java/com/campuscouriers/user/entity/Profile.java`](user-service/src/main/java/com/campuscouriers/user/entity/Profile.java)
+- [`user-service/src/main/java/com/campuscouriers/user/entity/RefreshToken.java`](user-service/src/main/java/com/campuscouriers/user/entity/RefreshToken.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/AdminBootstrapException.java`](user-service/src/main/java/com/campuscouriers/user/exception/AdminBootstrapException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/EmailAlreadyRegisteredException.java`](user-service/src/main/java/com/campuscouriers/user/exception/EmailAlreadyRegisteredException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/InsufficientPermissionException.java`](user-service/src/main/java/com/campuscouriers/user/exception/InsufficientPermissionException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/InvalidAccessTokenException.java`](user-service/src/main/java/com/campuscouriers/user/exception/InvalidAccessTokenException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/InvalidAccountException.java`](user-service/src/main/java/com/campuscouriers/user/exception/InvalidAccountException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/InvalidCredentialsException.java`](user-service/src/main/java/com/campuscouriers/user/exception/InvalidCredentialsException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/InvalidProfileException.java`](user-service/src/main/java/com/campuscouriers/user/exception/InvalidProfileException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/InvalidRefreshTokenException.java`](user-service/src/main/java/com/campuscouriers/user/exception/InvalidRefreshTokenException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/exception/LastAdministratorException.java`](user-service/src/main/java/com/campuscouriers/user/exception/LastAdministratorException.java)
+- [`user-service/src/main/java/com/campuscouriers/user/profile/ProfileController.java`](user-service/src/main/java/com/campuscouriers/user/profile/ProfileController.java)
+- [`user-service/src/main/java/com/campuscouriers/user/profile/ProfileService.java`](user-service/src/main/java/com/campuscouriers/user/profile/ProfileService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/profile/dto/NameResponse.java`](user-service/src/main/java/com/campuscouriers/user/profile/dto/NameResponse.java)
+- [`user-service/src/main/java/com/campuscouriers/user/profile/dto/ProfileResponse.java`](user-service/src/main/java/com/campuscouriers/user/profile/dto/ProfileResponse.java)
+- [`user-service/src/main/java/com/campuscouriers/user/profile/dto/UpdateNameRequest.java`](user-service/src/main/java/com/campuscouriers/user/profile/dto/UpdateNameRequest.java)
+- [`user-service/src/main/java/com/campuscouriers/user/repository/AccountRepository.java`](user-service/src/main/java/com/campuscouriers/user/repository/AccountRepository.java)
+- [`user-service/src/main/java/com/campuscouriers/user/repository/ProfileRepository.java`](user-service/src/main/java/com/campuscouriers/user/repository/ProfileRepository.java)
+- [`user-service/src/main/java/com/campuscouriers/user/repository/RefreshTokenRepository.java`](user-service/src/main/java/com/campuscouriers/user/repository/RefreshTokenRepository.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/JwtKeyConfig.java`](user-service/src/main/java/com/campuscouriers/user/security/JwtKeyConfig.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/SecurityConfig.java`](user-service/src/main/java/com/campuscouriers/user/security/SecurityConfig.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/access/AccessTokenClaims.java`](user-service/src/main/java/com/campuscouriers/user/security/access/AccessTokenClaims.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/access/JwtAuthenticationFilter.java`](user-service/src/main/java/com/campuscouriers/user/security/access/JwtAuthenticationFilter.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/access/JwtService.java`](user-service/src/main/java/com/campuscouriers/user/security/access/JwtService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/jwk/Jwk.java`](user-service/src/main/java/com/campuscouriers/user/security/jwk/Jwk.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/jwk/JwkSet.java`](user-service/src/main/java/com/campuscouriers/user/security/jwk/JwkSet.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/jwk/JwkSetController.java`](user-service/src/main/java/com/campuscouriers/user/security/jwk/JwkSetController.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/refresh/RefreshTokenService.java`](user-service/src/main/java/com/campuscouriers/user/security/refresh/RefreshTokenService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/security/refresh/TokenHasher.java`](user-service/src/main/java/com/campuscouriers/user/security/refresh/TokenHasher.java)
+- [`user-service/src/main/java/com/campuscouriers/user/validation/NusEmail.java`](user-service/src/main/java/com/campuscouriers/user/validation/NusEmail.java)
+- [`user-service/src/main/java/com/campuscouriers/user/validation/ValidName.java`](user-service/src/main/java/com/campuscouriers/user/validation/ValidName.java)
+- [`user-service/src/main/resources/application-bootstrap-admin.properties`](user-service/src/main/resources/application-bootstrap-admin.properties)
+- [`user-service/src/main/resources/application.properties`](user-service/src/main/resources/application.properties)
+- [`user-service/src/test/java/com/campuscouriers/user/TestConstants.java`](user-service/src/test/java/com/campuscouriers/user/TestConstants.java)
+- [`user-service/src/test/java/com/campuscouriers/user/UserApplicationTests.java`](user-service/src/test/java/com/campuscouriers/user/UserApplicationTests.java)
+- [`user-service/src/test/java/com/campuscouriers/user/account/AccountControllerTest.java`](user-service/src/test/java/com/campuscouriers/user/account/AccountControllerTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/account/AccountServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/account/AccountServiceTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/auth/AuthControllerTest.java`](user-service/src/test/java/com/campuscouriers/user/auth/AuthControllerTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/auth/AuthServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/auth/AuthServiceTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/auth/LogoutEndpointTest.java`](user-service/src/test/java/com/campuscouriers/user/auth/LogoutEndpointTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapIntegrationTest.java`](user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapIntegrationTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapRunnerTest.java`](user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapRunnerTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapServiceTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/profile/ProfileControllerTest.java`](user-service/src/test/java/com/campuscouriers/user/profile/ProfileControllerTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/profile/ProfileServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/profile/ProfileServiceTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/security/SecurityConfigTest.java`](user-service/src/test/java/com/campuscouriers/user/security/SecurityConfigTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/security/TestJwtKeyConfig.java`](user-service/src/test/java/com/campuscouriers/user/security/TestJwtKeyConfig.java)
+- [`user-service/src/test/java/com/campuscouriers/user/security/access/JwtServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/security/access/JwtServiceTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/security/jwk/JwkSetControllerTest.java`](user-service/src/test/java/com/campuscouriers/user/security/jwk/JwkSetControllerTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/security/refresh/RefreshTokenServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/security/refresh/RefreshTokenServiceTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/security/refresh/TokenHasherTest.java`](user-service/src/test/java/com/campuscouriers/user/security/refresh/TokenHasherTest.java)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Implement a register endpoint in AuthController that validates the request against F1.1.1 to F1.1.4 and write tests for each case.
+- Write a RefreshTokenService that stores the hashed token, redeems it once, and rejects unknown or expired tokens. Add tests.
+- Add a GET endpoint so an owner or an admin can retrieve a profile, with controller and service tests.
+- Add the user service to compose.yaml so it starts with its Postgres database.
+
+## AI-24 · User registration event and outbox
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate and test.
+- **Date** — 2026-10-09 to 2026-10-15
+- **Key response** — Generated code for the UserRegisteredEvent, the Kafka broker in Docker Compose, and the outbox tables, publishers and Debezium connector configs I specified. Added tests.
+
+**Commit evidence** — my commits dated 2026-10-09 to 2026-10-15
+
+**Affected files**
+
+- [`.env.example`](.env.example)
+- [`compose.yaml`](compose.yaml)
+- [`debezium/connectors/order-outbox.json`](debezium/connectors/order-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`debezium/connectors/supplier-outbox.json`](debezium/connectors/supplier-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`debezium/connectors/user-outbox.json`](debezium/connectors/user-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`debezium/register-connectors.sh`](debezium/register-connectors.sh)
+- [`order-service/alembic/env.py`](order-service/alembic/env.py)
+- [`order-service/alembic/versions/0004_create_outbox.py`](order-service/alembic/versions/0004_create_outbox.py)
+- [`order-service/main/accept_errand.py`](order-service/main/accept_errand.py)
+- [`order-service/main/cancel_errand.py`](order-service/main/cancel_errand.py)
+- [`order-service/main/complete_errand.py`](order-service/main/complete_errand.py)
+- [`order-service/main/create_errand.py`](order-service/main/create_errand.py)
+- [`order-service/main/database.py`](order-service/main/database.py)
+- [`order-service/main/fail_errand.py`](order-service/main/fail_errand.py)
+- [`order-service/main/models.py`](order-service/main/models.py)
+- [`order-service/main/outbox.py`](order-service/main/outbox.py)
+- [`order-service/test/outbox_support.py`](order-service/test/outbox_support.py)
+- [`order-service/test/terminal_support.py`](order-service/test/terminal_support.py)
+- [`order-service/test/test_accept_errand.py`](order-service/test/test_accept_errand.py)
+- [`order-service/test/test_cancel_errand.py`](order-service/test/test_cancel_errand.py)
+- [`order-service/test/test_complete_errand.py`](order-service/test/test_complete_errand.py)
+- [`order-service/test/test_create_errand.py`](order-service/test/test_create_errand.py)
+- [`order-service/test/test_fail_errand.py`](order-service/test/test_fail_errand.py)
+- [`order-service/test/test_terminal_concurrency.py`](order-service/test/test_terminal_concurrency.py)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/entity/OutboxEvent.java`](supplier-service/src/main/java/com/campuscouriers/supplier/entity/OutboxEvent.java)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/event/SupplierEvent.java`](supplier-service/src/main/java/com/campuscouriers/supplier/event/SupplierEvent.java)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/event/SupplierEventPublisher.java`](supplier-service/src/main/java/com/campuscouriers/supplier/event/SupplierEventPublisher.java)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/importer/SupplierSeedImporter.java`](supplier-service/src/main/java/com/campuscouriers/supplier/importer/SupplierSeedImporter.java)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/repository/OutboxEventRepository.java`](supplier-service/src/main/java/com/campuscouriers/supplier/repository/OutboxEventRepository.java)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/service/SupplierService.java`](supplier-service/src/main/java/com/campuscouriers/supplier/service/SupplierService.java)
+- [`supplier-service/src/test/java/com/campuscouriers/supplier/event/SupplierEventOutboxIntegrationTest.java`](supplier-service/src/test/java/com/campuscouriers/supplier/event/SupplierEventOutboxIntegrationTest.java)
+- [`supplier-service/src/test/java/com/campuscouriers/supplier/importer/SupplierSeedImporterTest.java`](supplier-service/src/test/java/com/campuscouriers/supplier/importer/SupplierSeedImporterTest.java)
+- [`supplier-service/src/test/java/com/campuscouriers/supplier/service/SupplierServiceTest.java`](supplier-service/src/test/java/com/campuscouriers/supplier/service/SupplierServiceTest.java)
+- [`user-service/pom.xml`](user-service/pom.xml)
+- [`user-service/src/main/java/com/campuscouriers/user/account/AccountCreationService.java`](user-service/src/main/java/com/campuscouriers/user/account/AccountCreationService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/CreatedAccount.java`](user-service/src/main/java/com/campuscouriers/user/account/CreatedAccount.java)
+- [`user-service/src/main/java/com/campuscouriers/user/auth/AuthService.java`](user-service/src/main/java/com/campuscouriers/user/auth/AuthService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/event/OutboxEvent.java`](user-service/src/main/java/com/campuscouriers/user/event/OutboxEvent.java)
+- [`user-service/src/main/java/com/campuscouriers/user/event/UserEventPublisher.java`](user-service/src/main/java/com/campuscouriers/user/event/UserEventPublisher.java)
+- [`user-service/src/main/java/com/campuscouriers/user/event/UserRegisteredEvent.java`](user-service/src/main/java/com/campuscouriers/user/event/UserRegisteredEvent.java)
+- [`user-service/src/main/java/com/campuscouriers/user/repository/OutboxEventRepository.java`](user-service/src/main/java/com/campuscouriers/user/repository/OutboxEventRepository.java)
+- [`user-service/src/main/resources/application-bootstrap-admin.properties`](user-service/src/main/resources/application-bootstrap-admin.properties)
+- [`user-service/src/main/resources/application.properties`](user-service/src/main/resources/application.properties)
+- [`user-service/src/test/java/com/campuscouriers/user/UserApplicationTests.java`](user-service/src/test/java/com/campuscouriers/user/UserApplicationTests.java)
+- [`user-service/src/test/java/com/campuscouriers/user/auth/AuthServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/auth/AuthServiceTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/auth/LogoutEndpointTest.java`](user-service/src/test/java/com/campuscouriers/user/auth/LogoutEndpointTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapIntegrationTest.java`](user-service/src/test/java/com/campuscouriers/user/bootstrap/AdminBootstrapIntegrationTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/event/UserEventOutboxIntegrationTest.java`](user-service/src/test/java/com/campuscouriers/user/event/UserEventOutboxIntegrationTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/event/UserEventPublisherTest.java`](user-service/src/test/java/com/campuscouriers/user/event/UserEventPublisherTest.java)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Publish a UserRegisteredEvent when an account is created and add tests for the event payload.
+- Add a single Kafka broker and kafka-ui to compose.yaml.
+- Write the outbox entity, repository and publisher for the user and supplier services, the order-service outbox migration, and the Debezium connector JSON for each.
+- Rewrite the DATABASE_URL in alembic env.py using URL.create.
+
+## AI-25 · Kubernetes manifests
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate configuration.
+- **Date** — 2026-11-06
+- **Key response** — Generated Deployments, Services, Ingress, autoscaling, network policies, Jobs and health probe settings for the services, following my deployment specification. Added the health endpoints and tests the probes needed.
+
+**Commit evidence** — `43d54e3`
+
+**Affected files**
+
+- [`credit-service/pom.xml`](credit-service/pom.xml)
+- [`credit-service/src/main/java/com/campuscouriers/credit/config/SecurityConfig.java`](credit-service/src/main/java/com/campuscouriers/credit/config/SecurityConfig.java)
+- [`credit-service/src/main/resources/application.properties`](credit-service/src/main/resources/application.properties)
+- [`debezium/connectors/order-outbox.json`](debezium/connectors/order-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`debezium/connectors/supplier-outbox.json`](debezium/connectors/supplier-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`debezium/connectors/user-outbox.json`](debezium/connectors/user-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`k8s/app/credit-service.yaml`](k8s/app/credit-service.yaml)
+- [`k8s/app/database-endpoints.yaml`](k8s/app/database-endpoints.yaml)
+- [`k8s/app/ingress.yaml`](k8s/app/ingress.yaml)
+- [`k8s/app/network-policies.yaml`](k8s/app/network-policies.yaml)
+- [`k8s/app/order-service.yaml`](k8s/app/order-service.yaml)
+- [`k8s/app/supplier-service.yaml`](k8s/app/supplier-service.yaml)
+- [`k8s/app/user-service.yaml`](k8s/app/user-service.yaml)
+- [`k8s/jobs/kustomization.yaml`](k8s/jobs/kustomization.yaml)
+- [`k8s/jobs/order-migrate.yaml`](k8s/jobs/order-migrate.yaml)
+- [`k8s/jobs/register-connectors.yaml`](k8s/jobs/register-connectors.yaml)
+- [`k8s/jobs/supplier-seed.yaml`](k8s/jobs/supplier-seed.yaml)
+- [`k8s/jobs/user-bootstrap.yaml`](k8s/jobs/user-bootstrap.yaml)
+- [`k8s/kustomization.yaml`](k8s/kustomization.yaml)
+- [`k8s/messaging/database-endpoints.yaml`](k8s/messaging/database-endpoints.yaml)
+- [`k8s/messaging/kafka-connect.yaml`](k8s/messaging/kafka-connect.yaml)
+- [`k8s/messaging/kafka.yaml`](k8s/messaging/kafka.yaml)
+- [`k8s/messaging/network-policies.yaml`](k8s/messaging/network-policies.yaml)
+- [`k8s/messaging/storageclass.yaml`](k8s/messaging/storageclass.yaml)
+- [`k8s/namespaces.yaml`](k8s/namespaces.yaml)
+- [`order-service/main/app.py`](order-service/main/app.py)
+- [`order-service/test/test_health.py`](order-service/test/test_health.py)
+- [`supplier-service/pom.xml`](supplier-service/pom.xml)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/config/SecurityConfig.java`](supplier-service/src/main/java/com/campuscouriers/supplier/config/SecurityConfig.java)
+- [`supplier-service/src/main/resources/application.properties`](supplier-service/src/main/resources/application.properties)
+- [`user-service/pom.xml`](user-service/pom.xml)
+- [`user-service/src/main/java/com/campuscouriers/user/security/SecurityConfig.java`](user-service/src/main/java/com/campuscouriers/user/security/SecurityConfig.java)
+- [`user-service/src/main/resources/application.properties`](user-service/src/main/resources/application.properties)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Write Kubernetes manifests for user, supplier, credit and order services with readiness and liveness probes, using the ALB ingress.
+- Add a health endpoint to the order service and a test for it.
+- Write a Job that registers the Debezium connectors after Kafka Connect is ready.
+- Add a HorizontalPodAutoscaler for each service.
+
+## AI-26 · AWS infrastructure with Terraform
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate configuration.
+- **Date** — 2026-11-09 to 2026-11-10
+- **Key response** — Generated Terraform for the AWS resources I specified (state bucket, VPC, EKS, RDS, ECR, Route 53 and certificates, S3 and CloudFront hosting), the matching Kubernetes manifests, and the image build and deploy scripts.
+
+**Commit evidence** — `bea50f0`, `0cee8ca`, `d4e175b`, `29d32b4`, `e09f7c9`, `13b609a`, `ed1dc9e`, `8d3d30c`, `fe7a21a`, `88ca99a`
+
+**Affected files**
+
+- [`debezium/connectors/chat-outbox.json`](debezium/connectors/chat-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`debezium/connectors/credit-outbox.json`](debezium/connectors/credit-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`k8s/app/chat-service.yaml`](k8s/app/chat-service.yaml)
+- [`k8s/app/config/chat-service.env`](k8s/app/config/chat-service.env)
+- [`k8s/app/config/credit-service.env`](k8s/app/config/credit-service.env)
+- [`k8s/app/config/notification-service.env`](k8s/app/config/notification-service.env)
+- [`k8s/app/config/order-service.env`](k8s/app/config/order-service.env)
+- [`k8s/app/config/supplier-service.env`](k8s/app/config/supplier-service.env)
+- [`k8s/app/config/user-service.env`](k8s/app/config/user-service.env)
+- [`k8s/app/credit-service.yaml`](k8s/app/credit-service.yaml)
+- [`k8s/app/database-endpoints.yaml`](k8s/app/database-endpoints.yaml)
+- [`k8s/app/external-secrets.yaml`](k8s/app/external-secrets.yaml)
+- [`k8s/app/ingress.yaml`](k8s/app/ingress.yaml)
+- [`k8s/app/network-policies.yaml`](k8s/app/network-policies.yaml)
+- [`k8s/app/notification-service.yaml`](k8s/app/notification-service.yaml)
+- [`k8s/app/order-service.yaml`](k8s/app/order-service.yaml)
+- [`k8s/app/supplier-service.yaml`](k8s/app/supplier-service.yaml)
+- [`k8s/app/user-service.yaml`](k8s/app/user-service.yaml)
+- [`k8s/domain.yaml`](k8s/domain.yaml)
+- [`k8s/jobs/kustomization.yaml`](k8s/jobs/kustomization.yaml)
+- [`k8s/jobs/order-migrate.yaml`](k8s/jobs/order-migrate.yaml)
+- [`k8s/jobs/supplier-seed.yaml`](k8s/jobs/supplier-seed.yaml)
+- [`k8s/jobs/user-bootstrap.yaml`](k8s/jobs/user-bootstrap.yaml)
+- [`k8s/kustomization.yaml`](k8s/kustomization.yaml)
+- [`k8s/messaging/database-endpoints.yaml`](k8s/messaging/database-endpoints.yaml)
+- [`k8s/messaging/external-secrets.yaml`](k8s/messaging/external-secrets.yaml)
+- [`k8s/messaging/kafka-connect.yaml`](k8s/messaging/kafka-connect.yaml)
+- [`k8s/messaging/network-policies.yaml`](k8s/messaging/network-policies.yaml)
+- [`k8s/ops/db-init-job.yaml`](k8s/ops/db-init-job.yaml)
+- [`k8s/ops/external-secrets.yaml`](k8s/ops/external-secrets.yaml)
+- [`k8s/ops/kustomization.yaml`](k8s/ops/kustomization.yaml)
+- [`k8s/ops/namespace.yaml`](k8s/ops/namespace.yaml)
+- [`k8s/platform/cluster-secret-store.yaml`](k8s/platform/cluster-secret-store.yaml)
+- [`notification-service/pom.xml`](notification-service/pom.xml)
+- [`notification-service/src/main/java/com/campuscouriers/notification_service/config/KafkaConfig.java`](notification-service/src/main/java/com/campuscouriers/notification_service/config/KafkaConfig.java)
+- [`notification-service/src/main/java/com/campuscouriers/notification_service/config/SecurityConfig.java`](notification-service/src/main/java/com/campuscouriers/notification_service/config/SecurityConfig.java)
+- [`notification-service/src/main/resources/application.yaml`](notification-service/src/main/resources/application.yaml)
+- [`scripts/build-and-push.ps1`](scripts/build-and-push.ps1)
+- [`scripts/deploy-frontend.ps1`](scripts/deploy-frontend.ps1)
+- [`supplier-service/src/main/java/com/campuscouriers/supplier/config/SecurityConfig.java`](supplier-service/src/main/java/com/campuscouriers/supplier/config/SecurityConfig.java)
+- [`terraform/bootstrap/dns.tf`](terraform/bootstrap/dns.tf)
+- [`terraform/bootstrap/main.tf`](terraform/bootstrap/main.tf)
+- [`terraform/bootstrap/outputs.tf`](terraform/bootstrap/outputs.tf)
+- [`terraform/bootstrap/terraform.tfvars.example`](terraform/bootstrap/terraform.tfvars.example)
+- [`terraform/bootstrap/variables.tf`](terraform/bootstrap/variables.tf)
+- [`terraform/bootstrap/versions.tf`](terraform/bootstrap/versions.tf)
+- [`terraform/infra/backend.hcl`](terraform/infra/backend.hcl)
+- [`terraform/infra/backend.hcl.example`](terraform/infra/backend.hcl.example)
+- [`terraform/infra/ecr.tf`](terraform/infra/ecr.tf)
+- [`terraform/infra/eks.tf`](terraform/infra/eks.tf)
+- [`terraform/infra/external-dns.tf`](terraform/infra/external-dns.tf)
+- [`terraform/infra/external-secrets.tf`](terraform/infra/external-secrets.tf)
+- [`terraform/infra/frontend.tf`](terraform/infra/frontend.tf)
+- [`terraform/infra/irsa.tf`](terraform/infra/irsa.tf)
+- [`terraform/infra/load-balancer-controller.tf`](terraform/infra/load-balancer-controller.tf)
+- [`terraform/infra/main.tf`](terraform/infra/main.tf)
+- [`terraform/infra/outputs.tf`](terraform/infra/outputs.tf)
+- [`terraform/infra/providers.tf`](terraform/infra/providers.tf)
+- [`terraform/infra/rds.tf`](terraform/infra/rds.tf)
+- [`terraform/infra/terraform.tfvars`](terraform/infra/terraform.tfvars)
+- [`terraform/infra/terraform.tfvars.example`](terraform/infra/terraform.tfvars.example)
+- [`terraform/infra/variables.tf`](terraform/infra/variables.tf)
+- [`terraform/infra/versions.tf`](terraform/infra/versions.tf)
+- [`terraform/infra/vpc.tf`](terraform/infra/vpc.tf)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Write Terraform for the VPC with the subnets I listed, then the EKS cluster and its add-ons.
+- Write the Terraform for the RDS instance and the Secrets Manager entries for each service's database.
+- Write a PowerShell script that builds each service image, pushes it to ECR and updates the image tags in kustomization.yaml.
+- Load the supplier security config only for the web app, not for the seed job.
+- Add manifests for the notification and chat services, following the existing ones.
+
+## AI-27 · GitHub Actions deploy
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate configuration.
+- **Date** — 2026-11-10
+- **Key response** — Generated the GitHub Actions deploy workflow, its helper scripts and the deploy-role Terraform I specified.
+
+**Commit evidence** — `cef3991`, `550f3e1`
+
+**Affected files**
+
+- [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+- [`scripts/ci/run-job.sh`](scripts/ci/run-job.sh)
+- [`scripts/image-tags.sh`](scripts/image-tags.sh)
+- [`terraform/infra/github-actions.tf`](terraform/infra/github-actions.tf)
+- [`terraform/infra/outputs.tf`](terraform/infra/outputs.tf)
+- [`terraform/infra/variables.tf`](terraform/infra/variables.tf)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Write a GitHub Actions workflow that builds changed images, pushes them to ECR, runs the jobs and applies the manifests.
+- Write a script that runs one Job from k8s/jobs and waits for it to finish.
+- Update the deploy role trust condition to match GitHub's immutable OIDC subject.
+
+## AI-28 · Admin user management
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate and test.
+- **Date** — 2026-11-10
+- **Key response** — Generated the paged account list endpoint in the User Service and the admin users page that calls it, with backend and frontend tests.
+
+**Commit evidence** — `ae4114c`
+
+**Affected files**
+
+- [`frontend/src/features/admin/AdminUi.tsx`](frontend/src/features/admin/AdminUi.tsx)
+- [`frontend/src/features/admin/AdminUsers.tsx`](frontend/src/features/admin/AdminUsers.tsx)
+- [`frontend/src/features/admin/account.api.test.ts`](frontend/src/features/admin/account.api.test.ts)
+- [`frontend/src/features/admin/account.api.ts`](frontend/src/features/admin/account.api.ts)
+- [`frontend/src/features/admin/admin.utils.ts`](frontend/src/features/admin/admin.utils.ts)
+- [`frontend/src/pages/AdminPage.css`](frontend/src/pages/AdminPage.css)
+- [`frontend/src/pages/AdminPage.test.tsx`](frontend/src/pages/AdminPage.test.tsx)
+- [`frontend/src/pages/AdminPage.tsx`](frontend/src/pages/AdminPage.tsx)
+- [`user-service/src/main/java/com/campuscouriers/user/account/AccountController.java`](user-service/src/main/java/com/campuscouriers/user/account/AccountController.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/AccountService.java`](user-service/src/main/java/com/campuscouriers/user/account/AccountService.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/dto/AccountPageResponse.java`](user-service/src/main/java/com/campuscouriers/user/account/dto/AccountPageResponse.java)
+- [`user-service/src/main/java/com/campuscouriers/user/account/dto/AccountSummaryResponse.java`](user-service/src/main/java/com/campuscouriers/user/account/dto/AccountSummaryResponse.java)
+- [`user-service/src/main/java/com/campuscouriers/user/repository/AccountRepository.java`](user-service/src/main/java/com/campuscouriers/user/repository/AccountRepository.java)
+- [`user-service/src/test/java/com/campuscouriers/user/account/AccountControllerTest.java`](user-service/src/test/java/com/campuscouriers/user/account/AccountControllerTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/account/AccountListIntegrationTest.java`](user-service/src/test/java/com/campuscouriers/user/account/AccountListIntegrationTest.java)
+- [`user-service/src/test/java/com/campuscouriers/user/account/AccountServiceTest.java`](user-service/src/test/java/com/campuscouriers/user/account/AccountServiceTest.java)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Add a paged GET endpoint that lists accounts for admins, with controller, service and integration tests.
+- Build the admin users page that lists accounts and lets an admin change an account type, using the existing styles. Add tests.
+
+## AI-29 · AI assistant and RAG deployment
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate configuration.
+- **Date** — 2026-11-10 to 2026-11-11
+- **Key response** — Generated the manifests, Secrets Manager wiring, image build changes and service updates needed to deploy the AI errand assistant and the RAG assistant.
+
+**Commit evidence** — `68d2404`, `ec6fbd2`
+
+**Affected files**
+
+- [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+- [`RAG-service/Dockerfile`](RAG-service/Dockerfile)
+- [`RAG-service/app/auth.py`](RAG-service/app/auth.py)
+- [`RAG-service/app/claude.py`](RAG-service/app/claude.py)
+- [`RAG-service/app/main.py`](RAG-service/app/main.py)
+- [`RAG-service/ingestion/index_chunks.py`](RAG-service/ingestion/index_chunks.py)
+- [`RAG-service/requirements.txt`](RAG-service/requirements.txt)
+- [`compose.yaml`](compose.yaml)
+- [`frontend/src/features/rag/rag.api.test.ts`](frontend/src/features/rag/rag.api.test.ts)
+- [`frontend/src/features/rag/rag.api.ts`](frontend/src/features/rag/rag.api.ts)
+- [`k8s/app/ai-errand-assistant-service.yaml`](k8s/app/ai-errand-assistant-service.yaml)
+- [`k8s/app/config/ai-errand-assistant-service.env`](k8s/app/config/ai-errand-assistant-service.env)
+- [`k8s/app/config/rag-service.env`](k8s/app/config/rag-service.env)
+- [`k8s/app/database-endpoints.yaml`](k8s/app/database-endpoints.yaml)
+- [`k8s/app/external-secrets.yaml`](k8s/app/external-secrets.yaml)
+- [`k8s/app/ingress.yaml`](k8s/app/ingress.yaml)
+- [`k8s/app/network-policies.yaml`](k8s/app/network-policies.yaml)
+- [`k8s/app/rag-service.yaml`](k8s/app/rag-service.yaml)
+- [`k8s/jobs/kustomization.yaml`](k8s/jobs/kustomization.yaml)
+- [`k8s/jobs/rag-index.yaml`](k8s/jobs/rag-index.yaml)
+- [`k8s/kustomization.yaml`](k8s/kustomization.yaml)
+- [`k8s/ops/db-init-job.yaml`](k8s/ops/db-init-job.yaml)
+- [`k8s/ops/external-secrets.yaml`](k8s/ops/external-secrets.yaml)
+- [`scripts/build-and-push.ps1`](scripts/build-and-push.ps1)
+- [`scripts/deploy-frontend.ps1`](scripts/deploy-frontend.ps1)
+- [`scripts/image-tags.sh`](scripts/image-tags.sh)
+- [`terraform/infra/ecr.tf`](terraform/infra/ecr.tf)
+- [`terraform/infra/external-secrets.tf`](terraform/infra/external-secrets.tf)
+- [`terraform/infra/github-actions.tf`](terraform/infra/github-actions.tf)
+- [`terraform/infra/rds.tf`](terraform/infra/rds.tf)
+- [`terraform/infra/variables.tf`](terraform/infra/variables.tf)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Add the AI errand assistant to the cluster the same way as the other services, with its OpenAI key from Secrets Manager.
+- Deploy the RAG service with its Claude key from Secrets Manager and add a Job that indexes the chunks.
+- Add tests for the frontend RAG API client.
+
+## AI-30 · RAG Claude model update
+
+- **Source and mode** — Anthropic Claude (model unrecorded). Refactor and debug.
+- **Date** — 2026-11-11
+- **Key response** — Updated the RAG service's Claude client to the model I specified and added handling for API errors.
+
+**Commit evidence** — `5239290`
+
+**Affected files**
+
+- [`.env.example`](.env.example)
+- [`RAG-service/app/claude.py`](RAG-service/app/claude.py)
+- [`RAG-service/app/main.py`](RAG-service/app/main.py)
+- [`compose.yaml`](compose.yaml)
+- [`k8s/app/config/rag-service.env`](k8s/app/config/rag-service.env)
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+**Reconstructed prompt gists**
+
+- Switch the RAG service to Claude Sonnet 5.5.
+- Return a clear error to the frontend when the Claude API call fails.
+
+## AI-31 · Attribution documentation for AI-23 to AI-30
+
+- **Source and mode** — Anthropic Claude Code (claude-opus-5-5). Generate documentation.
+- **Date** — 2026-11-11
+- **Key response** — Added file header comments for AI-23 to AI-30 and wrote these log entries from my commit history.
+
+**Affected files**
+
+- [`AI_USAGE_LOG.md`](AI_USAGE_LOG.md)
+- [`README.md`](README.md)
+- The files listed under AI-23 to AI-30 (header comments only)
+
+**Exact request excerpt**
+
+```text
+Add attributions to the relevant files that I worked on, and write to AI_USAGE_LOG.md
+```

@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-10-02
+ * Scope: Generated initial access configuration, CORS/JWT rules, and admin authorization.
+ */
 package com.campuscouriers.supplier.config;
 
 import java.util.Arrays;

@@ -1,3 +1,7 @@
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+# Scope: Implementation and test assistance for chat message outbox events.
+
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session

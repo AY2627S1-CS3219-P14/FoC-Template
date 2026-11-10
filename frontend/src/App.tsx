@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
+ */
 import { Route, Routes } from 'react-router'
 import { AppLayout } from './components/layout/AppLayout'
 import { PublicOnlyRoute, RequireAdmin, RequireAuth } from './features/auth/AuthRoutes'

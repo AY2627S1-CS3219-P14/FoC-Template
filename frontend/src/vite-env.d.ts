@@ -1,5 +1,11 @@
 /// <reference types="vite/client" />
 
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Added Chat Service frontend environment typing.
+ */
+
 interface ImportMetaEnv {
   readonly VITE_USER_API_URL: string
   readonly VITE_SUPPLIER_API_URL: string

@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
+ */
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 import { AuthApiError, login, logout } from './auth.api'
 import { AuthContext, type AuthContextValue, type AuthStatus } from './auth.context'

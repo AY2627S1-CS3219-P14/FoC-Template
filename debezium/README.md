@@ -1,3 +1,9 @@
+<!--
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+Scope: Added Chat Service outbox event documentation and connector integration.
+-->
+
 # Events: transactional outbox + Debezium
 
 Services never publish to Kafka directly. Each one writes its domain events into an `outbox` table **in the same

@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-11-09 to 2026-11-10
+ * Scope: Implementation and debugging assistance for opening chat from errand details.
+ */
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import creditIcon from '../assets/errand-credit.svg'

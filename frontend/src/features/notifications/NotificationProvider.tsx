@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation and test assistance for live notification state.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import { useAuth } from '../auth/useAuth'
 import {

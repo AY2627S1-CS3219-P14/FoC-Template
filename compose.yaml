@@ -1,3 +1,8 @@
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-11-10
+# Scope: Generated the initial Supplier PostgreSQL Compose scaffold and later added the
+# Supplier Service CORS wiring, Chat/Notification services, and port-conflict fixes.
+
 # Shared by the long-running user service and its bootstrap-only job
 x-user-service-env: &user-service-env
   SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/${USER_DB_NAME}

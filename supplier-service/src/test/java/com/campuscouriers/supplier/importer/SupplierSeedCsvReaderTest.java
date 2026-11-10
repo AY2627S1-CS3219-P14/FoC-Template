@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-10-01
+ * Scope: Generated seed CSV parsing tests and edge cases.
+ */
 package com.campuscouriers.supplier.importer;
 
 import org.junit.jupiter.api.Test;

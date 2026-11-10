@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+ * Scope: Generated and refined chat notification integration tests.
+ */
 package com.campuscouriers.notification_service;
 
 import static org.assertj.core.api.Assertions.assertThat;

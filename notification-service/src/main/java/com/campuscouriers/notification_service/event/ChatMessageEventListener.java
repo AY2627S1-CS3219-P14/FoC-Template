@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+ * Scope: Implementation and test assistance for chat notification events.
+ */
 package com.campuscouriers.notification_service.event;
 
 import com.campuscouriers.notification_service.notification.NotificationService;

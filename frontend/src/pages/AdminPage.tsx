@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
+ */
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import routeIcon from '../assets/route.svg'

@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation and test assistance for chat notification integration.
+ */
 import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source'
 import { authenticatedFetch } from '../auth/auth.fetch'
 import type { NotificationItem } from './notification.types'

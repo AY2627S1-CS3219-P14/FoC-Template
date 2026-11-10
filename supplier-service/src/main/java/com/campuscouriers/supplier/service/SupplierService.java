@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-10-02
+ * Scope: Generated supplier creation, search, retrieval, update, and lifecycle operations.
+ */
 package com.campuscouriers.supplier.service;
 
 import com.campuscouriers.supplier.dto.CreateSupplierRequest;

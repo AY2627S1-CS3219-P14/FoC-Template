@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { authenticatedFetch } from '../auth/auth.fetch'
 import { createSupplier, getSupplier, reactivateSupplier, SupplierApiError } from './supplier.api'

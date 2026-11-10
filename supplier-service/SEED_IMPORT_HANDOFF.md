@@ -1,3 +1,9 @@
+<!--
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-09-30
+Scope: Summarized the agreed initial supplier-data seeding workflow for chat handoff.
+-->
+
 # Initial Supplier Data Import - Handoff
 
 ## Goal

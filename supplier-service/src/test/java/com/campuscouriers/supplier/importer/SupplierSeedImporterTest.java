@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-10-01
+ * Scope: Generated seed importer tests and idempotency checks.
+ */
 package com.campuscouriers.supplier.importer;
 
 import com.campuscouriers.supplier.entity.Building;

@@ -1,3 +1,9 @@
+<!--
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+Scope: Implementation, testing, and documentation assistance for chat notifications.
+-->
+
 # Notification service
 
 Consumes committed errand outbox events from Kafka and stores notifications in PostgreSQL.

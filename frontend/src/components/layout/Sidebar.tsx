@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
+ */
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import clipboardIcon from '../../assets/nav-clipboard.svg'

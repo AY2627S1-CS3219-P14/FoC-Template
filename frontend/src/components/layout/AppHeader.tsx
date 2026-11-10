@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
+ */
 import { Link } from 'react-router'
 import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'

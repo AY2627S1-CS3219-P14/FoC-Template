@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-11-10
+ * Scope: Generated Supplier Service domain-error handling and later admin errors.
+ */
 package com.campuscouriers.supplier.exception;
 
 import org.springframework.http.HttpStatus;

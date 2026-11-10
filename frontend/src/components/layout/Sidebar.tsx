@@ -50,7 +50,7 @@ function SidebarNavItem({
 
 export function Sidebar() {
   return (
-    <aside className="hidden min-h-[calc(100vh-76px)] border-r border-[#dde3de] bg-white px-5 py-7 lg:block">
+    <aside className="hidden border-r border-[#dde3de] bg-white px-5 py-7 lg:sticky lg:top-[76px] lg:block lg:h-[calc(100vh-76px)] lg:self-start lg:overflow-y-auto">
       <nav
         aria-label="Primary navigation"
         className="space-y-2"

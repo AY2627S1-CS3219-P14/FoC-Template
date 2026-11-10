@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 # AI Assistance Disclosure
 # Tool and date: Anthropic Claude (model unrecorded), 2026-09-18 to 2026-10-03
 # Scope (AI-23): Generated code and tests for the User Service endpoints, entities, validation and token handling I specified.
@@ -509,3 +514,5 @@ volumes:
   rag-database-data:
   notification-db-data:
   chat-db-data:
+
+

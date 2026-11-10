@@ -30,7 +30,6 @@ This is a record of verified assistance in the current checkout. Dates use Singa
 ```text
 help me created the components for the supplier cards and populate the supplier page with them. Each card should have the name of the supplier, the category, locaion/building, a space for a short description, and an immage.
 ```
-
 ## AI-02 · Style updates from the supplied Figma mockup
 
 - **Source and mode** — OpenAI Codex (gpt-5.6-sol). Refactor.
@@ -969,7 +968,6 @@ I used Anthropic Claude to generate code for the entries below. These sessions w
 
 - Switch the RAG service to Claude Sonnet 5.5.
 - Return a clear error to the frontend when the Claude API call fails.
-
 ## AI-31 · Attribution documentation for AI-23 to AI-30
 
 - **Source and mode** — Anthropic Claude Code (claude-opus-5-5). Generate documentation.
@@ -987,12 +985,176 @@ I used Anthropic Claude to generate code for the entries below. These sessions w
 ```text
 Add attributions to the relevant files that I worked on, and write to AI_USAGE_LOG.md
 ```
+## AI-32 · Order Service folder refactor
 
-## Contributor note · Lin Yu Xin (AI-32 to AI-53)
+- **Source and mode** — OpenAI Codex. Refactor.
+- **Date** — 2026-10-02
+- **Key response** — Moved service modules into `main/`, tests into `test/`, updated imports and test discovery, and verified the refactor.
+
+**Affected files**
+
+- `order-service/main/*.py`
+- `order-service/test/*.py`
+- `order-service/README.md`
+
+**Exact prompt**
+
+```text
+I want to have microservice files in a folder named "main" and test files in a folder named "test". Can you move the relevant files and make refactoring changes appropriately?
+```
+
+## AI-33 · Remove redundant completion-confirmation code
+
+- **Source and mode** — OpenAI Codex. Refactor and test.
+- **Date** — 2026-10-22
+- **Key response** — Removed the redundant completion-confirmation module and updated the application, tests, and documentation.
+
+**Affected files**
+
+- `order-service/main/app.py`
+- `order-service/main/view_completion_confirmation.py`
+- `order-service/test/test_view_completion_confirmation.py`
+- `order-service/test/test_get_errands.py`
+
+**Exact prompt**
+
+```text
+Yes. If view_completion_confirmation is redundant please remove it, make all necesary changes to account for this, and run the necesary tests to ensure its removal doesn't raise complications. Then, guide me on how to commit get_errands.py
+```
+
+## AI-34 · Errand listing implementation
+
+- **Source and mode** — OpenAI Codex. Generate and test.
+- **Date** — 2026-10-22
+- **Key response** — Implemented the errand-listing endpoint without expiry processing and added the related tests.
+
+**Affected files**
+
+- `order-service/main/get_errands.py`
+- `order-service/main/app.py`
+- `order-service/test/test_get_errands.py`
+- `order-service/README.md`
+
+**Exact prompts**
+
+```text
+In that case, please implement get errands as discussed without processing expiry dates.
+Triggering background processing can be implemented later once the worker is complete.
+```
+
+```text
+It should still be possible to count non-open statuses without requester UUID. The activities of a specific requester should be hidden, but the total number of errands can be exposed
+```
+
+```text
+In that case, please implement the change such that only a requester can count their own non-open errands for now. Please implement it in such a way that it will be simple to remove this check in the future if needed.
+```
+
+## AI-35 · Errand endpoint implementation
+
+- **Source and mode** — OpenAI Codex. Generate and test.
+- **Date** — 2026-10-07
+- **Key response** — Added the requested endpoint modules, application registration, tests, and documentation.
+
+**Affected files**
+
+- `order-service/main/cancel_errand.py`
+- `order-service/main/accept_errand.py`
+- `order-service/main/complete_errand.py`
+- `order-service/main/fail_errand.py`
+- `order-service/main/app.py`
+- Corresponding files under `order-service/test/`
+
+**Exact prompts**
+
+```text
+I understand. Please add cancel_errand.py to the project repo, add a test file, and make any other neccesary changes
+```
+
+```text
+Please add the "accept_errand.py" file you suggested earlier, together with any other neccesary changes.
+Please add a corresponding test file as well.
+```
+
+```text
+The functions look good. Please add it to the project repo, together with test files and other neccesary changes
+```
+
+## AI-36 · Errand schema and validation implementation
+
+- **Source and mode** — OpenAI Codex. Generate and test.
+- **Date** — 2026-10-07
+- **Key response** — Added the supplier and required-item fields, expiry validation, migrations, and corresponding tests.
+
+**Affected files**
+
+- `order-service/alembic/versions/0002_add_supplier_id.py`
+- `order-service/alembic/versions/0003_add_required_item.py`
+- `order-service/main/models.py`
+- `order-service/main/create_errand.py`
+- `order-service/test/test_create_errand.py`
+
+**Exact prompts**
+
+```text
+I just noticed that "supplier_id" is not a field in the database. Could you add this field?
+```
+
+```text
+Ignore F2.1.5
+Please add the required_item field into the database schema and update the code to match.
+Please add the constraint for expiry date to errand creation to fulfil F2.1.2
+Go ahead and make the changes to the project repo
+```
+
+## AI-37 · Rename and refactor Order Service modules
+
+- **Source and mode** — OpenAI Codex. Refactor.
+- **Date** — 2026-10-07
+- **Key response** — Renamed the errand route module and its test, then updated imports, registration, and documentation.
+
+**Affected files**
+
+- `order-service/main/errand_route.py`
+- `order-service/main/create_errand.py`
+- `order-service/main/app.py`
+- `order-service/test/test_errand_route.py`
+- `order-service/README.md`
+
+**Exact prompt**
+
+```text
+Please change the name of "errand_route.py" to "create_errand.py".
+Change the name of "test_errand_route.py" as well
+Make any refactoring changes neccesary
+```
+
+## AI-38 · Remove obsolete example routes
+
+- **Source and mode** — OpenAI Codex. Refactor.
+- **Date** — 2026-10-02
+- **Key response** — Removed the obsolete example routes and updated the shared application and tests.
+
+**Affected files**
+
+- `order-service/main/echo_route.py`
+- `order-service/main/hello_route.py`
+- `order-service/main/app.py`
+- Corresponding files under `order-service/test/`
+
+**Exact prompt**
+
+```text
+Please remove them for me
+```
+
+This prompt is cited with the preceding discussion identifying the example routes for removal.
+
+## Contributor note · Lin Yu Xin (AI-39 to AI-60)
 
 The following entries preserve the recorded prompts, outcomes, affected-file notes, verification results.
 
-## AI-32 · Project setup and explanations
+## AI-39 · Project setup and explanations
 
 Mode: learning/setup assistance; Spring Initializr generated the base project.
 
@@ -1017,7 +1179,7 @@ Prompts included:
 **Key response** — explained Initializr generation, Maven import, Java 17, `PATH`, `JAVA_HOME`, and
 VS Code project/runtime configuration.
 
-## AI-33 · Testcontainers implementation and debugging
+## AI-40 · Testcontainers implementation and debugging
 
 Mode: implementation generation and debugging.
 Affected files: `supplier-service/pom.xml` and `SupplierApplicationTests.java`.
@@ -1034,7 +1196,7 @@ Prompts:
 2.0.5; corrected the Testcontainers 1.x/2.x classpath mismatch; verified `mvn clean test` with
 one passing PostgreSQL 16 application-context test.
 
-## AI-34 · Docker, datasource, and environment configuration
+## AI-41 · Docker, datasource, and environment configuration
 
 Mode: boilerplate/configuration generation, debugging, and explanation.
 Affected portions: Supplier block in `compose.yaml`, Supplier entries in `.env.example`, and
@@ -1069,7 +1231,7 @@ template, health check, port/volume configuration, and datasource settings; expl
 difference between test and development databases and how environment interpolation works.
 `docker compose config --quiet` passed.
 
-## AI-35 · Supplier README documentation
+## AI-42 · Supplier README documentation
 
 Mode: documentation generation.
 Affected file: `supplier-service/README.md`.
@@ -1085,7 +1247,7 @@ Prompts:
 **Key response** — documented prerequisites, root Compose commands, Windows/macOS/Linux environment
 syntax, Maven and Maven Wrapper commands, testing, shutdown, and troubleshooting.
 
-## AI-36 · API review and handoff
+## AI-43 · API review and handoff
 
 Mode: codebase review, explanation, and summarization.
 
@@ -1099,7 +1261,7 @@ Prompts:
 Any suggested interfaces, prioritization, or sprint planning from these responses must be
 independently decided by the team under Appendix 2.
 
-## AI-37 · Supplier JWT security
+## AI-44 · Supplier JWT security
 
 Mode: implementation, debugging, and explanation.
 Affected files: `supplier-service/.../config/SecurityConfig.java` and
@@ -1128,7 +1290,7 @@ mapped the JWT `type` claim to authorities, required authentication for reads, a
 `Administrator` for writes. Maven compilation succeeded. Follow-up responses explained CSRF,
 JWT verification/authorization, local User/Supplier Service startup, and manual 401/403 tests.
 
-## AI-38 · Supplier container and seed workflow
+## AI-45 · Supplier container and seed workflow
 
 Mode: boilerplate implementation and documentation.
 Affected files: `supplier-service/Dockerfile` and `supplier-service/README.md`.
@@ -1144,7 +1306,7 @@ Prompts:
 **Key response** — generated a Java 17 multi-stage, non-root image and replaced host Maven seeding
 instructions with one-off Compose commands using `supplier-db:5432`.
 
-## AI-39 · Supplier CORS fix
+## AI-46 · Supplier CORS fix
 
 Mode: debugging, implementation, and tests.
 Affected files: `SecurityConfig.java`, `SecurityConfigTest.java`, `application.properties`,
@@ -1157,7 +1319,7 @@ Prompt:
 **Key response** — enabled Spring Security CORS with a configurable origin allowlist, wired the
 Compose environment, added allowed/untrusted-origin tests, and verified all 55 tests passed.
 
-## AI-40 · Docker command explanations
+## AI-47 · Docker command explanations
 
 Mode: learning support and documentation.
 
@@ -1174,7 +1336,7 @@ Prompts:
 **Key response** — provided Compose build/start/log/stop/down commands, Maven/API test commands,
 and explained that `stop` preserves containers while `down` removes them but keeps volumes.
 
-## AI-41 · Initial supplier data seeding
+## AI-48 · Initial supplier data seeding
 
 Mode: implementation, tests, debugging, and documentation.
 Affected files: seed importer classes/tests, `pom.xml`, `application.properties`, and
@@ -1192,7 +1354,7 @@ Prompts:
 idempotent duplicate handling, tests, and PowerShell/macOS/Linux clean-seeding instructions.
 The user supplied and later replaced the CSV data itself.
 
-## AI-42 · Supplier deactivation and reactivation
+## AI-49 · Supplier deactivation and reactivation
 
 Mode: implementation, tests, and debugging.
 Affected files: `SupplierController`, `SupplierService`, `Supplier`, `SecurityConfig`, and their
@@ -1208,7 +1370,7 @@ Prompts:
 `PATCH /suppliers/{id}/reactivate`, persisted `INACTIVE`/`ACTIVE` state changes, updated CORS,
 and added regression tests. Verification completed with 59 full-suite tests and 29 focused tests.
 
-## AI-43 · Local Docker and browser usage
+## AI-50 · Local Docker and browser usage
 
 Mode: debugging/explanation only; no code files changed.
 
@@ -1223,7 +1385,7 @@ Prompts:
 **Key response** — explained rebuilding with `docker compose up -d --build`, persistent database
 volumes and idempotent supplier seeding, and using separate browser profiles/incognito sessions.
 
-## AI-44 · Supplier administration endpoints
+## AI-51 · Supplier administration endpoints
 
 Mode: implementation, tests, debugging, and documentation.
 Affected files: Supplier category/building controllers, DTOs, entities, repositories, services,
@@ -1244,7 +1406,7 @@ Prompts included:
 **Key response** — implemented update, retrieval, deactivate/reactivate, inactive-listing, duplicate
 validation, active-supplier guards, and combined inactive-reference errors with tests.
 
-## AI-45 · Chat UI fixes
+## AI-52 · Chat UI fixes
 
 Mode: debugging, implementation, and tests.
 Affected files: frontend chat API/preview and chat pages.
@@ -1258,7 +1420,7 @@ Prompts:
 
 **Key response** — corrected message scrolling, live preview ordering, and unread-state reconciliation.
 
-## AI-46 · Admin dashboard integration and responsive UI
+## AI-53 · Admin dashboard integration and responsive UI
 
 Mode: implementation, refactoring, debugging, and tests.
 Affected files: frontend admin page, Supplier/User API clients, auth guards, navigation/header
@@ -1280,7 +1442,7 @@ Prompts included:
 pagination, summaries, responsive layouts, cross-navigation, validation, error handling, and
 regression tests. The final recorded frontend run passed lint, production build, and 131 tests.
 
-## AI-47 · Chat Service implementation
+## AI-54 · Chat Service implementation
 
 Mode: implementation, tests, debugging, documentation, and learning support.
 Dates: 2026-11-08 to 2026-11-10. Affected files: `chat-service/**`, Chat entries in
@@ -1300,7 +1462,7 @@ deduplication, lifecycle Kafka projection, 30-minute completion grace period, tr
 message outbox, and tests. The team remains responsible for independently validating the
 pre-existing requirements, interfaces, schema, and security decisions.
 
-## AI-48 · Chat notification integration
+## AI-55 · Chat notification integration
 
 Mode: implementation, tests, debugging, and documentation. Affected files:
 `notification-service/**` files for chat events and notification persistence/response, plus Chat
@@ -1318,7 +1480,7 @@ Prompts included:
 notifications, added typed notification `data`, message/conversation identifiers, exact-message
 retrieval, and conditional database constraints. Tests and container configuration were updated.
 
-## AI-49 · Chat frontend integration
+## AI-56 · Chat frontend integration
 
 Mode: implementation, refactoring, debugging, and tests. Affected files: frontend Chat pages/API,
 notification provider/bell/banner files, errand-details integration, navigation, types, and tests.
@@ -1335,7 +1497,7 @@ Prompts included:
 and previews, unread indicators, read-state handling, scrolling behavior, read-only lifecycle UI,
 and errand titles. The recorded frontend verification passed 131 tests and a production build.
 
-## AI-50 · Expiry, ports, and cloud routing
+## AI-57 · Expiry, ports, and cloud routing
 
 Mode: debugging, implementation, tests, and configuration maintenance. Affected files:
 `chat-service/main/lifecycle.py`, lifecycle tests/docs, `.env.example`, `compose.yaml`,
@@ -1358,7 +1520,7 @@ JSON note: `debezium/connectors/chat-outbox.json` is disclosed here but has no f
 because JSON does not permit comments and adding an artificial property could alter connector
 configuration.
 
-## AI-51 · Supplier seed-data cleanup and local operations
+## AI-58 · Supplier seed-data cleanup and local operations
 
 Mode: data editing, debugging, and operational guidance.
 Date: 2026-10-01 to 2026-10-02. Affected file:
@@ -1384,7 +1546,7 @@ selection discussions are intentionally excluded at the user's request.
 CSV note: the affected CSV has no file-header attribution because its importer requires the exact
 header row first and CSV provides no safe comment syntax. This log records the attribution instead.
 
-## AI-52 · Initial Supplier Service CRUD, retrieval, and handoff documentation
+## AI-59 · Initial Supplier Service CRUD, retrieval, and handoff documentation
 
 Mode: implementation, tests, debugging, explanations, and documentation.
 Dates: 2026-09-26 to 2026-09-30. Affected files: Supplier Service category, building,
@@ -1410,7 +1572,7 @@ controller/service/PostgreSQL repository tests, and concise API/seeding handoff 
 The recorded full suite after supplier update passed 47 tests. Requirements and design choices
 remain the team's responsibility under Appendix 2.
 
-## AI-53 · Initial supplier seed CSV generation
+## AI-60 · Initial supplier seed CSV generation
 
 Mode: data generation and scripting. Date: 2026-09-10. Affected retained file:
 `supplier-service/src/main/resources/seed/supplier-seed-data.csv`.

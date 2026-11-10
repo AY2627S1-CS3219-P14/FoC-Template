@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 """Real Order/Credit HTTP + PostgreSQL; test issuer and supplier validation stub.
 
 Only the disposable compose stack may run this suite. Kafka provisioning is not
@@ -188,3 +193,5 @@ def test_credit_retry_is_idempotent():
     for _ in range(2):
         assert httpx.post(f"{url}/{reservation}/release", headers=auth).status_code == 200
     assert balance(requester) == (30, 0)
+
+

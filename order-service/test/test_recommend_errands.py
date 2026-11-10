@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
@@ -150,3 +155,5 @@ def test_recommended_path_is_not_shadowed_by_errand_listing(endpoint):
     body = get(client).json()
     assert "total" not in body
     assert "recommendation_reason" in body["items"][0]
+
+

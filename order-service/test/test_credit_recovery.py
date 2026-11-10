@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock
 from uuid import UUID, uuid4
@@ -131,3 +136,5 @@ def test_final_commit_failure_preserves_intent_and_can_retry(cancel_endpoint):
     assert outbox_events(factory) == []
     assert post(client, target["id"]).status_code == 200
     assert release.call_args_list[0] == release.call_args_list[1]
+
+

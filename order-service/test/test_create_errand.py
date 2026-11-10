@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 # AI Assistance Disclosure
 # Tool and date: Anthropic Claude (model unrecorded), 2026-10-09 to 2026-10-15
 # Scope (AI-24): Generated code, configuration and tests for the specified user event, Kafka setup and outbox changes.
@@ -373,3 +378,5 @@ def test_database_rejects_missing_or_blank_item(database_session_factory, payloa
                 expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
                 created_at=datetime.now(timezone.utc),
             ))
+
+

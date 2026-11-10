@@ -10,6 +10,7 @@ import type {
   ErrandValidationIssue,
   FailErrandResponse,
   ListErrandsParams,
+  RecommendedErrandListResponse,
 } from './errand.types'
 
 const orderApiBaseUrl = (import.meta.env.VITE_ORDER_API_URL ?? '').trim().replace(/\/+$/, '')
@@ -133,7 +134,23 @@ export async function listErrands(
   if (size !== undefined) searchParams.set('size', size.toString())
 
   const query = searchParams.toString()
-  const url = `${orderApiBaseUrl}/errands${query ? `?${query}` : ''}`
+  return getErrandJson<ErrandListResponse>(
+    `${orderApiBaseUrl}/errands${query ? `?${query}` : ''}`,
+    signal,
+  )
+}
+
+export function listRecommendedErrands(
+  size = 5,
+  signal?: AbortSignal,
+): Promise<RecommendedErrandListResponse> {
+  return getErrandJson<RecommendedErrandListResponse>(
+    `${orderApiBaseUrl}/errands/recommended?size=${size}`,
+    signal,
+  )
+}
+
+async function getErrandJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   let response: Response
 
   try {
@@ -159,7 +176,7 @@ export async function listErrands(
     throw new ErrandApiError(message, response.status, issues)
   }
 
-  return (await response.json()) as ErrandListResponse
+  return (await response.json()) as T
 }
 
 export async function getErrand(

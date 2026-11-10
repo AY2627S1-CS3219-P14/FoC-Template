@@ -119,6 +119,18 @@ export type ErrandDashboardItem = ErrandListItem & {
   delivery_building_name: string
 }
 
+export type RecommendedErrandListItem = ErrandListItem & {
+  recommendation_reason: string
+}
+
+export type RecommendedErrandListResponse = {
+  items: RecommendedErrandListItem[]
+}
+
+export type RecommendedErrandDashboardItem = ErrandDashboardItem & {
+  recommendation_reason: string
+}
+
 export type ErrandCreditFilter = 'all' | 'up-to-5' | '6-to-10' | '11-plus'
 
 export type ErrandExpiryFilter = 'all' | 'next-4-hours' | 'today' | 'next-7-days'

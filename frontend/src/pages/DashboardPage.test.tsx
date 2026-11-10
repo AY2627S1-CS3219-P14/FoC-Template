@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   loadErrandDashboardBuildings,
   loadOpenErrandDashboard,
+  loadRecommendedErrands,
 } from '../features/errands/errand.dashboard'
 import { acceptErrand } from '../features/errands/errand.api'
 import { loadMyErrands } from '../features/errands/errand.view'
@@ -16,6 +17,8 @@ vi.mock('../features/errands/errand.dashboard', () => ({
   applyDeliveryBuildingNames: (data: OpenErrandDashboardData) => data,
   loadErrandDashboardBuildings: vi.fn(),
   loadOpenErrandDashboard: vi.fn(),
+  loadRecommendedErrands: vi.fn(),
+  nameDeliveryBuildings: (items: unknown[]) => items,
 }))
 
 vi.mock('../features/errands/errand.api', async (importOriginal) => ({
@@ -38,6 +41,7 @@ vi.mock('../features/auth/useAuth', () => ({
 
 const loadOpenErrandDashboardMock = vi.mocked(loadOpenErrandDashboard)
 const loadErrandDashboardBuildingsMock = vi.mocked(loadErrandDashboardBuildings)
+const loadRecommendedErrandsMock = vi.mocked(loadRecommendedErrands)
 const acceptErrandMock = vi.mocked(acceptErrand)
 const loadMyErrandsMock = vi.mocked(loadMyErrands)
 
@@ -111,6 +115,8 @@ describe('DashboardPage', () => {
     loadErrandDashboardBuildingsMock.mockReset()
     loadOpenErrandDashboardMock.mockResolvedValue(dashboardData)
     loadErrandDashboardBuildingsMock.mockResolvedValue(deliveryBuildings)
+    loadRecommendedErrandsMock.mockReset()
+    loadRecommendedErrandsMock.mockResolvedValue([])
     acceptErrandMock.mockReset()
     acceptErrandMock.mockResolvedValue({
       id: openErrand.id,
@@ -373,5 +379,40 @@ describe('DashboardPage', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByText('2 available')).toBeInTheDocument()
+  })
+
+  it('shows recommended errands with the reason they were picked', async () => {
+    loadRecommendedErrandsMock.mockResolvedValue([
+      { ...secondOpenErrand, recommendation_reason: 'Goes to a building you often visit' },
+    ])
+    loadOpenErrandDashboardMock.mockResolvedValue({ total: 1, items: [openErrand] })
+
+    renderPage()
+
+    const section = await screen.findByRole('region', { name: 'Recommended for you' })
+    expect(within(section).getByText('Goes to a building you often visit')).toBeInTheDocument()
+    expect(
+      within(section).getByRole('heading', { name: 'Print and bind project report' }),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the recommended section when there is nothing to recommend', async () => {
+    renderPage()
+
+    await screen.findByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 })
+    expect(screen.queryByRole('region', { name: 'Recommended for you' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the open errands list when recommendations fail', async () => {
+    loadRecommendedErrandsMock.mockRejectedValue(new Error('Order Service is unavailable'))
+
+    renderPage()
+
+    expect(
+      await screen.findByText('Recommendations are unavailable right now.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Nasi Lemak + Iced Milo', level: 2 }),
+    ).toBeInTheDocument()
   })
 })

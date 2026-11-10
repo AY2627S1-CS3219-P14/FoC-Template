@@ -9,6 +9,10 @@ from sentence_transformers import SentenceTransformer
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 CHUNKS_FILE = os.getenv("CHUNKS_FILE", "/app/ingestion/chunks.csv")
+# Same file compose runs when it creates rag-database. Applied on every import (every statement is
+# IF NOT EXISTS) because a managed database like RDS has no first-start hook. On RDS the "vector"
+# extension needs admin rights, so the db-init Job creates it first and this step skips it.
+SCHEMA_FILE = os.getenv("SCHEMA_FILE", "/app/database/init.sql")
 EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL",
     "sentence-transformers/all-MiniLM-L6-v2",
@@ -41,6 +45,12 @@ def main() -> None:
     embeddings = model.encode(texts, normalize_embeddings=True)
 
     with psycopg.connect(DATABASE_URL) as connection:
+        schema = Path(SCHEMA_FILE)
+        if schema.exists():
+            connection.execute(schema.read_text(encoding="utf-8"))
+            connection.commit()
+
+        # After the schema: this looks up the "vector" type, which the extension creates
         register_vector(connection)
 
         with connection.cursor() as cursor:

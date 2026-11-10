@@ -141,9 +141,11 @@ Secrets copies them into a Kubernetes Secret that only the service using them re
 
 | Key | Secrets Manager secret (JSON) | Kubernetes Secret | Used by |
 |---|---|---|---|
-| `OPENAI_API_KEY` | `campuscouriers/openai-api-key` `{"OPENAI_API_KEY": "sk-..."}` | `ai-assistant-openai` | ai-errand-assistant-service |
+| `OPENAI_API_KEY` | `campuscouriers/openai-api-key` `{"OPENAI_API_KEY": "sk-..."}` | `ai-assistant-openai` | ai-errand-assistant-service (AI errand drafts) |
+| `ANTHROPIC_API_KEY` | `campuscouriers/anthropic-api-key` `{"ANTHROPIC_API_KEY": "sk-ant-..."}` | `rag-anthropic` | rag-service (the Assistant page) |
 
-Terraform creates the secret empty (`terraform/infra/external-secrets.tf`). To store or rotate a key:
+Terraform creates each secret empty (`terraform/infra/external-secrets.tf`). To store or rotate a key
+(the OpenAI one shown; for Claude use the second row's names):
 
 1. **AWS console** → Secrets Manager → `campuscouriers/openai-api-key` → *Retrieve secret value* →
    *Edit* (or *Set secret value* the first time) → key `OPENAI_API_KEY`, value: the key → Save.
@@ -158,13 +160,28 @@ Terraform creates the secret empty (`terraform/infra/external-secrets.tf`). To s
    kubectl rollout restart deployment/ai-errand-assistant-service -n campuscouriers-app
    ```
 
-Until the key is set, the service runs normally and AI drafts answer `503 OpenAI API key is not
-configured`. For local development, the key goes in the repository-root `.env` (gitignored), which
-`compose.yaml` passes to the container.
+   For Claude: `externalsecret rag-anthropic`, `secret rag-anthropic`, `deployment/rag-service`.
+
+Until a key is set, its service runs normally and answers `503 ... API key is not configured`. For
+local development, keys go in the repository-root `.env` (gitignored), which `compose.yaml` passes
+to the containers.
+
+**Claude model:** rag-service uses the model in `app/config/rag-service.env` (`CLAUDE_MODEL`).
+Changing it there rolls the pods by itself. Check the model is still offered before relying on it:
+Anthropic retires older models on announced dates.
 
 Adding another key later: create an empty `aws_secretsmanager_secret` under the `campuscouriers/`
 prefix in Terraform (External Secrets can already read that prefix), add an `ExternalSecret` to
 `app/external-secrets.yaml`, and reference its Secret with `envFrom.secretRef` in the Deployment.
+
+## RAG knowledge base (the Assistant)
+
+rag-service answers from `RAG-service/ingestion/chunks.csv`, stored with embeddings in the
+`campuscouriers_rag` database (pgvector). Once per environment, before its first deploy, run the
+db-init Job (Deploy, step 2) so the database, its login and the `vector` extension exist. After that,
+the deploy workflow runs the `rag-index` Job whenever the rag-service image changes, which includes
+any edit to `chunks.csv`: merge the CSV change and the knowledge base updates itself. By hand:
+`bash scripts/ci/run-job.sh campuscouriers-app rag-index 900` (after `scripts/image-tags.sh --write`).
 
 ## Notes
 - **Changing settings:** edit `app/config/<service>.env` (or `domain.yaml`) and `kubectl apply -k k8s`. The ConfigMap gets a new hash-suffixed name, so the affected Deployments roll by themselves. Old ConfigMaps stay behind (harmless); clean up with `kubectl delete configmap -n campuscouriers-app <old name>`. **Secrets don't do this:** after a secret changes in Secrets Manager, environment variables only update on restart (`kubectl rollout restart deployment/<name> -n campuscouriers-app`, or `-n campuscouriers-messaging deployment/kafka-connect` for the Debezium logins); mounted files (the JWT keys) update by themselves.

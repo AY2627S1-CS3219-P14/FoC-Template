@@ -9,7 +9,7 @@
 # deploy traceable and every rollback exact (unlike "latest", which changes under you).
 
 locals {
-  ecr_services = ["user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service"]
+  ecr_services = ["user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service", "rag-service"]
 }
 
 resource "aws_ecr_repository" "service" {

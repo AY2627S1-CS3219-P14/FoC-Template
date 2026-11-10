@@ -7,3 +7,4 @@ sentence-transformers
 fastapi
 uvicorn[standard]
 anthropic
+PyJWT[crypto]

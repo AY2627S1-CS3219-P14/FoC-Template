@@ -7,6 +7,7 @@
 #   │ campuscouriers_order         owner order_service         ← Debezium     │
 #   │ campuscouriers_chat          owner chat_service          ← Debezium     │
 #   │ campuscouriers_notification  owner notification_service                 │
+#   │ campuscouriers_rag           owner rag_service           + pgvector     │
 #   └──────────────────────────────────────────────────────────────────────────┘
 #
 # Each service still only sees its own database (database-per-service), but they share one instance,
@@ -27,6 +28,7 @@ locals {
     order        = { cdc = true }
     chat         = { cdc = true }
     notification = { cdc = false }
+    rag          = { cdc = false } # RAG-service: knowledge chunks + pgvector embeddings
   }
 }
 

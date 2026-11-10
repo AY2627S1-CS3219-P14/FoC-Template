@@ -126,6 +126,14 @@ spec:
                 name: chat-service
                 port:
                   name: http
+          # rag-service: the Assistant page (POST /query, signed-in users only)
+          - path: /query
+            pathType: Prefix
+            backend:
+              service:
+                name: rag-service
+                port:
+                  name: http
           # notification-service (includes the live stream GET /notifications/stream)
           - path: /notifications
             pathType: Prefix

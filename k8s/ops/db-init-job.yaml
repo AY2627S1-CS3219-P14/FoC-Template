@@ -1,6 +1,8 @@
 # Creates, for each service, a login user and a database it owns, and blocks the other services from
 # connecting to it (database-per-service, enforced by PostgreSQL itself). The users Debezium reads
-# from also get rds_replication. Tables are created later by each service (Hibernate / Alembic).
+# from also get rds_replication. Tables are created later by each service (Hibernate / Alembic;
+# RAG's by its rag-index Job). The RAG database also gets the pgvector extension, which only an
+# admin may create on RDS.
 #
 # Re-runnable: users and databases are only created if missing; passwords are (re)set every time.
 apiVersion: batch/v1
@@ -75,6 +77,10 @@ spec:
               init_db "$ORDER_DB_USERNAME"    "$ORDER_DB_PASSWORD"    campuscouriers_order    true
               init_db "$CHAT_DB_USERNAME"     "$CHAT_DB_PASSWORD"     campuscouriers_chat     true
               init_db "$NOTIFICATION_DB_USERNAME" "$NOTIFICATION_DB_PASSWORD" campuscouriers_notification false
+              init_db "$RAG_DB_USERNAME"      "$RAG_DB_PASSWORD"      campuscouriers_rag      false
+
+              echo "== campuscouriers_rag: pgvector extension"
+              psql -v ON_ERROR_STOP=1 -q -d campuscouriers_rag -c 'CREATE EXTENSION IF NOT EXISTS vector'
               echo "== done"
           resources:
             requests:

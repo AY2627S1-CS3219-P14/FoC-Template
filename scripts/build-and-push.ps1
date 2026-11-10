@@ -21,7 +21,7 @@
 # PositionalBinding off: a stray argument is an error, instead of silently becoming -Region/-Project
 [CmdletBinding(PositionalBinding = $false)]
 param(
-  [string[]]$Services = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service"),
+  [string[]]$Services = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service", "rag-service"),
   [ValidatePattern("^[a-z]{2}(-[a-z]+)+-\d$")]
   [string]$Region = "ap-southeast-1",
   [string]$Project = "campuscouriers",
@@ -34,9 +34,13 @@ $root = Split-Path $PSScriptRoot -Parent
 
 # Accept "-Services a,b" and "-Services a, b" alike: under `powershell -File` a comma list arrives
 # as one string (or several), not as an array
-$allServices = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service")
+$allServices = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service", "rag-service")
 $Services = @($Services | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $unknown = @($Services | Where-Object { $allServices -notcontains $_ })
+
+# Image names are lowercase; a service whose folder is named differently is listed here
+$folders = @{ "rag-service" = "RAG-service" }
+function Get-Folder([string]$service) { if ($folders.ContainsKey($service)) { $folders[$service] } else { $service } }
 if ($unknown.Count) { throw "Unknown service(s): $($unknown -join ', '). Choose from: $($allServices -join ', ')" }
 
 function Invoke-Native([scriptblock]$Command, [string]$What) {
@@ -55,7 +59,7 @@ function Test-Native([scriptblock]$Command) {
 
 # --- Tag: the git commit ---------------------------------------------------------------------------
 $sha = (git -C $root rev-parse --short=12 HEAD).Trim()
-$dirty = git -C $root status --porcelain -- $Services
+$dirty = git -C $root status --porcelain -- @($Services | ForEach-Object { Get-Folder $_ })
 if ($dirty) {
   if (-not $AllowDirty) {
     throw "Uncommitted changes in $($Services -join ', '). Commit them first (so the tag matches the code), or pass -AllowDirty."
@@ -107,7 +111,7 @@ foreach ($service in $Services) {
     docker build --platform linux/amd64 --provenance=false --sbom=false `
       --label "org.opencontainers.image.revision=$sha" `
       --label "org.opencontainers.image.source=https://github.com/AY2627S1-CS3219-P14" `
-      -t $image (Join-Path $root $service)
+      -t $image (Join-Path $root (Get-Folder $service))
   } "docker build ($service)"
 
   Write-Host "== Pushing $image" -ForegroundColor Cyan

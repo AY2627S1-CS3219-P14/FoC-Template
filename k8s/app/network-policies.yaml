@@ -32,7 +32,8 @@ spec:
       - key: app.kubernetes.io/name
         operator: In
         values: ["user-service", "supplier-service", "credit-service", "order-service",
-                 "notification-service", "chat-service", "ai-errand-assistant-service"]
+                 "notification-service", "chat-service", "ai-errand-assistant-service",
+                 "rag-service"]
   policyTypes: ["Ingress"]
   ingress:
     - from:
@@ -61,7 +62,8 @@ spec:
               - key: app.kubernetes.io/name
                 operator: In
                 values: ["supplier-service", "credit-service", "order-service",
-                         "notification-service", "chat-service", "ai-errand-assistant-service"]
+                         "notification-service", "chat-service", "ai-errand-assistant-service",
+                         "rag-service"]
       ports:
         - port: http
 ---

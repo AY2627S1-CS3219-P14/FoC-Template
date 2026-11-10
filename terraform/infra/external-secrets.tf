@@ -90,6 +90,14 @@ resource "aws_secretsmanager_secret" "user_bootstrap_admin" {
   recovery_window_in_days = 0
 }
 
+# Claude (Anthropic) API key for rag-service, the Assistant page. Same approach as the OpenAI key below:
+# Terraform creates only the empty secret, a person stores the key (k8s/README.md, "API keys").
+resource "aws_secretsmanager_secret" "anthropic_api_key" {
+  name                    = "${local.secrets_prefix}anthropic-api-key"
+  description             = "Claude API key for rag-service. JSON key: ANTHROPIC_API_KEY"
+  recovery_window_in_days = 7 # can't be regenerated, so allow recovery after an accidental delete
+}
+
 # OpenAI API key for ai-errand-assistant-service. Terraform creates only the empty secret: the key is
 # issued by OpenAI, and storing it here would put it in the Terraform state. Store the value by hand
 # (k8s/README.md, "API keys"); k8s/app/external-secrets.yaml syncs it into the cluster.

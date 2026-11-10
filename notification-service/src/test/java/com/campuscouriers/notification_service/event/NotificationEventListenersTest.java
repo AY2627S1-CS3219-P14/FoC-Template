@@ -43,6 +43,25 @@ class NotificationEventListenersTest {
             "Your courier marked your errand as delivered");
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "EXPIRED, Your errand expired before anyone accepted it",
+        "FAILED, Your errand expired before the courier marked it delivered"
+    })
+    void expiryUsesRequesterAndResultingStatus(String status, String message) {
+        UUID eventId = UUID.randomUUID();
+        UUID errandId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
+        var record = record("errand.expired", """
+            {"errandId":"%s","requesterId":"%s","resultingStatus":"%s"}
+            """.formatted(errandId, requesterId, status));
+        record.headers().add("eventId", eventId.toString().getBytes(StandardCharsets.UTF_8));
+
+        new ErrandEventListener(new ErrandEventParser(), notifications).onExpiry(record);
+
+        verify(notifications).save(eventId, requesterId, "ERRAND_EXPIRED", errandId, message);
+    }
+
     @Test
     void chatMessageUsesRecipientAndOutboxHeader() {
         UUID eventId = UUID.randomUUID();

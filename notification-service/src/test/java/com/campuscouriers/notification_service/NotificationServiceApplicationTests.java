@@ -399,6 +399,29 @@ class NotificationServiceApplicationTests {
     }
 
     @Test
+    void expiryRedeliveryCreatesOneAlertSeparateFromCreditRelease() throws Exception {
+        UUID expiryEvent = UUID.randomUUID();
+        UUID requester = UUID.randomUUID();
+        UUID errand = UUID.randomUUID();
+        String expiry = """
+            {"errandId":"%s","requesterId":"%s","resultingStatus":"EXPIRED"}
+            """.formatted(errand, requester);
+        String release = """
+            {"eventId":"%s","orderId":"%s","userId":"%s","changeType":"RELEASED","amount":8}
+            """.formatted(UUID.randomUUID(), errand, requester);
+
+        kafka.send(record("errand.expired", expiryEvent, expiry)).get(10, TimeUnit.SECONDS);
+        var replay = kafka.send(record("errand.expired", expiryEvent, expiry)).get(10, TimeUnit.SECONDS);
+        var credit = kafka.send(record("credit.released", UUID.randomUUID(), release)).get(10, TimeUnit.SECONDS);
+        assertCommitted("errand.expired", replay.getRecordMetadata().partition(), replay.getRecordMetadata().offset());
+        assertCommitted("credit.released", credit.getRecordMetadata().partition(), credit.getRecordMetadata().offset());
+
+        assertThat(repository.findAll().stream().filter(n -> n.getErrandId().equals(errand)))
+            .extracting(Notification::getType)
+            .containsExactlyInAnyOrder("ERRAND_EXPIRED", "CREDIT_RELEASED");
+    }
+
+    @Test
     void concurrentInsertsDeduplicateWithoutBlockingOtherRecipients() {
         UUID event = UUID.randomUUID();
         UUID recipient = UUID.randomUUID();

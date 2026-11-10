@@ -23,6 +23,7 @@ public class KafkaConfig {
             TopicBuilder.name("errand.delivered").partitions(3).build(),
             TopicBuilder.name("errand.completed").partitions(3).build(),
             TopicBuilder.name("errand.failed").partitions(3).build(),
+            TopicBuilder.name("errand.expired").partitions(3).build(),
             TopicBuilder.name("credit.received").partitions(3).build(),
             TopicBuilder.name("credit.released").partitions(3).build(),
             TopicBuilder.name("chat.message.created").partitions(3).build(),
@@ -30,6 +31,7 @@ public class KafkaConfig {
             TopicBuilder.name("errand.delivered.notification-dlt").partitions(3).build(),
             TopicBuilder.name("errand.completed.notification-dlt").partitions(3).build(),
             TopicBuilder.name("errand.failed.notification-dlt").partitions(3).build(),
+            TopicBuilder.name("errand.expired.notification-dlt").partitions(3).build(),
             TopicBuilder.name("credit.received.notification-dlt").partitions(3).build(),
             TopicBuilder.name("credit.released.notification-dlt").partitions(3).build(),
             TopicBuilder.name("chat.message.created.notification-dlt").partitions(3).build());

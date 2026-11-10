@@ -120,6 +120,32 @@ describe('ErrandDetailsPage', () => {
     expect(screen.queryByRole('button', { name: 'Cancel errand' })).not.toBeInTheDocument()
   })
 
+  it('refetches the errand status when its expiry alert arrives', async () => {
+    const open = activeErrand(requesterOpenId)
+    loadErrandDetailsMock.mockResolvedValueOnce(open).mockResolvedValueOnce({
+      ...open, status: 'EXPIRED',
+    })
+    let notify!: NotificationListener
+    renderPage(requesterOpenId, {
+      items: [], unreadCount: 0, historyStatus: 'ready', connection: 'connected',
+      refresh: vi.fn(), markRead: vi.fn(), markAllRead: vi.fn(), hide: vi.fn(),
+      subscribe(listener) { notify = listener; return vi.fn() },
+    })
+    expect(await screen.findByRole('button', { name: 'Cancel errand' })).toBeInTheDocument()
+
+    act(() => notify({
+      type: 'notification',
+      item: {
+        id: 'expired', type: 'ERRAND_EXPIRED', data: { errandId: requesterOpenId },
+        message: 'Your errand expired before anyone accepted it',
+        createdAt: '2026-11-08T00:00:00Z', readAt: null,
+      },
+    }))
+
+    expect(await screen.findByRole('heading', { name: 'Expired' })).toBeInTheDocument()
+    expect(loadErrandDetailsMock).toHaveBeenCalledTimes(2)
+  })
+
   it('refetches the visible errand on its alert and ignores an older response after reconnect', async () => {
     const accepted = activeErrand(requesterAcceptedId)
     let resolveOlder!: (details: typeof accepted) => void

@@ -80,3 +80,13 @@ output "rds_master_secret_arn" {
   description = "Secrets Manager secret (created by RDS) holding the master username and password."
   value       = aws_db_instance.main.master_user_secret[0].secret_arn
 }
+
+# --- ECR -------------------------------------------------------------------------------------------
+output "ecr_registry" {
+  description = "Registry host for `docker login` and image names."
+  value       = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+}
+
+output "ecr_repository_urls" {
+  value = { for name, repo in aws_ecr_repository.service : name => repo.repository_url }
+}

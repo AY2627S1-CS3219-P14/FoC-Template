@@ -13,7 +13,7 @@ metadata:
   namespace: campuscouriers-app
 spec:
   type: ExternalName
-  externalName:  # TODO: RDS endpoint
+  externalName: campuscouriers.cd2g48wauxqx.ap-southeast-1.rds.amazonaws.com # terraform output rds_address
 ---
 apiVersion: v1
 kind: Service
@@ -22,7 +22,7 @@ metadata:
   namespace: campuscouriers-app
 spec:
   type: ExternalName
-  externalName:  # TODO: RDS endpoint
+  externalName: campuscouriers.cd2g48wauxqx.ap-southeast-1.rds.amazonaws.com # terraform output rds_address
 ---
 apiVersion: v1
 kind: Service
@@ -31,7 +31,7 @@ metadata:
   namespace: campuscouriers-app
 spec:
   type: ExternalName
-  externalName:  # TODO: RDS endpoint
+  externalName: campuscouriers.cd2g48wauxqx.ap-southeast-1.rds.amazonaws.com # terraform output rds_address
 ---
 apiVersion: v1
 kind: Service
@@ -40,4 +40,4 @@ metadata:
   namespace: campuscouriers-app
 spec:
   type: ExternalName
-  externalName:  # TODO: RDS endpoint
+  externalName: campuscouriers.cd2g48wauxqx.ap-southeast-1.rds.amazonaws.com # terraform output rds_address

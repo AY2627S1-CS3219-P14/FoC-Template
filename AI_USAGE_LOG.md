@@ -535,7 +535,7 @@ errand completed should also notify requester. Also when courier indicates that 
 
 ## Contributor note · Melodi Joy Halim (AI-23 to AI-31)
 
-I used Anthropic Claude to generate code for the entries below. These sessions were not saved, so the exact prompts and model versions are unavailable. Each entry lists reconstructed prompt gists that summarize the kinds of requests I made. They are not verbatim. File lists come from my commits for each period. Author review is pending.
+I used Anthropic Claude to generate code for the entries below. These sessions were not saved, so the exact prompts and model versions are unavailable. Each entry lists reconstructed prompt gists that summarize the kinds of requests I made. They are not verbatim. File lists come from my commits for each period.
 
 ## AI-23 · User Service accounts and authentication
 

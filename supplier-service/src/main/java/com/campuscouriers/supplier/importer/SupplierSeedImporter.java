@@ -4,8 +4,10 @@
  * Scope (AI-24): Generated code, configuration and tests for the specified user event, Kafka setup and outbox changes.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Pending confirmation by Melodi Joy Halim.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-10-01
+ * Scope: Generated and refined the CSV seed-import implementation.
  */
-
 package com.campuscouriers.supplier.importer;
 
 import com.campuscouriers.supplier.entity.Building;

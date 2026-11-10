@@ -1,4 +1,9 @@
-"""Add transactional outbox for chat message events."""
+"""Add transactional outbox for chat message events.
+
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+Scope: Generated and refined this Chat Service migration.
+"""
 
 from alembic import op
 import sqlalchemy as sa

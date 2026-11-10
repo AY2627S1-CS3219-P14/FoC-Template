@@ -14,6 +14,10 @@
 # Scope (AI-30): Updated the RAG service to the specified Claude model and added API error handling.
 # Usage log: AI_USAGE_LOG.md
 # Author review: Pending confirmation by Melodi Joy Halim.
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-11-10
+# Scope: Generated the initial Supplier PostgreSQL Compose scaffold and later added the
+# Supplier Service CORS wiring, Chat/Notification services, and port-conflict fixes.
 
 # Shared by the long-running user service and its bootstrap-only job
 x-user-service-env: &user-service-env

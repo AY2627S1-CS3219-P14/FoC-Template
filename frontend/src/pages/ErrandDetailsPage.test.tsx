@@ -6,8 +6,10 @@
  * Scope (AI-20): Built and tested the errand details preview with manual refresh.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Updated tests for opening Chat Service conversations.
  */
-
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

@@ -4,8 +4,10 @@
  * Scope (AI-15): Implemented and tested the requested create-account UI.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
  */
-
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'

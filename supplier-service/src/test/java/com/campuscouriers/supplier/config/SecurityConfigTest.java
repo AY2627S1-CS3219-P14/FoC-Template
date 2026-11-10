@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-30 and 2026-10-02
+ * Scope: Generated CORS preflight tests and updated allowed methods for lifecycle PATCH endpoints.
+ */
 package com.campuscouriers.supplier.config;
 
 import com.campuscouriers.supplier.controller.SupplierController;

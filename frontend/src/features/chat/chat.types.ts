@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation assistance for frontend chat types.
+ */
 export type ChatMessage = {
   id: string
   conversationId: string

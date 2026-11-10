@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-11-10
+ * Scope: Generated the category entity and later administration behavior.
+ */
 package com.campuscouriers.supplier.entity;
 
 import jakarta.persistence.Column;

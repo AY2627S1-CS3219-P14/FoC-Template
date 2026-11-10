@@ -1,4 +1,9 @@
-"""Allow chat for thirty minutes after completion."""
+"""Allow chat for thirty minutes after completion.
+
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+Scope: Generated and refined this Chat Service migration.
+"""
 
 from alembic import op
 import sqlalchemy as sa

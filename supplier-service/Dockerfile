@@ -1,3 +1,7 @@
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), date: 2026-09-30
+# Scope: Generated the multi-stage Java 17 build and non-root runtime container.
+
 FROM maven:3.9.11-eclipse-temurin-17-alpine AS build
 
 WORKDIR /workspace

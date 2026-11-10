@@ -4,6 +4,9 @@ Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-11
 Scope (AI-16): Compiled the attribution documentation.
 Usage log: AI_USAGE_LOG.md
 Author review: Changes validated and confirmed.
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-11-11
+Scope: Added only the project-level AI disclosure section and usage-log link at the end.
 -->
 
 # CS3219 — Software Design and Architecture (AY2627 Sem 1)

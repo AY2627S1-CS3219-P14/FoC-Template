@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation assistance for notification-driven errand refreshes.
+ */
 import { useEffect, useState } from 'react'
 import { useNotifications } from './useNotifications'
 

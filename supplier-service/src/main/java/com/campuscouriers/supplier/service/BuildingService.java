@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-11-10
+ * Scope: Generated building creation, listing, update, and lifecycle operations.
+ */
 package com.campuscouriers.supplier.service;
 
 import com.campuscouriers.supplier.dto.BuildingResponse;

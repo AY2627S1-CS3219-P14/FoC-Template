@@ -1,5 +1,9 @@
 """${message}
 
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+Scope: Generated Chat Service migration template.
+
 Revision ID: ${up_revision}
 Revises: ${down_revision | comma,n}
 Create Date: ${create_date}

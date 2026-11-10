@@ -6,8 +6,10 @@
  * Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Pending confirmation by Melodi Joy Halim.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-10-02
+ * Scope: Generated initial access configuration, CORS/JWT rules, and admin authorization.
  */
-
 package com.campuscouriers.supplier.config;
 
 import java.util.Arrays;

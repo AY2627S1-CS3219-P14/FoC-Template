@@ -139,6 +139,13 @@ public class ReservationService {
         return ReservationResponse.from(reservation, wallet);
     }
 
+    @Transactional
+    public void releaseExpiredErrand(UUID errandId) {
+        Reservation reservation = reservationRepository.findByOrderId(errandId)
+                .orElseThrow(() -> new ReservationNotFoundException());
+        releaseReservation(reservation.getReservationId());
+    }
+
 
     @Transactional
     public ReservationResponse completeReservation(UUID reservationId, UUID courierUserId, UUID orderId) {

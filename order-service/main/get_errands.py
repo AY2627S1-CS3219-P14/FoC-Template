@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 from uuid import UUID
@@ -169,3 +174,5 @@ def get_errands(
         total=total,
         items=[ErrandResponse.model_validate(errand) for errand in errands],
     )
+
+

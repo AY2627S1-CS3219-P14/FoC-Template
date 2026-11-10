@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 """Credit Service HTTP contract. No retries with newly generated identifiers."""
 
 import os
@@ -94,3 +99,5 @@ class CreditClient:
             {"courierUserId": str(courier_id), "orderId": str(order_id)},
             order_id, amount, "TRANSFERRED", reservation_id,
         )
+
+

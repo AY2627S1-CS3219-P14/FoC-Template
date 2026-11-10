@@ -30,7 +30,6 @@ This is a record of verified assistance in the current checkout. Dates use Singa
 ```text
 help me created the components for the supplier cards and populate the supplier page with them. Each card should have the name of the supplier, the category, locaion/building, a space for a short description, and an immage.
 ```
-
 ## AI-02 · Style updates from the supplied Figma mockup
 
 - **Source and mode** — OpenAI Codex (gpt-5.6-sol). Refactor.
@@ -969,7 +968,6 @@ I used Anthropic Claude to generate code for the entries below. These sessions w
 
 - Switch the RAG service to Claude Sonnet 5.5.
 - Return a clear error to the frontend when the Claude API call fails.
-
 ## AI-31 · Attribution documentation for AI-23 to AI-30
 
 - **Source and mode** — Anthropic Claude Code (claude-opus-5-5). Generate documentation.
@@ -987,3 +985,169 @@ I used Anthropic Claude to generate code for the entries below. These sessions w
 ```text
 Add attributions to the relevant files that I worked on, and write to AI_USAGE_LOG.md
 ```
+## AI-32 · Order Service folder refactor
+
+- **Source and mode** — OpenAI Codex. Refactor.
+- **Date** — 2026-10-02
+- **Key response** — Moved service modules into `main/`, tests into `test/`, updated imports and test discovery, and verified the refactor.
+
+**Affected files**
+
+- `order-service/main/*.py`
+- `order-service/test/*.py`
+- `order-service/README.md`
+
+**Exact prompt**
+
+```text
+I want to have microservice files in a folder named "main" and test files in a folder named "test". Can you move the relevant files and make refactoring changes appropriately?
+```
+
+## AI-33 · Remove redundant completion-confirmation code
+
+- **Source and mode** — OpenAI Codex. Refactor and test.
+- **Date** — 2026-10-22
+- **Key response** — Removed the redundant completion-confirmation module and updated the application, tests, and documentation.
+
+**Affected files**
+
+- `order-service/main/app.py`
+- `order-service/main/view_completion_confirmation.py`
+- `order-service/test/test_view_completion_confirmation.py`
+- `order-service/test/test_get_errands.py`
+
+**Exact prompt**
+
+```text
+Yes. If view_completion_confirmation is redundant please remove it, make all necesary changes to account for this, and run the necesary tests to ensure its removal doesn't raise complications. Then, guide me on how to commit get_errands.py
+```
+
+## AI-34 · Errand listing implementation
+
+- **Source and mode** — OpenAI Codex. Generate and test.
+- **Date** — 2026-10-22
+- **Key response** — Implemented the errand-listing endpoint without expiry processing and added the related tests.
+
+**Affected files**
+
+- `order-service/main/get_errands.py`
+- `order-service/main/app.py`
+- `order-service/test/test_get_errands.py`
+- `order-service/README.md`
+
+**Exact prompts**
+
+```text
+In that case, please implement get errands as discussed without processing expiry dates.
+Triggering background processing can be implemented later once the worker is complete.
+```
+
+```text
+It should still be possible to count non-open statuses without requester UUID. The activities of a specific requester should be hidden, but the total number of errands can be exposed
+```
+
+```text
+In that case, please implement the change such that only a requester can count their own non-open errands for now. Please implement it in such a way that it will be simple to remove this check in the future if needed.
+```
+
+## AI-35 · Errand endpoint implementation
+
+- **Source and mode** — OpenAI Codex. Generate and test.
+- **Date** — 2026-10-07
+- **Key response** — Added the requested endpoint modules, application registration, tests, and documentation.
+
+**Affected files**
+
+- `order-service/main/cancel_errand.py`
+- `order-service/main/accept_errand.py`
+- `order-service/main/complete_errand.py`
+- `order-service/main/fail_errand.py`
+- `order-service/main/app.py`
+- Corresponding files under `order-service/test/`
+
+**Exact prompts**
+
+```text
+I understand. Please add cancel_errand.py to the project repo, add a test file, and make any other neccesary changes
+```
+
+```text
+Please add the "accept_errand.py" file you suggested earlier, together with any other neccesary changes.
+Please add a corresponding test file as well.
+```
+
+```text
+The functions look good. Please add it to the project repo, together with test files and other neccesary changes
+```
+
+## AI-36 · Errand schema and validation implementation
+
+- **Source and mode** — OpenAI Codex. Generate and test.
+- **Date** — 2026-10-07
+- **Key response** — Added the supplier and required-item fields, expiry validation, migrations, and corresponding tests.
+
+**Affected files**
+
+- `order-service/alembic/versions/0002_add_supplier_id.py`
+- `order-service/alembic/versions/0003_add_required_item.py`
+- `order-service/main/models.py`
+- `order-service/main/create_errand.py`
+- `order-service/test/test_create_errand.py`
+
+**Exact prompts**
+
+```text
+I just noticed that "supplier_id" is not a field in the database. Could you add this field?
+```
+
+```text
+Ignore F2.1.5
+Please add the required_item field into the database schema and update the code to match.
+Please add the constraint for expiry date to errand creation to fulfil F2.1.2
+Go ahead and make the changes to the project repo
+```
+
+## AI-37 · Rename and refactor Order Service modules
+
+- **Source and mode** — OpenAI Codex. Refactor.
+- **Date** — 2026-10-07
+- **Key response** — Renamed the errand route module and its test, then updated imports, registration, and documentation.
+
+**Affected files**
+
+- `order-service/main/errand_route.py`
+- `order-service/main/create_errand.py`
+- `order-service/main/app.py`
+- `order-service/test/test_errand_route.py`
+- `order-service/README.md`
+
+**Exact prompt**
+
+```text
+Please change the name of "errand_route.py" to "create_errand.py".
+Change the name of "test_errand_route.py" as well
+Make any refactoring changes neccesary
+```
+
+## AI-38 · Remove obsolete example routes
+
+- **Source and mode** — OpenAI Codex. Refactor.
+- **Date** — 2026-10-02
+- **Key response** — Removed the obsolete example routes and updated the shared application and tests.
+
+**Affected files**
+
+- `order-service/main/echo_route.py`
+- `order-service/main/hello_route.py`
+- `order-service/main/app.py`
+- Corresponding files under `order-service/test/`
+
+**Exact prompt**
+
+```text
+Please remove them for me
+```
+
+This prompt is cited with the preceding discussion identifying the example routes for removal.
+
+

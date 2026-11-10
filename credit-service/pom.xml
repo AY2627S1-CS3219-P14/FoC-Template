@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+AI Assistance Disclosure (contributor use):
+Tool: OpenAI Codex (model not recorded), date: 2026-10-22
+Scope: Debugging assistance for the Maven Kafka dependency error.
+Author review: I verified the dependency against the project build configuration.
+-->
 
 <!--
 AI Assistance Disclosure
@@ -149,3 +155,4 @@ Author review: Pending confirmation by Melodi Joy Halim.
 	</build>
 
 </project>
+ 

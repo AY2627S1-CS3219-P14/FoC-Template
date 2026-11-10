@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 # AI Assistance Disclosure
 # Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
 # Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
@@ -70,3 +75,5 @@ app.include_router(get_errands_router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8002)
+
+

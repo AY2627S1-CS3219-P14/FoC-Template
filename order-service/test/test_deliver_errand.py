@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
@@ -142,3 +147,5 @@ def test_invalid_request(endpoint):
 
     assert response.status_code == 422
     assert outbox_events(factory) == []
+
+

@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 """Add the supplier UUID required for every errand.
 
 Existing errands must have their supplier IDs backfilled before this migration
@@ -24,3 +29,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column("errands", "supplier_id")
+
+

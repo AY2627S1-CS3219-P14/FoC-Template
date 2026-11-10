@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 from uuid import uuid4
 
 import httpx
@@ -105,3 +110,5 @@ def test_missing_backend_secret_fails_closed(transport, monkeypatch):
         CreditClient("token").reserve(uuid4(), uuid4(), 10)
     assert error.value.status_code == 503
     assert requests == []
+
+

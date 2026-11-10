@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 """Recoverable intents around synchronous credit calls.
 
 Each intent commits BEFORE the HTTP call. An unknown result or failed final DB
@@ -132,3 +137,5 @@ def finish_terminal(factory, operation_id, token):
         errand.pending_credit_action = None
         operation.state = "SUCCEEDED"
     return response
+
+

@@ -4,6 +4,7 @@ import { AuthContext, type AuthContextValue, type AuthStatus } from './auth.cont
 import {
   clearAccessToken,
   getAccessTokenSubject,
+  getAccessTokenType,
   getAccessToken,
   refreshAccessToken,
   setAccessToken,
@@ -17,6 +18,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     mockAuthEnabled ? 'authenticated' : 'loading',
   )
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserType, setCurrentUserType] = useState<import('./auth.token').AccountType | null>(
+    mockAuthEnabled ? 'Administrator' : null,
+  )
 
   useEffect(() => {
     if (mockAuthEnabled) return
@@ -25,6 +29,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const unsubscribe = subscribeToSessionExpiry(() => {
       if (active) {
         setCurrentUserId(null)
+        setCurrentUserType(null)
         setStatus('unauthenticated')
       }
     })
@@ -33,12 +38,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .then((token) => {
         if (active) {
           setCurrentUserId(getAccessTokenSubject(token))
+          setCurrentUserType(getAccessTokenType(token))
           setStatus('authenticated')
         }
       })
       .catch(() => {
         if (active) {
           setCurrentUserId(null)
+          setCurrentUserType(null)
           setStatus('unauthenticated')
         }
       })
@@ -53,10 +60,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     () => ({
       status,
       currentUserId,
+      currentUserType,
       async signIn(credentials) {
         const session = await login(credentials)
         setAccessToken(session.accessToken)
         setCurrentUserId(getAccessTokenSubject(session.accessToken))
+        setCurrentUserType(getAccessTokenType(session.accessToken))
         setStatus('authenticated')
       },
       async signOut() {
@@ -78,11 +87,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
         } finally {
           clearAccessToken()
           setCurrentUserId(null)
+          setCurrentUserType(null)
           setStatus('unauthenticated')
         }
       },
     }),
-    [currentUserId, status],
+    [currentUserId, currentUserType, status],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

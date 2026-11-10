@@ -226,8 +226,21 @@ are separate reads and may briefly differ during concurrent changes; a count is 
 an atomic safeguard against supplier deactivation racing with creation.
 
 No schema migration is needed. Run `python -m pytest -q test/test_get_errands.py`.
-The expiry worker/background trigger and Supplier Service integration remain future
-work. The separate sibling integration-test suite has not been changed.
+Supplier Service integration remains future work. The separate sibling
+integration-test suite has not been changed.
+
+### Automatic expiry
+
+The Order Service runs a lightweight background worker when the application starts.
+Every `ERRAND_EXPIRY_INTERVAL_SECONDS` seconds (default: 60), it processes overdue
+errands in a transaction:
+
+- `OPEN` errands become `EXPIRED`.
+- `ACCEPTED` errands become `FAILED` with the reason `Errand expired before delivery`.
+
+Each transition writes an `errand.expired` outbox event in the same transaction.
+Credit Service consumes that event and releases the reservation by the errand ID.
+The release operation is safe to retry if Kafka redelivers the event.
 
 See [CREDIT_INTEGRATION.md](CREDIT_INTEGRATION.md) for required configuration,
 migration 0005, idempotency/recovery behaviour and repeatable Docker tests.

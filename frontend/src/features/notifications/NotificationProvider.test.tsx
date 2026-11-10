@@ -23,6 +23,7 @@ vi.mock('./notification.api', () => ({
 const alice = {
   status: 'authenticated' as const,
   currentUserId: 'alice',
+  currentUserType: 'Student' as const,
   signIn: vi.fn(),
   signOut: vi.fn(),
 }

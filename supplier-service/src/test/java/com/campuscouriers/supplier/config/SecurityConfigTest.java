@@ -8,10 +8,18 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.when;
+
+import com.campuscouriers.supplier.dto.PageMetadata;
+import com.campuscouriers.supplier.dto.SupplierPageResponse;
+import java.util.List;
 
 @WebMvcTest(SupplierController.class)
 @Import(SecurityConfig.class)
@@ -41,5 +49,20 @@ class SecurityConfigTest {
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isForbidden())
                 .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+    }
+
+    @Test
+    void deactivatedSupplierList_requiresAdministrator() throws Exception {
+        when(supplierService.findDeactivated(null, null, null, 0, 20, "name,asc"))
+                .thenReturn(new SupplierPageResponse(
+                        List.of(), new PageMetadata(0, 20, 0, 0, false, false)));
+
+        mockMvc.perform(get("/suppliers/deactivated")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("Student"))))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/suppliers/deactivated")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("Administrator"))))
+                .andExpect(status().isOk());
     }
 }

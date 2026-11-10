@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 from sqlalchemy.orm import Session
 
-from main.models import OutboxEvent
+from main.models import ErrandStatus, OutboxEvent
 
 
 ERRAND_AGGREGATE = "errand"
@@ -58,6 +58,12 @@ class ErrandFailedEvent(ErrandEvent):
     failed_at: datetime
 
 
+class ErrandExpiredEvent(ErrandEvent):
+    resulting_status: ErrandStatus
+    failure_reason: str | None = None
+    expired_at: datetime
+
+
 EVENT_TYPES: dict[type[ErrandEvent], str] = {
     ErrandCreatedEvent: "errand.created",
     ErrandAcceptedEvent: "errand.accepted",
@@ -65,6 +71,7 @@ EVENT_TYPES: dict[type[ErrandEvent], str] = {
     ErrandCancelledEvent: "errand.cancelled",
     ErrandCompletedEvent: "errand.completed",
     ErrandFailedEvent: "errand.failed",
+    ErrandExpiredEvent: "errand.expired",
 }
 
 

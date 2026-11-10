@@ -19,6 +19,10 @@ public interface SupplierRepository extends JpaRepository<Supplier, UUID>, JpaSp
     boolean existsByNormalizedNameAndBuildingIdAndIdNot(
             String normalizedName, UUID buildingId, UUID id);
 
+    boolean existsByCategoryIdAndStatus(UUID categoryId, SupplierStatus status);
+
+    boolean existsByBuildingIdAndStatus(UUID buildingId, SupplierStatus status);
+
     @EntityGraph(attributePaths = {"category", "building"})
     Optional<Supplier> findByIdAndStatus(UUID id, SupplierStatus status);
 

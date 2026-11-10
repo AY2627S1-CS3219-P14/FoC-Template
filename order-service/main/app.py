@@ -1,4 +1,6 @@
 import os
+import asyncio
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
@@ -11,6 +13,18 @@ from main.cancel_errand import router as cancel_errand_router
 from main.complete_errand import router as complete_errand_router
 from main.fail_errand import router as fail_errand_router
 from main.get_errands import router as get_errands_router
+from main.expiry_worker import expiry_worker
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    stop_event = asyncio.Event()
+    task = asyncio.create_task(expiry_worker(stop_event))
+    try:
+        yield
+    finally:
+        stop_event.set()
+        await task
 
 
 cors_allowed_origins = [
@@ -22,7 +36,7 @@ cors_allowed_origins = [
     if origin.strip()
 ]
 
-app = FastAPI(title="Order Service")
+app = FastAPI(title="Order Service", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_allowed_origins,
@@ -30,6 +44,12 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
     expose_headers=["Idempotency-Key"],
 )
+
+@app.get("/health", include_in_schema=False)
+def health() -> dict[str, str]:
+    """Liveness/readiness check for Kubernetes probes and the ALB (not routed through the Ingress)."""
+    return {"status": "ok"}
+
 
 app.include_router(create_errand_router)
 app.include_router(accept_errand_router)

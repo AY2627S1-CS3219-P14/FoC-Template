@@ -13,7 +13,7 @@ import com.campuscouriers.supplier.entity.Supplier;
 import com.campuscouriers.supplier.entity.SupplierStatus;
 import com.campuscouriers.supplier.event.SupplierEventPublisher;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
-import com.campuscouriers.supplier.exception.ReferenceNotActiveException;
+import com.campuscouriers.supplier.exception.InactiveReferencesException;
 import com.campuscouriers.supplier.exception.ReferenceNotFoundException;
 import com.campuscouriers.supplier.exception.InvalidQueryParameterException;
 import com.campuscouriers.supplier.repository.BuildingRepository;
@@ -30,6 +30,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Locale;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Service
@@ -56,15 +57,9 @@ public class SupplierService {
     public SupplierResponse create(CreateSupplierRequest request) {
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ReferenceNotFoundException("Category", request.categoryId()));
-        if (category.getStatus() != CategoryStatus.ACTIVE) {
-            throw new ReferenceNotActiveException("Category");
-        }
-
         Building building = buildingRepository.findById(request.buildingId())
                 .orElseThrow(() -> new ReferenceNotFoundException("Building", request.buildingId()));
-        if (building.getStatus() != BuildingStatus.ACTIVE) {
-            throw new ReferenceNotActiveException("Building");
-        }
+        validateActiveReferences(category, building);
 
         String displayName = NameNormalizer.displayName(request.name());
         String normalizedName = NameNormalizer.normalizedName(displayName);
@@ -108,24 +103,19 @@ public class SupplierService {
             int size,
             String sort
     ) {
-        validatePagination(page, size);
-        Sort.Direction direction = parseSortDirection(sort);
+        return findByStatus(SupplierStatus.ACTIVE, query, categoryId, buildingId, page, size, sort);
+    }
 
-        Specification<Supplier> specification = Specification
-                .where(SupplierSpecifications.hasStatus(SupplierStatus.ACTIVE))
-                .and(SupplierSpecifications.nameContains(query))
-                .and(SupplierSpecifications.hasCategory(categoryId))
-                .and(SupplierSpecifications.hasBuilding(buildingId));
-
-        Page<Supplier> suppliers = supplierRepository.findAll(
-                specification,
-                PageRequest.of(page, size, Sort.by(direction, "normalizedName"))
-        );
-
-        return new SupplierPageResponse(
-                suppliers.getContent().stream().map(SupplierResponse::from).toList(),
-                PageMetadata.from(suppliers)
-        );
+    @Transactional(readOnly = true)
+    public SupplierPageResponse findDeactivated(
+            String query,
+            UUID categoryId,
+            UUID buildingId,
+            int page,
+            int size,
+            String sort
+    ) {
+        return findByStatus(SupplierStatus.INACTIVE, query, categoryId, buildingId, page, size, sort);
     }
 
     @Transactional(readOnly = true)
@@ -139,8 +129,11 @@ public class SupplierService {
     public SupplierResponse update(UUID id, UpdateSupplierRequest request) {
         Supplier supplier = supplierRepository.findById(id)
                 .orElseThrow(() -> new ReferenceNotFoundException("Supplier", id));
-        Category category = activeCategory(request.categoryId());
-        Building building = activeBuilding(request.buildingId());
+        Category category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new ReferenceNotFoundException("Category", request.categoryId()));
+        Building building = buildingRepository.findById(request.buildingId())
+                .orElseThrow(() -> new ReferenceNotFoundException("Building", request.buildingId()));
+        validateActiveReferences(category, building);
 
         String displayName = NameNormalizer.displayName(request.name());
         String normalizedName = NameNormalizer.normalizedName(displayName);
@@ -189,26 +182,23 @@ public class SupplierService {
         Supplier supplier = supplierRepository.findById(id)
                 .orElseThrow(() -> new ReferenceNotFoundException("Supplier", id));
 
+        validateActiveReferences(supplier.getCategory(), supplier.getBuilding());
+
         supplier.reactivate();
         return SupplierResponse.from(supplierRepository.saveAndFlush(supplier));
     }
 
-    private Category activeCategory(UUID id) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ReferenceNotFoundException("Category", id));
+    private void validateActiveReferences(Category category, Building building) {
+        ArrayList<String> inactiveReferences = new ArrayList<>(2);
         if (category.getStatus() != CategoryStatus.ACTIVE) {
-            throw new ReferenceNotActiveException("Category");
+            inactiveReferences.add("category");
         }
-        return category;
-    }
-
-    private Building activeBuilding(UUID id) {
-        Building building = buildingRepository.findById(id)
-                .orElseThrow(() -> new ReferenceNotFoundException("Building", id));
         if (building.getStatus() != BuildingStatus.ACTIVE) {
-            throw new ReferenceNotActiveException("Building");
+            inactiveReferences.add("building");
         }
-        return building;
+        if (!inactiveReferences.isEmpty()) {
+            throw new InactiveReferencesException(inactiveReferences);
+        }
     }
 
     private void validatePagination(int page, int size) {
@@ -218,6 +208,35 @@ public class SupplierService {
         if (size < 1 || size > 100) {
             throw new InvalidQueryParameterException("Size must be between 1 and 100");
         }
+    }
+
+    private SupplierPageResponse findByStatus(
+            SupplierStatus status,
+            String query,
+            UUID categoryId,
+            UUID buildingId,
+            int page,
+            int size,
+            String sort
+    ) {
+        validatePagination(page, size);
+        Sort.Direction direction = parseSortDirection(sort);
+
+        Specification<Supplier> specification = Specification
+                .where(SupplierSpecifications.hasStatus(status))
+                .and(SupplierSpecifications.nameContains(query))
+                .and(SupplierSpecifications.hasCategory(categoryId))
+                .and(SupplierSpecifications.hasBuilding(buildingId));
+
+        Page<Supplier> suppliers = supplierRepository.findAll(
+                specification,
+                PageRequest.of(page, size, Sort.by(direction, "normalizedName"))
+        );
+
+        return new SupplierPageResponse(
+                suppliers.getContent().stream().map(SupplierResponse::from).toList(),
+                PageMetadata.from(suppliers)
+        );
     }
 
     private Sort.Direction parseSortDirection(String sort) {

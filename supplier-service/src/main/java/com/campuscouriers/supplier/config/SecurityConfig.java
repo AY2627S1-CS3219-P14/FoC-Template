@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,7 +16,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+// Only when running as a web app: the supplier-seed Job (k8s/jobs/supplier-seed.yaml) starts this
+// application with no web server, where there are no HTTP requests to secure and no HttpSecurity bean
 @Configuration
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class SecurityConfig {
 
     @Bean
@@ -24,13 +28,25 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> { })
                 .authorizeHttpRequests(requests -> requests
+                        // Kubernetes probes and ALB health checks (not routed through the Ingress)
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/suppliers/deactivated", "/categories/deactivated",
+                                "/buildings/deactivated")
+                        .hasAuthority("Administrator")
                         .requestMatchers(HttpMethod.GET,
                                 "/suppliers/**", "/categories/**", "/buildings/**")
                         .authenticated()
                         .requestMatchers(HttpMethod.POST,
                                 "/suppliers", "/categories", "/buildings")
                         .hasAuthority("Administrator")
-                        .requestMatchers(HttpMethod.PUT, "/suppliers/**")
+                        .requestMatchers(HttpMethod.POST,
+                                "/categories/*/deactivate", "/categories/*/reactivate",
+                                "/buildings/*/deactivate", "/buildings/*/reactivate")
+                        .hasAuthority("Administrator")
+                        .requestMatchers(HttpMethod.PUT,
+                                "/suppliers/**", "/categories/**", "/buildings/**")
                         .hasAuthority("Administrator")
                         .requestMatchers(HttpMethod.PATCH,
                                 "/suppliers/*/deactivate", "/suppliers/*/reactivate")

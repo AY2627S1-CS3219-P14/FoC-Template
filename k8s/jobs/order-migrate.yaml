@@ -1,0 +1,47 @@
+# Runs order-service's database migrations ONCE per deploy, instead of in every pod at startup.
+# Apply this before (or together with) a new order-service version; see k8s/README.md.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: order-migrate
+  namespace: campuscouriers-app
+spec:
+  backoffLimit: 3 # retry up to 3 times (e.g. if RDS isn't reachable yet)
+  ttlSecondsAfterFinished: 3600 # delete the finished Job after 1 hour, so it can be applied again
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: order-migrate
+    spec:
+      restartPolicy: Never
+      serviceAccountName: order-service
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: campuscouriers/order-service
+          command: ["alembic", "upgrade", "head"]
+          # Database settings only (same values as k8s/app/config/order-service.env). Set here because
+          # Jobs live in a separate kustomization and can't know the generated ConfigMap's hashed name.
+          env:
+            - { name: DB_HOST, value: order-db }
+            - { name: DB_PORT, value: "5432" }
+            - { name: DB_NAME, value: campuscouriers_order }
+          envFrom:
+            - secretRef:
+                name: order-db-credentials
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from './useAuth'
+import { UnauthorizedPage } from '../../pages/UnauthorizedPage'
 
 function SessionLoadingScreen() {
   return (
@@ -30,4 +31,9 @@ export function PublicOnlyRoute() {
   if (status === 'authenticated') return <Navigate to="/" replace />
 
   return <Outlet />
+}
+
+export function RequireAdmin() {
+  const { currentUserType } = useAuth()
+  return currentUserType === 'Administrator' ? <Outlet /> : <UnauthorizedPage />
 }

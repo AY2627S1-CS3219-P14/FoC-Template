@@ -399,6 +399,59 @@ services:
       - user-net
     restart: "no"
 
+  rag-database:
+    image: pgvector/pgvector:pg16
+    container_name: rag-database
+    environment:
+      POSTGRES_DB: ${RAG_DB_NAME:-rag_db}
+      POSTGRES_USER: ${RAG_DB_USERNAME:-rag_user}
+      POSTGRES_PASSWORD: ${RAG_DB_PASSWORD:-rag_password}
+    ports:
+      - "${RAG_DB_PORT:-5436}:5432"
+    volumes:
+      - rag-database-data:/var/lib/postgresql/data
+      - ./RAG-service/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${RAG_DB_USERNAME:-rag_user} -d ${RAG_DB_NAME:-rag_db}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  rag-index:
+    build: ./RAG-service
+    profiles:
+      - jobs
+    environment:
+      DATABASE_URL: postgresql://${RAG_DB_USERNAME:-rag_user}:${RAG_DB_PASSWORD:-rag_password}@rag-database:5432/${RAG_DB_NAME:-rag_db}
+      CHUNKS_FILE: /app/ingestion/chunks.csv
+      EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+    volumes:
+      - ./RAG-service/ingestion/chunks.csv:/app/ingestion/chunks.csv:ro
+    depends_on:
+      rag-database:
+        condition: service_healthy
+    restart: "no"
+
+  rag-service:
+    build: ./RAG-service
+    environment:
+      DATABASE_URL: postgresql://${RAG_DB_USERNAME:-rag_user}:${RAG_DB_PASSWORD:-rag_password}@rag-database:5432/${RAG_DB_NAME:-rag_db}
+      EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      RAG_TOP_K: ${RAG_TOP_K:-5}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-5-20250929}
+      CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-512}
+    ports:
+      - "${RAG_SERVICE_PORT:-8003}:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      rag-database:
+        condition: service_healthy
+    restart: unless-stopped
+
 networks:
   user-net:
 
@@ -407,5 +460,6 @@ volumes:
   supplier-db-data:
   user-db-data:
   credit-db-data:
+  rag-database-data:
   notification-db-data:
   chat-db-data:

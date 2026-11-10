@@ -30,8 +30,9 @@ function getProgress(
   role: ErrandViewerRole,
 ): MyErrandProgress | null {
   if (errand.status === 'OPEN' && role === 'requester') return 'waiting-for-courier'
-  if (errand.status === 'ACCEPTED') {
-    return role === 'requester' ? 'awaiting-confirmation' : 'accepted'
+  if (errand.status === 'ACCEPTED') return 'accepted'
+  if (errand.status === 'DELIVERED') {
+    return role === 'requester' ? 'ready-for-collection' : 'awaiting-confirmation'
   }
   return null
 }
@@ -41,6 +42,7 @@ function getLastChangedAt(errand: ErrandListItem) {
     errand.failed_at ??
     errand.cancelled_at ??
     errand.completed_at ??
+    errand.delivered_at ??
     errand.accepted_at ??
     errand.created_at
   )
@@ -85,7 +87,7 @@ export async function loadMyErrands(
     listErrands(
       {
         requesterId: currentUserId,
-        statuses: ['OPEN', 'ACCEPTED'],
+        statuses: ['OPEN', 'ACCEPTED', 'DELIVERED'],
         sort: 'created_at,desc',
         page: 0,
         size: 100,
@@ -95,7 +97,7 @@ export async function loadMyErrands(
     listErrands(
       {
         courierId: currentUserId,
-        statuses: ['ACCEPTED'],
+        statuses: ['ACCEPTED', 'DELIVERED'],
         sort: 'created_at,desc',
         page: 0,
         size: 100,
@@ -187,6 +189,7 @@ export async function loadErrandDetails(
     createdAt: errand.created_at,
     expiresAt: errand.expires_at,
     acceptedAt: errand.accepted_at,
+    deliveredAt: errand.delivered_at,
     completedAt: errand.completed_at,
     cancelledAt: errand.cancelled_at,
     failedAt: errand.failed_at,

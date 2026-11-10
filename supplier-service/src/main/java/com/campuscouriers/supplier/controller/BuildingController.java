@@ -3,6 +3,7 @@ package com.campuscouriers.supplier.controller;
 import com.campuscouriers.supplier.dto.BuildingResponse;
 import com.campuscouriers.supplier.dto.CreateBuildingRequest;
 import com.campuscouriers.supplier.dto.ItemListResponse;
+import com.campuscouriers.supplier.dto.UpdateBuildingRequest;
 import com.campuscouriers.supplier.service.BuildingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -11,8 +12,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import java.net.URI;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/buildings")
@@ -33,5 +37,33 @@ public class BuildingController {
     @GetMapping
     public ItemListResponse<BuildingResponse> findActive() {
         return buildingService.findActive();
+    }
+
+    @GetMapping("/deactivated")
+    public ItemListResponse<BuildingResponse> findDeactivated() {
+        return buildingService.findDeactivated();
+    }
+
+    @GetMapping("/{id}")
+    public BuildingResponse findById(@PathVariable UUID id) {
+        return buildingService.findById(id);
+    }
+
+    @PutMapping("/{id}")
+    public BuildingResponse update(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateBuildingRequest request
+    ) {
+        return buildingService.update(id, request);
+    }
+
+    @PostMapping("/{id}/deactivate")
+    public BuildingResponse deactivate(@PathVariable UUID id) {
+        return buildingService.deactivate(id);
+    }
+
+    @PostMapping("/{id}/reactivate")
+    public BuildingResponse reactivate(@PathVariable UUID id) {
+        return buildingService.reactivate(id);
     }
 }

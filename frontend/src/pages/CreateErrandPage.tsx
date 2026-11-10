@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { CreditOfferCard } from '../components/errands/CreditOfferCard'
 import { FormField } from '../components/ui/FormField'
 import { createErrand, ErrandApiError } from '../features/errands/errand.api'
@@ -478,9 +478,12 @@ export function CreateErrandPage() {
           </button>
 
           {createdErrandId ? (
-            <p className="rounded-xl bg-[#ddf3e7] px-4 py-3 text-sm text-[#175c45]" role="status">
-              Errand created successfully. Reference: {createdErrandId}
-            </p>
+            <div className="rounded-xl bg-[#ddf3e7] px-4 py-3 text-sm text-[#175c45]">
+              <p role="status">Errand created successfully. Reference: {createdErrandId}</p>
+              <Link className="mt-2 inline-block font-semibold underline" to={`/errands/${createdErrandId}`}>
+                View errand
+              </Link>
+            </div>
           ) : null}
 
           {submitError ? (

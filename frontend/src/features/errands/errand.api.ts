@@ -41,11 +41,11 @@ export class ErrandApiError extends Error {
   }
 }
 
-async function postErrandAction<T>(
+async function sendErrandAction(
   path: string,
   request: Record<string, string>,
   signal?: AbortSignal,
-): Promise<T> {
+): Promise<Response> {
   let response: Response
 
   try {
@@ -76,6 +76,15 @@ async function postErrandAction<T>(
     throw new ErrandApiError(message, response.status, issues)
   }
 
+  return response
+}
+
+async function postErrandAction<T>(
+  path: string,
+  request: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<T> {
+  const response = await sendErrandAction(path, request, signal)
   return (await response.json()) as T
 }
 
@@ -178,6 +187,10 @@ export function cancelErrand(errandId: string, signal?: AbortSignal) {
     { errand_id: errandId },
     signal,
   )
+}
+
+export async function deliverErrand(errandId: string, signal?: AbortSignal): Promise<void> {
+  await sendErrandAction('/errand/deliver', { errand_id: errandId }, signal)
 }
 
 export function completeErrand(errandId: string, signal?: AbortSignal) {

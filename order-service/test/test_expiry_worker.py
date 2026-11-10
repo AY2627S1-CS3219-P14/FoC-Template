@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -79,3 +84,5 @@ def test_repeated_runs_do_not_emit_duplicate_events(database):
     assert expiry_worker.expire_overdue_errands() == 1
     assert expiry_worker.expire_overdue_errands() == 0
     assert len(outbox_events(database)) == 1
+
+

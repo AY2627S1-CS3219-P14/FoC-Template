@@ -6,8 +6,10 @@
  * Scope (AI-18): Built and tested the requested errand creation preview and entry points.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
  */
-
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import clipboardIcon from '../../assets/nav-clipboard.svg'
@@ -50,7 +52,7 @@ function SidebarNavItem({
 
 export function Sidebar() {
   return (
-    <aside className="hidden min-h-[calc(100vh-76px)] border-r border-[#dde3de] bg-white px-5 py-7 lg:block">
+    <aside className="hidden border-r border-[#dde3de] bg-white px-5 py-7 lg:sticky lg:top-[76px] lg:block lg:h-[calc(100vh-76px)] lg:self-start lg:overflow-y-auto">
       <nav
         aria-label="Primary navigation"
         className="space-y-2"

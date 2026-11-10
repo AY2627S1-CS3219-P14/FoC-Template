@@ -1,5 +1,11 @@
 # syntax=docker/dockerfile:1
 
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-09-18 to 2026-10-03
+# Scope (AI-23): Generated code and tests for the User Service endpoints, entities, validation and token handling I specified.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # ---- Build: compile and package the Spring Boot jar ----------------------
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /workspace

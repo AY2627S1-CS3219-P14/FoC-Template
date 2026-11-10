@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+AI Assistance Disclosure
+Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+Usage log: AI_USAGE_LOG.md
+Author review: Pending confirmation by Melodi Joy Halim.
+-->
+
+<!--
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 and 2026-10-01
+Scope: Added Testcontainers dependencies and Apache Commons CSV for seed importing.
+Spring Initializr generated the remaining initial Maven scaffold.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>

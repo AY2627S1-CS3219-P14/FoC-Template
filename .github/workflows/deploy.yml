@@ -1,3 +1,11 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10
+# Scope (AI-27): Generated the deploy workflow, CI helper scripts and deploy-role Terraform I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # Deploys main to AWS on every push (and on demand: Actions tab -> Deploy -> Run workflow).
 # How it works and the one-time setup: .github/workflows/README.md
 #

@@ -4,8 +4,10 @@
  * Scope (AI-08): Removed trailing full stops from alert text and updated examples and tests.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+ * Scope: Generated and refined chat notification event tests.
  */
-
 package com.campuscouriers.notification_service.event;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

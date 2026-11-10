@@ -1,4 +1,9 @@
-"""Create conversations, messages, websocket tickets and event inbox."""
+"""Create conversations, messages, websocket tickets and event inbox.
+
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+Scope: Generated and refined this Chat Service migration.
+"""
 
 from alembic import op
 import sqlalchemy as sa

@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: Anthropic Claude (model unrecorded), 2026-11-10
+ * Scope (AI-28): Generated the account list endpoint, admin users page and their tests.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Melodi Joy Halim.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Responsive styling and layout refactoring for the admin dashboard.
+ */
 .admin-preview { height:100vh; height:100dvh; overflow:hidden; background:#f5f7f4; color:#17211d; font-size:14px; }
 .admin-preview button,.admin-preview a,.admin-dialog button { cursor:pointer; }
 .admin-preview button,.admin-dialog button { border:1px solid #dce4dd; border-radius:10px; padding:9px 14px; background:white; font-weight:600; color:#175c45; }

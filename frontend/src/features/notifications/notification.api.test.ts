@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Generated and refined notification API tests.
+ */
 import { afterEach, expect, it, vi } from 'vitest'
 import { authenticatedFetch } from '../auth/auth.fetch'
 import { openNotificationStream } from './notification.api'

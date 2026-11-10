@@ -1,3 +1,9 @@
+<!--
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), dates: 2026-11-08 to 2026-11-10
+Scope: Implementation, testing, debugging, and documentation assistance for Chat Service.
+-->
+
 # Chat Service
 
 The Chat Service provides one persistent conversation for each accepted errand.

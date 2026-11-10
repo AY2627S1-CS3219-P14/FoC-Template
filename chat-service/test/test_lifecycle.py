@@ -1,3 +1,7 @@
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), dates: 2026-11-08 to 2026-11-10
+# Scope: Generated and refined Chat Service lifecycle tests.
+
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 

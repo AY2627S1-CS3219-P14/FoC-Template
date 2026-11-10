@@ -4,8 +4,10 @@
  * Scope (AI-02): Adjusted existing UI styling to match the supplied Figma mockup.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation and test assistance for frontend chat integration.
  */
-
 import { Outlet } from 'react-router'
 import { CreditProvider } from '../../features/credits/CreditProvider'
 import { NotificationProvider } from '../../features/notifications/NotificationProvider'

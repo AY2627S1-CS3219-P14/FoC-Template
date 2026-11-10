@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+ * Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Melodi Joy Halim.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+ * Scope: Implementation and test assistance for chat notification events.
+ */
 package com.campuscouriers.notification_service.config;
 
 import com.campuscouriers.notification_service.event.InvalidNotificationEventException;

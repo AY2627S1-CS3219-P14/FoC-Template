@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-11-10
+ * Scope: Generated supplier persistence, duplicate, retrieval, and administration queries.
+ */
 package com.campuscouriers.supplier.repository;
 
 import com.campuscouriers.supplier.entity.Supplier;

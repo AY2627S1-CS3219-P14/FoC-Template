@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 import asyncio
 import logging
 import os
@@ -67,3 +72,5 @@ async def expiry_worker(stop_event: asyncio.Event) -> None:
             await asyncio.wait_for(stop_event.wait(), timeout=INTERVAL_SECONDS)
         except asyncio.TimeoutError:
             pass
+
+

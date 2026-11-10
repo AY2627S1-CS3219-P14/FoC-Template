@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+AI Assistance Disclosure (contributor use):
+Tool: OpenAI Codex (model not recorded), date: 2026-10-22
+Scope: Debugging assistance for the Maven Kafka dependency error.
+Author review: I verified the dependency against the project build configuration.
+-->
+
+<!--
+AI Assistance Disclosure
+Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+Usage log: AI_USAGE_LOG.md
+Author review: Pending confirmation by Melodi Joy Halim.
+-->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
@@ -140,3 +155,4 @@
 	</build>
 
 </project>
+ 

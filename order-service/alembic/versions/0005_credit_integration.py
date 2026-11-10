@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 """Persist reservation IDs and recoverable credit-operation intents."""
 
 from alembic import op
@@ -35,3 +40,5 @@ def downgrade():
     op.drop_constraint("uq_errands_credit_reservation", "errands", type_="unique")
     op.drop_column("errands", "pending_credit_action")
     op.drop_column("errands", "credit_reservation_id")
+
+

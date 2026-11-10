@@ -1,3 +1,14 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-10-09 to 2026-10-15
+# Scope (AI-24): Generated code, configuration and tests for the specified user event, Kafka setup and outbox changes.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 """Errand events published through the transactional outbox.
 
 Each event is added to the caller's session, so it is relayed to Kafka (by Debezium)
@@ -83,3 +94,5 @@ def append_errand_event(db: Session, event: ErrandEvent) -> None:
         type=EVENT_TYPES[type(event)],
         payload=event.model_dump(mode="json", by_alias=True),
     ))
+
+

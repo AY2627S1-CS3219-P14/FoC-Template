@@ -1,3 +1,8 @@
+# AI Assistance Disclosure (contributor use):
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
+# Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -76,3 +81,5 @@ def deliver_errand_request(
             courier_id=delivered["courier_id"],
             delivered_at=delivered["delivered_at"],
         ))
+
+

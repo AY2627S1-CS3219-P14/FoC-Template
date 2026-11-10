@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: Anthropic Claude (model unrecorded), 2026-09-18 to 2026-10-03
+ * Scope (AI-23): Generated code and tests for the User Service endpoints, entities, validation and token handling I specified.
+ * Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+ * Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Melodi Joy Halim.
+ */
+
 package com.campuscouriers.user.security;
 
 import com.campuscouriers.user.security.access.JwtAuthenticationFilter;

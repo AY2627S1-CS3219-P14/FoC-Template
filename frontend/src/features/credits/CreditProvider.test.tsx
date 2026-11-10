@@ -4,8 +4,10 @@
  * Scope (AI-04): Reused balance loading logic and tested request cleanup.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Updated tests for notification-driven frontend behavior.
  */
-
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAvailableBalance } from './credit.api'

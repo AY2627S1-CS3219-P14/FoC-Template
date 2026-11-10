@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+# Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # Disk type for Kafka's persistent volumes. Newer EKS clusters have no default StorageClass, so
 # define one. Needs the Amazon EBS CSI driver add-on.
 apiVersion: storage.k8s.io/v1

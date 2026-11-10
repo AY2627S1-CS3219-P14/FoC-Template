@@ -1,5 +1,6 @@
 package com.campuscouriers.user.account;
 
+import com.campuscouriers.user.account.dto.AccountPageResponse;
 import com.campuscouriers.user.account.dto.AccountResponse;
 import com.campuscouriers.user.account.dto.EmailResponse;
 import com.campuscouriers.user.entity.Account;
@@ -11,11 +12,14 @@ import com.campuscouriers.user.exception.LastAdministratorException;
 import com.campuscouriers.user.repository.AccountRepository;
 import com.campuscouriers.user.security.access.AccessTokenClaims;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -25,6 +29,29 @@ public class AccountService {
 
     public AccountService(AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
+    }
+
+    // Available to Administrators only. search matches part of the email or name, ignoring case;
+    // type limits the list to one account type (null = all)
+    @Transactional(readOnly = true)
+    public AccountPageResponse listAccounts(String search, AccountType type, int page, int size,
+                                            AccessTokenClaims caller) {
+
+        if (caller.type() != AccountType.Administrator) {
+            throw new InsufficientPermissionException();
+        }
+
+        String term = search == null ? "" : search.strip().toLowerCase(Locale.ROOT);
+        String pattern = "%" + escapeLike(term) + "%";
+        Set<AccountType> types = type == null ? EnumSet.allOf(AccountType.class) : EnumSet.of(type);
+
+        return AccountPageResponse.from(
+                accountRepository.searchSummaries(pattern, types, PageRequest.of(page, size)));
+    }
+
+    // So a search for "a_b" or "100%" matches those characters literally ("!" is the query's escape character)
+    static String escapeLike(String term) {
+        return term.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     // Available to Administrators only, and never on their own account

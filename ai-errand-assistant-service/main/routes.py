@@ -71,11 +71,11 @@ CLOCK_PATTERN = re.compile(
     r")\b",
     re.IGNORECASE,
 )
-RELATIVE_DEADLINE_PATTERN = re.compile(
-    r"\b(?:in|within)\s+(\d+)\s+(minutes?|mins?|hours?|hrs?)\b",
-    re.IGNORECASE,
-)
 WORD_PATTERN = re.compile(r"[a-z0-9]+")
+# One word that can state a floor: "2", "02", "l2", "lvl2", "level2", "b1", "2nd".
+# A number fused to anything else ("1h", "5pm", "10cr") is not a floor.
+FLOOR_WORD_PATTERN = re.compile(r"(?:level|lvl|floor|flr|fl|l|(b))?0*(\d{1,2})(?:st|nd|rd|th)?")
+SENTENCE_PATTERN = re.compile(r"[^.!?]+[.!?]*")
 # Words too common in supplier/building names to identify one on their own.
 GENERIC_NAME_WORDS = frozenset({
     "the", "and", "cafe", "coffee", "food", "foods", "shop", "store", "express", "kitchen",
@@ -105,6 +105,60 @@ def _names_place(message: str, name: str) -> bool:
         len(word) >= 3 and word not in GENERIC_NAME_WORDS and word in message_word_set
         for word in name_words
     )
+
+
+def _floor_keys(text: str) -> set[str]:
+    """Floors a text could be naming, e.g. {"2"} for "L2", {"b1"} for "B1"."""
+    keys = set()
+    for word in _words(text):
+        match = FLOOR_WORD_PATTERN.fullmatch(word)
+        if match is not None:
+            basement, number = match.groups()
+            keys.add(f"{'b' if basement else ''}{int(number)}")
+    return keys
+
+
+def _verified_floor(floor: str | None, message: str) -> str | None:
+    """Accept the LLM's floor only if the message states it.
+
+    The LLM decides which number is the floor; the backend only checks that
+    number appears in the message as a word of its own ("level 2", "L2",
+    "#02-10"). Numbers fused to a unit ("in 1h", "by 5pm") never count, so a
+    duration or time cannot become a floor. Floors without a number ("ground")
+    must appear word for word.
+    """
+    if not floor:
+        return None
+    floor_keys = _floor_keys(floor)
+    if floor_keys:
+        return floor if floor_keys & _floor_keys(message) else None
+    message_words = set(_words(message))
+    return floor if all(word in message_words for word in _words(floor)) else None
+
+
+def _without_unstated_places(
+    description: str | None,
+    message: str,
+    suppliers: list[SupplierCandidate],
+    buildings: list[BuildingCandidate],
+) -> str | None:
+    """Drop sentences that name a catalog place the user never mentioned.
+
+    The LLM sometimes writes the supplier it matched into the instructions
+    ("pick up from Arise and Shine") even though the message did not name it.
+    """
+    if not description:
+        return description
+    names = {supplier.name for supplier in suppliers}
+    names |= {supplier.building for supplier in suppliers}
+    names |= {building.name for building in buildings}
+    unstated = [name for name in names if name.strip() and not _names_place(message, name)]
+    kept = [
+        sentence.strip()
+        for sentence in SENTENCE_PATTERN.findall(description)
+        if sentence.strip() and not any(_names_place(sentence, name) for name in unstated)
+    ]
+    return " ".join(kept)
 
 
 def _verified_supplier(
@@ -198,27 +252,24 @@ def _clock_candidates(message: str) -> set[tuple[int, int]]:
     return candidates
 
 
-def _relative_deadlines(message: str, now: datetime) -> list[datetime]:
-    """Deadlines computed in code from phrases such as "within 30 minutes"."""
-    deadlines = []
-    for match in RELATIVE_DEADLINE_PATTERN.finditer(message):
-        amount = int(match.group(1))
-        minutes = amount * 60 if match.group(2).casefold().startswith("h") else amount
-        if minutes > MAX_DEADLINE.total_seconds() / 60:
-            continue
-        deadlines.append(now.astimezone(UTC) + timedelta(minutes=minutes))
-    return deadlines
+def _relative_deadline(minutes: int | None, now: datetime) -> datetime | None:
+    """Deadline for a duration the LLM read from the message ("in 1h" -> 60).
+
+    The LLM only interprets the wording; the time itself is computed here as
+    now + minutes, and must fall within MAX_DEADLINE.
+    """
+    if minutes is None or minutes < 1 or minutes > MAX_DEADLINE.total_seconds() / 60:
+        return None
+    return now.astimezone(UTC) + timedelta(minutes=minutes)
 
 
 def _parse_explicit_deadline(value: str | None, message: str, now: datetime) -> datetime | None:
-    """Accept the LLM's deadline only if the message actually states it.
+    """Accept the LLM's clock deadline only if the message actually states it.
 
-    - Clock deadlines: the LLM's local hour:minute must be one the message
-      mentions after a deadline marker. The LLM decides the date (so "tmr",
-      "this friday" or any other wording works); the backend only checks the
-      result is in the future and within MAX_DEADLINE.
-    - Relative deadlines: the time is computed in code (now + duration), so the
-      LLM cannot shift it.
+    The LLM's local hour:minute must be one the message mentions after a
+    deadline marker. The LLM decides the date (so "tmr", "this friday" or any
+    other wording works); the backend only checks the result is in the future
+    and within MAX_DEADLINE. Relative deadlines are handled by _relative_deadline.
     """
     if value is None:
         return None
@@ -230,15 +281,10 @@ def _parse_explicit_deadline(value: str | None, message: str, now: datetime) -> 
         parsed = parsed.replace(tzinfo=BUSINESS_TIMEZONE)
 
     parsed_local = parsed.astimezone(BUSINESS_TIMEZONE)
-    relative = _relative_deadlines(message, now)
-    if (parsed_local.hour, parsed_local.minute) in _clock_candidates(message):
-        deadline = parsed_local
-    elif relative:
-        deadline = min(relative, key=lambda candidate: abs(candidate - parsed))
-    else:
+    if (parsed_local.hour, parsed_local.minute) not in _clock_candidates(message):
         return None
 
-    deadline = deadline.astimezone(UTC)
+    deadline = parsed_local.astimezone(UTC)
     now_utc = now.astimezone(UTC)
     if deadline <= now_utc or deadline > now_utc + MAX_DEADLINE:
         return None
@@ -311,9 +357,15 @@ def _response(
         else None
     )
     item = extraction.required_item.strip() if extraction.required_item else None
-    floor = extraction.delivery_floor.strip() if extraction.delivery_floor else None
-    description = _with_arrival_note(extraction.delivery_description)
-    deadline = _parse_explicit_deadline(extraction.expires_at, message, now)
+    floor = _verified_floor(
+        extraction.delivery_floor.strip() if extraction.delivery_floor else None, message,
+    )
+    description = _with_arrival_note(
+        _without_unstated_places(extraction.delivery_description, message, suppliers, buildings)
+    )
+    deadline = _parse_explicit_deadline(
+        extraction.expires_at, message, now
+    ) or _relative_deadline(extraction.deadline_in_minutes, now)
 
     selected_indices = sorted(
         {index for index in extraction.similar_history_indices if 0 <= index < len(history_context)}

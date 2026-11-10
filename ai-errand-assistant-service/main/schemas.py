@@ -58,6 +58,9 @@ class LLMExtraction(BaseModel):
     # Credits the user explicitly offered in the message ("for 10 credits"), else null.
     # Not range-checked here; routes._response ignores values below 1 and caps at 25.
     requested_credits: int | None = None
+    # A relative deadline ("in 1h", "an hour from now") as minutes from now, else null.
+    # The backend computes the deadline itself, so the LLM never does the date arithmetic.
+    deadline_in_minutes: int | None = None
 
 
 class ErrandHistoryItem(BaseModel):

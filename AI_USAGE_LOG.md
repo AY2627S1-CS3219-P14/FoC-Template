@@ -8,8 +8,6 @@ Author review: Pending confirmation by Elliot Yong.
 
 # AI usage log
 
-Contributor: Elliot Yong (`yytelliot`)
-
 This is a partial record of verified assistance for this contributor in the current checkout. Dates use Singapore time. File headers link to entries by ID. Prompt text is reproduced verbatim where available. Key responses are summarized. Author review is pending.
 
 ## AI-01 · Supplier card content

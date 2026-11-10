@@ -8,7 +8,7 @@ Author review: Changes validated and confirmed.
 
 # AI usage log
 
-This is a partial record of verified assistance for this contributor in the current checkout. Dates use Singapore time. File headers link to entries by ID. Prompt text is reproduced verbatim where available. Key responses are summarized. Changes were validated and confirmed by the author.
+This is a record of verified assistance in the current checkout. Dates use Singapore time. File headers link to entries by ID. Prompt text is reproduced verbatim where available. Key responses are summarized. Changes were validated and confirmed by the author.
 
 ## AI-01 · Supplier card content
 

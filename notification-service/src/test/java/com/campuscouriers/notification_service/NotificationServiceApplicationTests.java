@@ -233,6 +233,36 @@ class NotificationServiceApplicationTests {
     }
 
     @Test
+    void expiryAppearsLiveAndInHistoryOnceAfterKafkaReplay() throws Exception {
+        UUID requester = UUID.randomUUID();
+        UUID errand = UUID.randomUUID();
+        UUID event = UUID.randomUUID();
+        String body = """
+            {"errandId":"%s","requesterId":"%s","creditValue":10,"resultingStatus":"FAILED",
+             "failureReason":"Errand expired before delivery","expiredAt":"2026-11-08T00:00:00Z"}
+            """.formatted(errand, requester);
+        String token = token(requester);
+        try (BufferedReader stream = openStream(token)) {
+            assertThat(nextEvent(stream).type()).isEqualTo("connected");
+            kafka.send(record("errand.expired", event, body)).get(10, TimeUnit.SECONDS);
+            SseFrame frame = nextEvent(stream);
+            assertThat(frame.type()).isEqualTo("notification");
+            JsonNode alert = json.readTree(frame.data());
+            assertThat(alert.get("type").asString()).isEqualTo("ERRAND_EXPIRED");
+            assertThat(alert.get("message").asString()).isEqualTo("Your errand expired before delivery");
+            assertThat(alert.get("data").get("errandId").asString()).isEqualTo(errand.toString());
+
+            var replay = kafka.send(record("errand.expired", event, body)).get(10, TimeUnit.SECONDS);
+            assertCommitted("errand.expired", replay.getRecordMetadata().partition(),
+                replay.getRecordMetadata().offset());
+            var history = request("GET", "/notifications", token);
+            JsonNode items = json.readTree(history.body()).get("items");
+            assertThat(items.size()).isEqualTo(1);
+            assertThat(items.get(0)).isEqualTo(alert);
+        }
+    }
+
+    @Test
     void streamRequiresAuthenticationAndClosesWhenTokenExpires() throws Exception {
         var preflight = http.send(httpRequest("/notifications/stream", null)
             .header("Origin", "http://localhost:5173")

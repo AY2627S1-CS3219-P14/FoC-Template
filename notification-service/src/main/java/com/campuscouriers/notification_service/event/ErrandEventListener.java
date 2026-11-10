@@ -32,4 +32,15 @@ public class ErrandEventListener {
             default -> throw new InvalidNotificationEventException("Unsupported event topic");
         }
     }
+
+    @KafkaListener(topics = "errand.expired")
+    public void onExpired(ConsumerRecord<String, String> record) {
+        var event = parser.parseExpired(record);
+        String message = switch (event.resultingStatus()) {
+            case "EXPIRED" -> "Your errand expired";
+            case "FAILED" -> "Your errand expired before delivery";
+            default -> throw new InvalidNotificationEventException("Unsupported expiry resultingStatus");
+        };
+        notifications.save(event.eventId(), event.requesterId(), "ERRAND_EXPIRED", event.errandId(), message);
+    }
 }

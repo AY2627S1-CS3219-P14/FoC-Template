@@ -9,12 +9,15 @@ Authenticated HTTP endpoints expose saved notifications and stream new ones over
 | `errand.delivered` | `requesterId` | `ERRAND_DELIVERED` |
 | `errand.completed` | `courierId` | `ERRAND_COMPLETED` |
 | `errand.failed` | `courierId` | `ERRAND_FAILED` |
+| `errand.expired` | `requesterId` | `ERRAND_EXPIRED` |
 | `credit.received` | `userId` (courier) | `CREDIT_RECEIVED` |
 | `credit.released` | `userId` (requester) | `CREDIT_RELEASED` |
 | `chat.message.created` | `recipientId` | `CHAT_MESSAGE` |
 
-Errand events are plain JSON with `errandId`, `requesterId`, `courierId` (UUIDs),
-and positive integer `creditValue`. Additional payload fields are ignored.
+Errand events are plain JSON. Acceptance, delivery, completion, and failure events
+use `errandId`, `requesterId`, `courierId` (UUIDs), and a positive integer `creditValue`.
+Expiry uses `errandId`, `requesterId`, and `resultingStatus` (`EXPIRED` or `FAILED`).
+Additional payload fields are ignored.
 The UTF-8 `eventId` Kafka header must contain the original outbox UUID;
 see `../debezium/connectors/order-outbox.json`.
 Delivery notifications confirm that the assigned courier marked the errand delivered.

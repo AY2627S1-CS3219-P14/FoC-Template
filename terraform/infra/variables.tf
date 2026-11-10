@@ -150,3 +150,10 @@ variable "app_subdomain" {
   type        = string
   default     = "app"
 }
+
+# --- GitHub Actions --------------------------------------------------------------------------------
+variable "github_repository" {
+  description = "owner/name of the GitHub repository whose main branch may deploy (github-actions.tf)."
+  type        = string
+  default     = "AY2627S1-CS3219-P14/FoC-Template"
+}

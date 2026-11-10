@@ -110,3 +110,8 @@ output "api_url" {
   description = "Baked into the frontend build as VITE_*_API_URL by scripts/deploy-frontend.ps1."
   value       = "https://${var.api_subdomain}.${var.domain_name}"
 }
+
+output "github_deploy_role_arn" {
+  description = "Set as the AWS_DEPLOY_ROLE_ARN variable of the GitHub repository (.github/workflows/README.md)."
+  value       = aws_iam_role.github_deploy.arn
+}

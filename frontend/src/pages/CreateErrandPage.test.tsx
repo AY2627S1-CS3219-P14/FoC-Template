@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-17
+ * Scope (AI-18): Built and tested the requested errand creation preview and entry points.
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-23
+ * Scope (AI-21): Displayed the real balance in the UI and tested its display.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

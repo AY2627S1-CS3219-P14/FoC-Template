@@ -2,6 +2,8 @@
  * AI Assistance Disclosure
  * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-14
  * Scope (AI-15): Implemented and tested the requested create-account UI.
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-17
+ * Scope (AI-18): Built and tested the requested errand creation preview and entry points.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Pending confirmation by Elliot Yong.
  */

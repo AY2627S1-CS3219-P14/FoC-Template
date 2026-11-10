@@ -4,6 +4,8 @@
  * Scope (AI-02): Adjusted existing UI styling to match the supplied Figma mockup.
  * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-08
  * Scope (AI-06): Implemented and tested the requested account initials menu.
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-23
+ * Scope (AI-21): Displayed the real balance in the UI and tested its display.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Pending confirmation by Elliot Yong.
  */

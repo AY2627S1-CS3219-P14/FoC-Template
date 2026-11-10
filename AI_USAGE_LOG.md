@@ -349,3 +349,186 @@ proceed
 ```text
 Help me add attributions to the relevant files that I worked on
 ```
+
+## AI-17 · Courier pickup and requester receipt controls
+
+- **Source and mode** — OpenAI Codex (gpt-6.1-sol). Generate and test.
+- **Date** — 2026-11-07
+- **Key response** — Wired the assigned courier’s pickup action and the requester’s receipt and problem-report actions to the existing Order Service flow. Added frontend tests for those actions.
+
+**Commit evidence** — `8775e70`
+
+**Affected files**
+
+- [`frontend/src/components/errands/ErrandActionDialog.tsx`](frontend/src/components/errands/ErrandActionDialog.tsx)
+- [`frontend/src/features/errands/errand.api.ts`](frontend/src/features/errands/errand.api.ts)
+- [`frontend/src/features/errands/errand.api.test.ts`](frontend/src/features/errands/errand.api.test.ts)
+- [`frontend/src/pages/ErrandDetailsPage.tsx`](frontend/src/pages/ErrandDetailsPage.tsx)
+- [`frontend/src/pages/ErrandDetailsPage.test.tsx`](frontend/src/pages/ErrandDetailsPage.test.tsx)
+
+**Exact prompts**
+
+```json
+"In the frontend there should be a way for the requester to cancel an errand if a courier has not accepted it. You should also implement the new flow of the courier confirming the item is ready for pickup. so order flow will look like this\n\nRequester makers an errand\nrequester can cancel the errand\nCourier accepts the errand \nrequester can no longer cancel the errand\nCourier indicates the item is ready for pickup\nRequester confirms that item has arrives and credits transfer, or requester reports problem\n\n\n Implement this for the frontend with the given contracts and API endpoints\n"
+```
+
+```text
+The frontend will have to accept from DELIVERED
+```
+
+```text
+ok make the commits
+```
+
+## AI-18 · Standalone errand creation preview
+
+- **Source and mode** — OpenAI Codex (gpt-5.6-sol). Generate and test.
+- **Date** — 2026-10-17
+- **Key response** — Implemented the requested frontend form preview, removed the supplier-page step label, redirected the sidebar button to the form, and added UI tests.
+
+**Commit evidence** — `0f426f1`, `09f9da8`, `b7c366c`
+
+**Affected files**
+
+- [`frontend/src/App.tsx`](frontend/src/App.tsx)
+- [`frontend/src/components/errands/CreditOfferCard.tsx`](frontend/src/components/errands/CreditOfferCard.tsx)
+- [`frontend/src/components/ui/FormField.tsx`](frontend/src/components/ui/FormField.tsx)
+- [`frontend/src/components/layout/MobileBottomNav.tsx`](frontend/src/components/layout/MobileBottomNav.tsx)
+- [`frontend/src/components/layout/Sidebar.tsx`](frontend/src/components/layout/Sidebar.tsx)
+- [`frontend/src/components/ui/SupplierCard.tsx`](frontend/src/components/ui/SupplierCard.tsx)
+- [`frontend/src/pages/SuppliersPage.tsx`](frontend/src/pages/SuppliersPage.tsx)
+- [`frontend/src/pages/CreateErrandPage.tsx`](frontend/src/pages/CreateErrandPage.tsx)
+- [`frontend/src/pages/CreateErrandPage.test.tsx`](frontend/src/pages/CreateErrandPage.test.tsx)
+- [`frontend/src/index.css`](frontend/src/index.css)
+
+**Exact prompts**
+
+```text
+[https://www.figma.com/design/VhEDwbUypQ52Dj2agGpkXJ/CS3219-Mockup?node-id=7-2&p=f&t=bEFh4l5lSF6cTKX0-0](https://www.figma.com/design/VhEDwbUypQ52Dj2agGpkXJ/CS3219-Mockup?node-id=7-2\&p=f\&t=bEFh4l5lSF6cTKX0-0)
+
+create a plan for creating the errand creation page inspired by the existing style and the figma. Do not connect any back end services yet, these commits should be to create the frontend appearance first
+```
+
+```text
+also include in your plan to remove the 1 of 3 from the supplier page, since now people can go directly to errand creation
+```
+
+```text
+finally include in your plan to change the lime choose a supplier button to redirect straight to the errand creation page
+```
+
+```text
+ok execute the plan
+```
+
+## AI-19 · Browse Errands dashboard preview
+
+- **Source and mode** — OpenAI Codex (gpt-5.6-sol). Generate and test.
+- **Date** — 2026-10-20
+- **Key response** — Rendered the requested frontend dashboard preview with space for active errands and added tests for the dashboard UI.
+
+**Commit evidence** — `7d7f0fe`, `839a4f2`
+
+**Affected files**
+
+- [`frontend/src/pages/DashboardPage.tsx`](frontend/src/pages/DashboardPage.tsx)
+- [`frontend/src/pages/DashboardPage.test.tsx`](frontend/src/pages/DashboardPage.test.tsx)
+
+**Exact prompts**
+
+```text
+[https://www.figma.com/design/VhEDwbUypQ52Dj2agGpkXJ/CS3219-Mockup?node-id=7-2&p=f&t=bEFh4l5lSF6cTKX0-0](https://www.figma.com/design/VhEDwbUypQ52Dj2agGpkXJ/CS3219-Mockup?node-id=7-2&p=f&t=bEFh4l5lSF6cTKX0-0)
+create a plan for creating the errand dashboard page inspired by the existing style and the figma. Do not connect any back end services yet, these commits should be to create the frontend appearance first
+```
+
+```text
+try again but only have the elements the current backlog features and current apis can support. There should not be a weekly impact summary. There should be a space for the active errands panel as active errands will eventually be displayed.
+```
+
+```text
+execute your proposed commits
+```
+
+## AI-20 · Errand details preview
+
+- **Source and mode** — OpenAI Codex (gpt-5.6-sol). Generate and test.
+- **Date** — 2026-10-22
+- **Key response** — Rendered the frontend errand details preview with manual refresh and added tests for preview states.
+
+**Commit evidence** — `0c0d1ce`, `9175de5`, `c232c9a`
+
+**Affected files**
+
+- [`frontend/src/pages/ErrandDetailsPage.tsx`](frontend/src/pages/ErrandDetailsPage.tsx)
+- [`frontend/src/pages/ErrandDetailsPage.test.tsx`](frontend/src/pages/ErrandDetailsPage.test.tsx)
+
+The chat also contained the existing Order Service Endpoint Guide as reference. The preview used local mock data.
+
+**Exact prompts**
+
+```text
+create a plan for creating the errand details page inspired by the existing style and the figma. Do not connect any back end services yet, these commits should be to create the frontend appearance first
+```
+
+```text
+Do not poll the API as we are adding SSE later. For now we will manually refresh.
+```
+
+```text
+plan the errand details page commits
+```
+
+```text
+execute
+```
+
+## AI-21 · Display the existing credit balance
+
+- **Source and mode** — OpenAI Codex (gpt-5.6-sol). Generate and test.
+- **Date** — 2026-10-23
+- **Key response** — Replaced placeholder credit amounts in the header and errand form with the existing Credit Service balance and added display tests.
+
+**Commit evidence** — `12bad48`, `b4aa90e`
+
+**Affected files**
+
+- [`frontend/src/components/errands/CreditOfferCard.tsx`](frontend/src/components/errands/CreditOfferCard.tsx)
+- [`frontend/src/components/layout/AppHeader.tsx`](frontend/src/components/layout/AppHeader.tsx)
+- [`frontend/src/components/layout/AppHeader.test.tsx`](frontend/src/components/layout/AppHeader.test.tsx)
+- [`frontend/src/pages/CreateErrandPage.tsx`](frontend/src/pages/CreateErrandPage.tsx)
+- [`frontend/src/pages/CreateErrandPage.test.tsx`](frontend/src/pages/CreateErrandPage.test.tsx)
+
+**Exact prompts**
+
+```text
+come up with a plan to update the UI's current placeholder credit amount with the user's real credit amount using the newly added credit api
+```
+
+```text
+plan the commits
+```
+
+```text
+execute
+```
+
+## AI-22 · Requester delivery notification
+
+- **Source and mode** — OpenAI Codex (gpt-6.1-sol). Generate and test.
+- **Date** — 2026-11-07
+- **Key response** — Added the requested requester alert when the courier marks an errand delivered. Used the existing errand.delivered event and added coverage for the alert.
+
+**Commit evidence** — `1684b0d`
+
+**Affected files**
+
+- [`notification-service/README.md`](notification-service/README.md)
+- [`notification-service/src/main/java/com/campuscouriers/notification_service/event/ErrandEventListener.java`](notification-service/src/main/java/com/campuscouriers/notification_service/event/ErrandEventListener.java)
+- [`notification-service/src/test/java/com/campuscouriers/notification_service/NotificationServiceApplicationTests.java`](notification-service/src/test/java/com/campuscouriers/notification_service/NotificationServiceApplicationTests.java)
+
+**Exact prompts**
+
+```text
+errand completed should also notify requester. Also when courier indicates that the item is ready for collection, there should be a notification for the requester. Make use of the existing order service events described in the even list.
+```
+

@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-07
+ * Scope (AI-17): Wired and tested the existing pickup and receipt actions.
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-22
+ * Scope (AI-20): Built and tested the errand details preview with manual refresh.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

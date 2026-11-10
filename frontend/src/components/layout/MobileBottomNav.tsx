@@ -4,7 +4,6 @@ import clipboardIcon from '../../assets/nav-clipboard.svg'
 import compassIcon from '../../assets/nav-compass.svg'
 import chatIcon from '../../assets/nav-chat.svg'
 import suppliersIcon from '../../assets/nav-suppliers.svg'
-import { useAuth } from '../../features/auth/useAuth'
 
 type MobileNavItemProps = {
   to: string
@@ -40,7 +39,6 @@ function MobileNavItem({
 }
 
 export function MobileBottomNav() {
-  const { currentUserType } = useAuth()
   return (
     <nav
       aria-label="Mobile navigation"
@@ -65,7 +63,6 @@ export function MobileBottomNav() {
       <MobileNavItem to="/errands/new">
         Create errand
       </MobileNavItem>
-      {currentUserType === 'Administrator' && <MobileNavItem to="/admin" icon={clipboardIcon}>Admin</MobileNavItem>}
     </nav>
   )
 }

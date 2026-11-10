@@ -9,8 +9,13 @@ import {
   reactivateSupplier, SupplierApiError,
 } from '../features/suppliers/supplier.api'
 import type { Supplier } from '../features/suppliers/supplier.types'
+import { listErrands } from '../features/errands/errand.api'
+import { getProfile } from '../features/auth/profile.api'
+import type { ErrandListItem } from '../features/errands/errand.types'
 
 vi.mock('../components/layout/AccountMenu', () => ({ AccountMenu: () => <button>Account menu</button> }))
+vi.mock('../features/errands/errand.api', () => ({ listErrands: vi.fn() }))
+vi.mock('../features/auth/profile.api', () => ({ getProfile: vi.fn() }))
 
 vi.mock('../features/suppliers/supplier.api', async importOriginal => ({
   ...await importOriginal<typeof import('../features/suppliers/supplier.api')>(),
@@ -29,6 +34,14 @@ const supplier: Supplier = {
   openingTime: '08:00:00', closingTime: '18:00:00', imageUrl: null, status: 'ACTIVE',
 }
 const page = (items: Supplier[]) => ({ items, page: { number: 0, size: 100, totalElements: items.length, totalPages: 1, hasNext: false, hasPrevious: false } })
+const errand: ErrandListItem = {
+  id: 'errand-1', status: 'ACCEPTED', requester_id: 'requester-1', courier_id: 'courier-1',
+  supplier_id: supplier.id, required_item: 'Two iced coffees', credit_value: 12,
+  delivery_building_id: building.id, delivery_floor: '2', delivery_description: null,
+  expires_at: '2026-11-10T12:00:00Z', created_at: '2026-11-10T09:00:00Z',
+  accepted_at: '2026-11-10T09:05:00Z', delivered_at: null, completed_at: null,
+  cancelled_at: null, failed_at: null, failure_reason: null,
+}
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
@@ -46,6 +59,11 @@ beforeEach(() => {
   vi.mocked(listDeactivatedBuildings).mockResolvedValue({ items: [] })
   vi.mocked(createSupplier).mockResolvedValue(supplier)
   vi.mocked(deactivateSupplier).mockResolvedValue({ ...supplier, status: 'INACTIVE' })
+  vi.mocked(listErrands).mockResolvedValue({ total: 1, items: [errand] })
+  vi.mocked(getProfile).mockImplementation(async id => ({
+    name: id === errand.requester_id ? 'Jamie Tan' : 'Alex Lim',
+    email: `${id}@u.nus.edu`,
+  }))
 })
 
 function dashboard(path = '/admin') {
@@ -67,8 +85,19 @@ describe('Admin dashboard supplier integration', () => {
     vi.mocked(listDeactivatedCategories).mockResolvedValue({ items: [{ id: 'old-category', name: 'Old category', status: 'RETIRED' }] })
     vi.mocked(listDeactivatedBuildings).mockResolvedValue({ items: [{ id: 'old-building', name: 'Old building', status: 'RETIRED' }] })
     dashboard()
-    expect(await screen.findByText('Inactive categories')).toBeInTheDocument()
-    expect(screen.getByText('Inactive buildings')).toBeInTheDocument()
+    expect(await screen.findByText('Directory overview')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Suppliers' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Categories' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Buildings' })).toBeInTheDocument()
+    expect(screen.getAllByText('Active')).toHaveLength(3)
+    expect(screen.getAllByText('Inactive')).toHaveLength(3)
+    expect(screen.getByText('Expired errands')).toBeInTheDocument()
+    expect(screen.getByText('Cancelled errands')).toBeInTheDocument()
+    expect(screen.getByText('Failed errands')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View all errands →' })).toHaveAttribute('href', '/admin/errands')
+    expect(screen.getByRole('link', { name: 'Manage categories →' })).toHaveAttribute('href', '/admin/categories')
+    expect(screen.getByRole('link', { name: 'Manage buildings →' })).toHaveAttribute('href', '/admin/buildings')
+    expect(screen.queryByText('Keep the directory current.')).not.toBeInTheDocument()
     expect(screen.queryByText('Manage the campus supplier directory.')).not.toBeInTheDocument()
   })
 
@@ -115,10 +144,26 @@ describe('Admin dashboard supplier integration', () => {
     await waitFor(() => expect(deactivateSupplier).toHaveBeenCalledWith(supplier.id))
   })
 
-  it('keeps the errands section sample-only', () => {
+  it('loads administrator-wide errands and participant names from live services', async () => {
     dashboard('/admin/errands')
-    expect(screen.getByText('Sample data only')).toBeInTheDocument()
-    expect(screen.getByText(/Order Service has not been connected/)).toBeInTheDocument()
+    expect(await screen.findByText('Two iced coffees')).toBeInTheDocument()
+    expect(screen.getByText('Jamie Tan')).toBeInTheDocument()
+    expect(screen.getByLabelText('Supplier')).toHaveValue('')
+    expect(screen.getByRole('option', { name: 'Oldest first' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Lowest credits' })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Search by item or ID'), { target: { value: 'Jamie Tan' } })
+    expect(screen.queryByText('Two iced coffees')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Search by item or ID'), { target: { value: 'errand-1' } })
+    expect(screen.getByText('Two iced coffees')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'View errand-1' }))
+    expect(screen.queryByText(/Errand monitoring is read-only/)).not.toBeInTheDocument()
+    expect(screen.getAllByText('Robot Café').length).toBeGreaterThan(0)
+    expect(listErrands).toHaveBeenCalledWith(
+      { page: 0, size: 100, sort: 'created_at,desc' },
+      expect.any(AbortSignal),
+    )
+    expect(getProfile).toHaveBeenCalledWith('requester-1', expect.any(AbortSignal))
+    expect(getProfile).toHaveBeenCalledWith('courier-1', expect.any(AbortSignal))
   })
 
   it('shows a clear reactivation error in a dialog', async () => {
@@ -165,6 +210,6 @@ describe('Admin dashboard supplier integration', () => {
 
     dashboard('/admin/suppliers')
     expect(await screen.findByText('Floor 1')).toBeInTheDocument()
-    expect(screen.getByText('Admin Dashboard / Suppliers')).toBeInTheDocument()
+    expect(screen.queryByText('Admin Dashboard / Suppliers')).not.toBeInTheDocument()
   })
 })

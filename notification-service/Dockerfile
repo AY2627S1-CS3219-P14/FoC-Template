@@ -1,4 +1,7 @@
 # syntax=docker/dockerfile:1
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+# Scope: Updated container configuration for chat notification integration.
 
 FROM maven:3.9.11-eclipse-temurin-17-alpine AS build
 

@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-09-26
+ * Scope: Generated and debugged the PostgreSQL Testcontainers application-context test.
+ */
 package com.campuscouriers.supplier;
 
 import org.junit.jupiter.api.Test;

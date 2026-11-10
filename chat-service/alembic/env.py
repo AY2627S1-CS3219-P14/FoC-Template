@@ -1,3 +1,7 @@
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+# Scope: Generated Chat Service migration configuration.
+
 from logging.config import fileConfig
 
 from alembic import context

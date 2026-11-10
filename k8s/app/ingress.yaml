@@ -7,6 +7,9 @@
 # Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
 # Usage log: AI_USAGE_LOG.md
 # Author review: Pending confirmation by Melodi Joy Halim.
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+# Scope: Debugged and updated Chat Service cloud endpoint routing.
 
 # Public entry point for the APIs. The AWS Load Balancer Controller sees this Ingress and creates an
 # internet-facing Application Load Balancer (ALB) in the public subnets.

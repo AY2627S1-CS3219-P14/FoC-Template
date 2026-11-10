@@ -4,8 +4,10 @@
  * Scope (AI-06): Implemented and tested the requested account initials menu.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
  */
-
 import { userApiBaseUrl } from './auth.api'
 import { authenticatedFetch } from './auth.fetch'
 

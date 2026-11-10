@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation and test assistance for chat notification banners.
+ */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { loadChatPreview } from '../chat/chat.preview'

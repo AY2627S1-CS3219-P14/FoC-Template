@@ -4,8 +4,10 @@
  * Scope (AI-24): Generated code, configuration and tests for the specified user event, Kafka setup and outbox changes.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Pending confirmation by Melodi Joy Halim.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-10-02
+ * Scope: Generated service tests for supplier creation, retrieval, update, and lifecycle.
  */
-
 package com.campuscouriers.supplier.service;
 
 import com.campuscouriers.supplier.dto.CreateSupplierRequest;

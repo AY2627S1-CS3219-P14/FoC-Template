@@ -1,3 +1,10 @@
+<!--
+AI Assistance Disclosure:
+Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-10-02
+Scope: Drafted and iteratively updated local startup, Docker Compose, environment-variable,
+Maven/Maven Wrapper, clean seeding, testing, shutdown, and troubleshooting documentation.
+-->
+
 # Supplier Service
 
 Spring Boot service for managing Friend on Campus suppliers, campus pickup locations, and supplier categories.

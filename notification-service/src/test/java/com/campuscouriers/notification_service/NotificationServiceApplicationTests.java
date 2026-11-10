@@ -6,8 +6,10 @@
  * Scope (AI-22): Implemented and tested the requested requester delivery alert.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-08
+ * Scope: Generated and refined chat notification integration tests.
  */
-
 package com.campuscouriers.notification_service;
 
 import static org.assertj.core.api.Assertions.assertThat;

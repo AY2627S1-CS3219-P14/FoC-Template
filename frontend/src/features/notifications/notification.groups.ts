@@ -1,3 +1,8 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation assistance for frontend notification grouping.
+ */
 import type { NotificationItem } from './notification.types'
 
 type NotificationCard = {

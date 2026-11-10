@@ -8,8 +8,10 @@
  * Scope (AI-21): Displayed the real balance in the UI and tested its display.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
+ * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
  */
-
 import { Link } from 'react-router'
 import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'

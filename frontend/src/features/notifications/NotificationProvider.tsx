@@ -4,8 +4,10 @@
  * Scope (AI-07): Implemented and tested mark-as-read on notification clicks.
  * Usage log: AI_USAGE_LOG.md
  * Author review: Changes validated and confirmed.
+ * AI Assistance Disclosure:
+ * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
+ * Scope: Implementation and test assistance for live notification state.
  */
-
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import { useAuth } from '../auth/useAuth'
 import {

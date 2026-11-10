@@ -93,6 +93,16 @@ spec:
                 name: credit-service
                 port:
                   name: http
+          # ai-errand-assistant-service. The one exception to service-owned prefixes: POST /errands/draft
+          # sits inside order-service's /errands, so this Exact rule must stay ABOVE /errands (the ALB uses
+          # the first matching rule, in this order). Moving the endpoint to its own prefix would remove this.
+          - path: /errands/draft
+            pathType: Exact
+            backend:
+              service:
+                name: ai-errand-assistant-service
+                port:
+                  name: http
           # order-service. Prefix matches whole path segments, so /errand does not cover /errands
           - path: /errand
             pathType: Prefix

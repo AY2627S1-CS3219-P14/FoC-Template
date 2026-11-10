@@ -10,7 +10,8 @@
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
-services=(user-service supplier-service credit-service order-service notification-service chat-service)
+services=(user-service supplier-service credit-service order-service notification-service chat-service
+          ai-errand-assistant-service)
 
 tag_of() {
   git -C "$root" rev-parse "HEAD:$1" | cut -c1-12

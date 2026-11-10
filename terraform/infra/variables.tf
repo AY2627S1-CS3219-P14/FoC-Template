@@ -157,3 +157,9 @@ variable "github_repository" {
   type        = string
   default     = "AY2627S1-CS3219-P14/FoC-Template"
 }
+
+variable "github_oidc_subject_prefix" {
+  description = "Start of the subject in the repository's GitHub OIDC tokens. Find it with: gh api repos/<owner>/<repo>/actions/oidc/customization/sub (sub_claim_prefix)."
+  type        = string
+  default     = "repo:AY2627S1-CS3219-P14@323944968/FoC-Template@1356783930"
+}

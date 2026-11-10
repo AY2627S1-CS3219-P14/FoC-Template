@@ -25,6 +25,7 @@ resources:
   - app/order-service.yaml
   - app/notification-service.yaml
   - app/chat-service.yaml
+  - app/ai-errand-assistant-service.yaml
   - app/ingress.yaml
   - app/network-policies.yaml
 
@@ -50,6 +51,9 @@ configMapGenerator:
   - name: chat-service-config
     namespace: campuscouriers-app
     envs: [app/config/chat-service.env]
+  - name: ai-errand-assistant-service-config
+    namespace: campuscouriers-app
+    envs: [app/config/ai-errand-assistant-service.env]
 
 # Added to every resource's metadata (not to selectors, which can't change after creation)
 labels:
@@ -86,6 +90,8 @@ replacements:
         fieldPaths: [data.NOTIFICATION_CORS_ALLOWED_ORIGINS]
       - select: { kind: ConfigMap, name: chat-service-config }
         fieldPaths: [data.CHAT_CORS_ALLOWED_ORIGINS]
+      - select: { kind: ConfigMap, name: ai-errand-assistant-service-config }
+        fieldPaths: [data.CORS_ALLOWED_ORIGINS]
 
 # The manifests say "image: campuscouriers/user-service" (the compose name). This rewrites it to
 # the ECR repository and tag in one place. Keep in sync with k8s/jobs/kustomization.yaml.
@@ -109,3 +115,6 @@ images:
   - name: campuscouriers/chat-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/chat-service
     newTag: 88ca99a6c06a
+  - name: campuscouriers/ai-errand-assistant-service
+    newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/ai-errand-assistant-service
+    newTag: set-by-scripts-image-tags

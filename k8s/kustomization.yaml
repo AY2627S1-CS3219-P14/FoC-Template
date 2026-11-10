@@ -38,13 +38,13 @@ labels:
 images:
   - name: campuscouriers/user-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/user-service
-    newTag: e09f7c9cfc18
+    newTag: 13b609abdf18
   - name: campuscouriers/supplier-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/supplier-service
-    newTag: e09f7c9cfc18
+    newTag: 13b609abdf18
   - name: campuscouriers/credit-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/credit-service
-    newTag: e09f7c9cfc18
+    newTag: 13b609abdf18
   - name: campuscouriers/order-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/order-service
-    newTag: e09f7c9cfc18
+    newTag: 13b609abdf18

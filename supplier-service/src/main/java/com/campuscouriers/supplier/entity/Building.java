@@ -39,4 +39,17 @@ public class Building {
         this.normalizedName = normalizedName;
         this.status = BuildingStatus.ACTIVE;
     }
+
+    public void rename(String name, String normalizedName) {
+        this.name = name;
+        this.normalizedName = normalizedName;
+    }
+
+    public void deactivate() {
+        this.status = BuildingStatus.RETIRED;
+    }
+
+    public void reactivate() {
+        this.status = BuildingStatus.ACTIVE;
+    }
 }

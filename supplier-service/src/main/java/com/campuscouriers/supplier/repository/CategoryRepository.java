@@ -12,6 +12,8 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     boolean existsByNormalizedName(String normalizedName);
 
+    boolean existsByNormalizedNameAndIdNot(String normalizedName, UUID id);
+
     Optional<Category> findByNormalizedName(String normalizedName);
 
     List<Category> findAllByStatusOrderByNormalizedNameAsc(CategoryStatus status);

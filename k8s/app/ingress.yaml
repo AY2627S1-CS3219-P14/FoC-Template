@@ -10,9 +10,8 @@
 #   /.well-known/jwks.json  only the services need the JWT public keys
 #   /actuator/**, /health   health checks
 #
-# Rule ORDER matters: the ALB checks rules top to bottom and uses the first match. Any path that sits
-# inside another service's prefix (like chat's /errands/*/conversation inside order's /errands) must
-# come BEFORE that prefix.
+# Routes use service-owned prefixes so requests do not depend on precedence between overlapping
+# ALB path rules.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -42,15 +41,6 @@ spec:
     - host: api.example.com # set from k8s/domain.yaml (apiHost); external-dns points it at this ALB
       http:
         paths:
-          # chat-service, FIRST: GET /errands/{id}/conversation sits inside order-service's /errands.
-          # "*" wildcards need pathType ImplementationSpecific (passed to the ALB as written)
-          - path: /errands/*/conversation
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: chat-service
-                port:
-                  name: http
           # user-service
           - path: /auth
             pathType: Prefix

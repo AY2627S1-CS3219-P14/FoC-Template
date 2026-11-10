@@ -26,7 +26,7 @@ export async function listConversations(signal?: AbortSignal): Promise<Conversat
 }
 
 export async function getConversationForErrand(errandId: string, signal?: AbortSignal): Promise<Conversation | null> {
-  const response = await authenticatedFetch(`${baseUrl}/errands/${encodeURIComponent(errandId)}/conversation`, { signal })
+  const response = await authenticatedFetch(`${baseUrl}/conversations/by-errand/${encodeURIComponent(errandId)}`, { signal })
   if (response.status === 202) return null
   if (!response.ok) throw new Error('Could not open chat.')
   return mapConversation(await response.json() as RawConversation)

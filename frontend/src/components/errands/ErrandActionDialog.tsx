@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-07
+ * Scope (AI-17): Wired and tested the existing pickup and receipt actions.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Pending confirmation by Elliot Yong.
+ */
+
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 
 export type ErrandAction = 'cancel' | 'deliver' | 'complete' | 'fail'

@@ -5,7 +5,11 @@
   <rect class="bg" width="1600" height="900"/><text class="title" x="70" y="65">CampusCouriers — Deployment Architecture</text><text class="t" x="70" y="98">Production target: frontend at the edge; backend services on Kubernetes/EKS</text>
   <rect class="app" x="70" y="190" width="230" height="110"/><text class="h" x="185" y="235" text-anchor="middle">Users</text><text class="t" x="185" y="265" text-anchor="middle">Browser / mobile browser</text>
   <rect class="ops" x="380" y="190" width="250" height="110"/><text class="h" x="505" y="235" text-anchor="middle">CloudFront / S3</text><text class="t" x="505" y="265" text-anchor="middle">Static React frontend</text>
+<<<<<<< ours
   <rect class="outer" x="720" y="160" width="760" height="600"/><text class="h" x="1100" y="205" text-anchor="middle">AWS EKS Cluster</text><text class="t" x="1100" y="232" text-anchor="middle">Ingress / ALB routes API paths to services</text>
+=======
+  <rect class="ops" x="720" y="160" width="760" height="600" class="outer"/><text class="h" x="1100" y="205" text-anchor="middle">AWS EKS Cluster</text><text class="t" x="1100" y="232" text-anchor="middle">Ingress / ALB routes API paths to services</text>
+>>>>>>> theirs
   <rect class="app" x="770" y="275" width="190" height="90"/><text class="h" x="865" y="312" text-anchor="middle">User</text><text class="t" x="865" y="340" text-anchor="middle">2–5 replicas</text>
   <rect class="app" x="1000" y="275" width="190" height="90"/><text class="h" x="1095" y="312" text-anchor="middle">Supplier</text><text class="t" x="1095" y="340" text-anchor="middle">2–5 replicas</text>
   <rect class="app" x="1230" y="275" width="190" height="90"/><text class="h" x="1325" y="312" text-anchor="middle">Order</text><text class="t" x="1325" y="340" text-anchor="middle">2–5 replicas</text>

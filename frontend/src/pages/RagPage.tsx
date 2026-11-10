@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { askRag } from '../features/rag/rag.api'
 
 const suggestedQuestions = [
@@ -62,7 +63,22 @@ export function RagPage() {
           ) : null}
           {submittedQuestion ? <div className="ml-auto w-fit max-w-[88%] rounded-2xl bg-[#175c45] px-4 py-3 text-sm leading-6 text-white">{submittedQuestion}</div> : null}
           {loading ? <div className="w-fit rounded-2xl bg-[#f0f3f1] px-4 py-3 text-sm text-[#68736c]" aria-live="polite">Thinking…</div> : null}
-          {answer ? <div className="max-w-[88%] whitespace-pre-wrap rounded-2xl bg-[#f0f3f1] px-4 py-3 text-sm leading-6 text-[#17211d]">{answer}</div> : null}
+          {answer ? (
+            <div className="max-w-[88%] rounded-2xl bg-[#f0f3f1] px-4 py-3 text-sm leading-6 text-[#17211d]">
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                  ul: ({ children }) => <ul className="mb-3 list-disc space-y-1 pl-5 last:mb-0">{children}</ul>,
+                  ol: ({ children }) => <ol className="mb-3 list-decimal space-y-1 pl-5 last:mb-0">{children}</ol>,
+                  li: ({ children }) => <li>{children}</li>,
+                  code: ({ children }) => <code className="rounded bg-white/70 px-1 py-0.5 text-[0.9em]">{children}</code>,
+                }}
+              >
+                {answer}
+              </ReactMarkdown>
+            </div>
+          ) : null}
           {error ? <div role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{error}</div> : null}
         </div>
 

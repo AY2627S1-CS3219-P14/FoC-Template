@@ -138,3 +138,15 @@ variable "domain_name" {
   description = "Your registered domain (same as in terraform/bootstrap). Its hosted zone is created there."
   type        = string
 }
+
+variable "api_subdomain" {
+  description = "Subdomain of the backend API (must match terraform/bootstrap and k8s/domain.yaml)."
+  type        = string
+  default     = "api"
+}
+
+variable "app_subdomain" {
+  description = "Subdomain the frontend is served at (must match appOrigin in k8s/domain.yaml)."
+  type        = string
+  default     = "app"
+}

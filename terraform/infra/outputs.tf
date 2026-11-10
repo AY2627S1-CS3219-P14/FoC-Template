@@ -90,3 +90,23 @@ output "ecr_registry" {
 output "ecr_repository_urls" {
   value = { for name, repo in aws_ecr_repository.service : name => repo.repository_url }
 }
+
+# --- Frontend --------------------------------------------------------------------------------------
+output "frontend_url" {
+  value = "https://${local.app_hostname}"
+}
+
+output "frontend_bucket" {
+  description = "Used by scripts/deploy-frontend.ps1."
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "frontend_distribution_id" {
+  description = "Used by scripts/deploy-frontend.ps1 to clear the CloudFront cache after a deploy."
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "api_url" {
+  description = "Baked into the frontend build as VITE_*_API_URL by scripts/deploy-frontend.ps1."
+  value       = "https://${var.api_subdomain}.${var.domain_name}"
+}

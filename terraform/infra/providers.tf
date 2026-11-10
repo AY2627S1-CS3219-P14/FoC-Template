@@ -15,6 +15,24 @@ provider "aws" {
   # No credentials here: they come from your SSO login via AWS_PROFILE (see terraform/README.md)
 }
 
+# Second copy of the AWS provider, pointed at us-east-1. CloudFront is a global service and only
+# accepts TLS certificates from us-east-1, so the frontend's certificate is created there.
+# Resources use it with: provider = aws.us_east_1
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  allowed_account_ids = [var.aws_account_id]
+
+  default_tags {
+    tags = {
+      Project   = var.project
+      ManagedBy = "terraform"
+      Stack     = "infra"
+    }
+  }
+}
+
 # Installs Helm charts (packaged Kubernetes apps) into the EKS cluster.
 # It logs in the same way kubectl does: by running `aws eks get-token` with your AWS_PROFILE.
 provider "helm" {

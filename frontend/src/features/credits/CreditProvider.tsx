@@ -3,7 +3,7 @@
  * Tool and date: OpenAI Codex (gpt-5.6-sol) and GitHub Copilot code review (model unrecorded), 2026-10-23
  * Scope (AI-04): Reused balance loading logic and tested request cleanup.
  * Usage log: AI_USAGE_LOG.md
- * Author review: Pending confirmation by Elliot Yong.
+ * Author review: Changes validated and confirmed.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'

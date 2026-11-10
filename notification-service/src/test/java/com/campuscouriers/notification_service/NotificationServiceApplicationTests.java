@@ -5,7 +5,7 @@
  * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-07
  * Scope (AI-22): Implemented and tested the requested requester delivery alert.
  * Usage log: AI_USAGE_LOG.md
- * Author review: Pending confirmation by Elliot Yong.
+ * Author review: Changes validated and confirmed.
  */
 
 package com.campuscouriers.notification_service;

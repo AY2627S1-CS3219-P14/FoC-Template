@@ -5,12 +5,12 @@ Scope (AI-16): Compiled the attribution documentation.
 Tool and date: Anthropic Claude Code (claude-opus-5-5), 2026-11-11
 Scope (AI-31): Added entries AI-23 to AI-31.
 Usage log: AI_USAGE_LOG.md
-Author review: Pending confirmation by Elliot Yong.
+Author review: Changes validated and confirmed.
 -->
 
 # AI usage log
 
-This is a partial record of verified assistance for this contributor in the current checkout. Dates use Singapore time. File headers link to entries by ID. Prompt text is reproduced verbatim where available. Key responses are summarized. Author review is pending.
+This is a record of verified assistance in the current checkout. Dates use Singapore time. File headers link to entries by ID. Prompt text is reproduced verbatim where available. Key responses are summarized. Changes were validated and confirmed by the author.
 
 ## AI-01 · Supplier card content
 

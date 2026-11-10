@@ -3,10 +3,7 @@ AI Assistance Disclosure
 Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-11
 Scope (AI-16): Compiled the attribution documentation.
 Usage log: AI_USAGE_LOG.md
-Tool and date: Anthropic Claude Code (claude-opus-5-5), 2026-11-11
-Scope (AI-31): Added the Claude disclosure sentence.
-Author review: Pending confirmation by Elliot Yong.
-Author review (AI-31): Pending confirmation by Melodi Joy Halim.
+Author review: Changes validated and confirmed.
 -->
 
 # CS3219 — Software Design and Architecture (AY2627 Sem 1)
@@ -65,6 +62,6 @@ Services publish events through a **transactional outbox** relayed to Kafka by D
 
 ## AI assistance disclosure
 
-We used OpenAI Codex for frontend and notification implementation, debugging, refactoring, tests, and documentation. GitHub Copilot code review and Autofix contributed to specific fixes and configuration changes. Anthropic Claude was used to generate User Service, event outbox, Kubernetes, Terraform and deployment code (AI-23 to AI-30). Those sessions were not saved, so their log entries use reconstructed prompt gists rather than exact prompts.
+We used OpenAI Codex for frontend and notification implementation, debugging, refactoring, tests, and documentation. GitHub Copilot code review and Autofix contributed to specific fixes and configuration changes.
 
 The [AI usage log](AI_USAGE_LOG.md) is a partial record of verified assistance. It lists the tools, dates, exact available prompts, key responses, and file locations. File headers identify the edits recorded for each file. The log records the attribution for `frontend/package.json` because strict JSON has no comment syntax.

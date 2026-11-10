@@ -26,7 +26,9 @@ which is the delivery destination, and what items are requested. Pick the closes
 supplier and delivery building from the supplied catalogs (exact names are not
 required) and use only IDs present in them. If the message names no pickup place or
 no destination, or the match is ambiguous, return null for that ID; never infer a
-supplier from the item alone.
+supplier from the item alone. If the message names only a building or area that has
+several suppliers (for example a food court), return null for supplier_id; do not
+pick one of them. Read common shorthand such as "tmr" or "tmrw" as tomorrow.
 
 delivery_description: short, friendly instructions for the courier written from the
 requester's point of view, covering anything useful from the message (where to meet,
@@ -47,29 +49,25 @@ future time between 09:00 and 20:59; for hours 1 through 8, use the PM occurrenc
 when it is the intended future occurrence in that window.
 Return expires_at as an ISO-8601 datetime with timezone offset, or null.
 
-Credits: compare the item and supplier with completed_errand_history and list the
-history_index values of genuinely similar completed errands (preferring the same
-supplier and a related item), or an empty list. Do not calculate credits; the
-backend does that.
+Credits: if the user states how many credits they will pay or offer (for example
+"for 10 credits", "10 cr", "pay 8", "offering twelve credits"), return that number as
+the integer requested_credits; otherwise return null. Never guess an amount the user
+did not state. Also compare the item and supplier with completed_errand_history and
+list the history_index values of genuinely similar completed errands (preferring the
+same supplier and a related item), or an empty list. Do not estimate credits
+yourself; the backend does that when the user states no amount.
 
 Return these keys exactly:
 supplier_id, required_item, delivery_building_id, delivery_floor,
-delivery_description, expires_at, similar_history_indices."""
+delivery_description, expires_at, similar_history_indices, requested_credits."""
 
 
-def _provider_config() -> tuple[str, str, str]:
-    provider = os.getenv("AI_ASSISTANT_LLM_PROVIDER", "OPENAI").strip().upper()
-    if provider == "OPENAI":
-        api_key = os.getenv("OPENAI_API_KEY", "").strip()
-        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
-    elif provider == "ANTHROPIC":
-        api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
-        model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929").strip()
-    else:
-        raise HTTPException(503, "AI assistant provider must be OPENAI or ANTHROPIC")
+def _openai_config() -> tuple[str, str]:
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
     if not api_key:
-        raise HTTPException(503, f"{provider} API key is not configured")
-    return provider, api_key, model
+        raise HTTPException(503, "OpenAI API key is not configured")
+    return api_key, model
 
 
 async def _call_openai(api_key: str, model: str, system: str, user_content: str) -> str:
@@ -103,38 +101,6 @@ async def _call_openai(api_key: str, model: str, system: str, user_content: str)
         raise HTTPException(502, "OpenAI returned an invalid draft") from exc
 
 
-async def _call_anthropic(api_key: str, model: str, system: str, user_content: str) -> str:
-    try:
-        async with httpx.AsyncClient(timeout=LLM_TIMEOUT) as client:
-            response = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                },
-                json={
-                    "model": model,
-                    "max_tokens": 1200,
-                    "temperature": 0,
-                    "system": system,
-                    "messages": [{"role": "user", "content": user_content}],
-                },
-            )
-    except httpx.RequestError as exc:
-        raise HTTPException(503, "Anthropic is unavailable") from exc
-    if response.status_code in (401, 403):
-        raise HTTPException(503, "Anthropic rejected its configured API key")
-    if response.status_code == 429 or response.status_code >= 500:
-        raise HTTPException(503, "Anthropic is temporarily unavailable")
-    if not response.is_success:
-        raise HTTPException(502, "Anthropic returned an unexpected response")
-    try:
-        blocks = response.json()["content"]
-        return "".join(block["text"] for block in blocks if block.get("type") == "text")
-    except (KeyError, TypeError, ValueError) as exc:
-        raise HTTPException(502, "Anthropic returned an invalid draft") from exc
-
-
 async def generate_extraction(
     message: str,
     now: datetime,
@@ -142,7 +108,7 @@ async def generate_extraction(
     buildings: list[BuildingCandidate],
     history: list[dict[str, object]],
 ) -> LLMExtraction:
-    provider, api_key, model = _provider_config()
+    api_key, model = _openai_config()
     user_content = json.dumps(
         {
             "request": message,
@@ -156,11 +122,7 @@ async def generate_extraction(
         },
         ensure_ascii=True,
     )
-    system = _system_prompt(now)
-    if provider == "OPENAI":
-        output = await _call_openai(api_key, model, system, user_content)
-    else:
-        output = await _call_anthropic(api_key, model, system, user_content)
+    output = await _call_openai(api_key, model, _system_prompt(now), user_content)
 
     try:
         return LLMExtraction.model_validate_json(output)

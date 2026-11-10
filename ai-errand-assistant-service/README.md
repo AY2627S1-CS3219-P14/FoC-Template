@@ -6,30 +6,23 @@ reserve credits; users can review and edit the returned fields before submitting
 
 ## Run with Docker Compose
 
-Set one provider key in the repository-root `.env` and choose the provider:
+The service uses the OpenAI Chat Completions API. Set your OpenAI API key in the
+repository-root `.env`:
 
 ```env
-AI_ASSISTANT_LLM_PROVIDER=OPENAI
 OPENAI_API_KEY=<your-key>
 ```
 
-Or use Claude:
-
-```env
-AI_ASSISTANT_LLM_PROVIDER=ANTHROPIC
-ANTHROPIC_API_KEY=<your-key>
-```
-
-The other provider key may remain empty. Keep provider keys in `.env`; do not
-commit them or expose them as frontend `VITE_` variables. Start the service:
+Keep the key in `.env`; do not commit it or expose it as a frontend `VITE_`
+variable. Start the service:
 
 ```powershell
 docker compose up -d --build ai-errand-assistant-service
 ```
 
 It is available to the host at `http://localhost:8005`. Compose connects to
-Supplier Service and Order Service using their internal service URLs. Configure
-`OPENAI_MODEL` or `ANTHROPIC_MODEL` to override the defaults.
+Supplier Service and Order Service using their internal service URLs. Set
+`OPENAI_MODEL` to use a different model (default `gpt-4o-mini`).
 
 ## API
 
@@ -86,8 +79,9 @@ mistaken for 2 o'clock). The backend then checks the LLM did not invent one:
   `deadline`, `no later than`, `at`). After `at`, only a time directly following
   it counts, since "at" usually introduces a place. A time without am/pm (for
   example "by 5") may mean either 05:00 or 17:00; the LLM chooses, preferring
-  09:00–20:59. If the day is omitted, the deadline is today, and it is left unset
-  if that time has already passed.
+  09:00–20:59. The LLM decides the date from the wording ("tmr", "friday", "on the 11th";
+  if no day is given it uses today), and the deadline is left unset if it has
+  already passed.
 - **Relative deadlines** ("within 30 minutes", "in 2 hours"): the time is computed
   by the backend as now + duration rather than taken from the LLM.
 
@@ -96,6 +90,12 @@ are interpreted in `BUSINESS_TIMEZONE` (default `Asia/Singapore`) and must be
 within the next seven days.
 
 ### Credits
+
+If the message states how many credits the user will pay ("for 10 credits",
+"10 cr", "offering twelve credits"), the LLM returns it as `requested_credits` and
+that amount is used as-is (capped at 25, no urgency multiplier); `credit_reason`
+says "You offered N credits." The estimate below is used only when the user
+states no amount (or a value below 1).
 
 The LLM compares the requested item and supplier with completed errands and
 selects the similar-history entries; the backend does all arithmetic. Each past
@@ -112,7 +112,9 @@ explains whether similar history, all history, or the default was used.
 The suggestion is not checked against the user's balance; the frontend and
 Order Service enforce that when the errand is created.
 
-Provider/configuration failures return an explicit HTTP error. The endpoint
+OpenAI and configuration failures return an explicit HTTP error: a missing or
+rejected API key, an OpenAI outage, or an OpenAI rate limit returns `503`, and an
+unusable OpenAI response returns `502`. The endpoint
 does not silently skip unavailable history or supplier catalog data.
 
 ## Local development
@@ -124,7 +126,6 @@ python -m pip install -r requirements.txt
 $env:USER_SERVICE_URL="http://localhost:8081"
 $env:SUPPLIER_SERVICE_URL="http://localhost:8082"
 $env:ORDER_SERVICE_URL="http://localhost:8002"
-$env:AI_ASSISTANT_LLM_PROVIDER="OPENAI"
 $env:OPENAI_API_KEY="<your-key>"
 python -m uvicorn main.app:app --reload --port 8005
 ```

@@ -90,6 +90,41 @@ def test_no_history_uses_default_credit():
     assert "5-credit default" in result.credit_reason
 
 
+def test_credits_offered_by_user_take_priority_over_history():
+    now = local(10)
+    result = routes._response(
+        extraction(
+            requested_credits=10,
+            expires_at=(now + timedelta(minutes=20)).isoformat(),
+            similar_history_indices=[0, 1],
+        ),
+        "get iced milo to com2 level 2 within 20 minutes for 10 credits",
+        SUPPLIERS, BUILDINGS, [history(4), history(4)], 2, now,
+    )
+    # Not the history median (4) and not raised for the 20-minute deadline.
+    assert result.credit_value == 10
+    assert result.credit_reason == "You offered 10 credits."
+
+
+def test_offered_credits_above_maximum_are_capped():
+    result = routes._response(
+        extraction(requested_credits=40),
+        "milo to COM3 for 40 credits", SUPPLIERS, BUILDINGS, [], 0, local(10),
+    )
+    assert result.credit_value == 25
+    assert "You offered 40 credits. Capped at 25 credits." == result.credit_reason
+
+
+@pytest.mark.parametrize("offered", [None, 0, -3])
+def test_no_valid_offer_falls_back_to_estimate(offered):
+    result = routes._response(
+        extraction(requested_credits=offered),
+        "milo to COM3", SUPPLIERS, BUILDINGS, [], 0, local(10),
+    )
+    assert result.credit_value == 5
+    assert "5-credit default" in result.credit_reason
+
+
 def test_past_urgency_premium_is_removed_before_applying_current_urgency():
     now = local(10)
     # Both past errands were posted urgently and paid a 2x premium on a base of 6.
@@ -169,6 +204,69 @@ def test_ids_outside_the_catalog_are_dropped():
     )
     assert result.supplier_id is None
     assert result.delivery_building_id is None
+
+
+CHONG_PANG = UUID("44444444-4444-4444-8444-444444444444")
+FONG_SENG = UUID("55555555-5555-4555-8555-555555555555")
+COOL_SPOT = UUID("66666666-6666-4666-8666-666666666666")
+DECK_FOOD_COURT = [
+    SupplierCandidate(id=CHONG_PANG, name="Chong Pang Tai Zhi Wei", building="The Deck"),
+    SupplierCandidate(id=FONG_SENG, name="Fong Seng Nasi Lemak", building="The Deck"),
+    SupplierCandidate(id=COOL_SPOT, name="Cool Spot", building="Com2"),
+]
+
+
+def test_building_with_several_suppliers_leaves_supplier_empty():
+    # "deck" is a food court with several stalls; the LLM guessing one is not accepted.
+    result = routes._response(
+        extraction(supplier_id=CHONG_PANG),
+        "get iced milo from deck to com2 by 5pm tmr",
+        DECK_FOOD_COURT, BUILDINGS, [], 0, local(10),
+    )
+    assert result.supplier_id is None
+    assert result.supplier_name is None
+
+
+def test_supplier_named_in_message_is_kept_even_in_shared_building():
+    result = routes._response(
+        extraction(supplier_id=CHONG_PANG),
+        "get chong pang fried rice from the deck to com2",
+        DECK_FOOD_COURT, BUILDINGS, [], 0, local(10),
+    )
+    assert result.supplier_id == CHONG_PANG
+    assert result.supplier_name == "Chong Pang Tai Zhi Wei"
+
+
+def test_only_supplier_in_named_building_is_kept():
+    # "com 2" names the building; Cool Spot is the only supplier there.
+    result = routes._response(
+        extraction(supplier_id=COOL_SPOT),
+        "grab a drink from com 2 to COM3",
+        DECK_FOOD_COURT, BUILDINGS, [], 0, local(10),
+    )
+    assert result.supplier_id == COOL_SPOT
+
+
+def test_supplier_not_mentioned_in_message_is_dropped():
+    result = routes._response(
+        extraction(supplier_id=COOL_SPOT),
+        "get me an iced milo to COM3",
+        DECK_FOOD_COURT, BUILDINGS, [], 0, local(10),
+    )
+    assert result.supplier_id is None
+
+
+def test_generic_words_do_not_identify_a_supplier():
+    cafe = UUID("77777777-7777-4777-8777-777777777777")
+    suppliers = DECK_FOOD_COURT + [
+        SupplierCandidate(id=cafe, name="Good Day Cafe", building="Medicine+Science Library"),
+    ]
+    result = routes._response(
+        extraction(supplier_id=cafe),
+        "coffee from any cafe to COM3",
+        suppliers, BUILDINGS, [], 0, local(10),
+    )
+    assert result.supplier_id is None
 
 
 def test_missing_fields_return_as_null_without_clarification():
@@ -284,6 +382,37 @@ def test_24_hour_and_dotted_deadlines_are_accepted(message, llm_value, expected_
     assert (local_deadline.hour, local_deadline.minute) == expected_local
 
 
+@pytest.mark.parametrize(
+    "message",
+    [
+        "get iced milo from deck to com2 by 5pm tmr",
+        "get iced milo from deck to com2 by 5pm tmrw",
+        "get iced milo from deck to com2 by 5pm the day after today",
+        "get iced milo from deck to com2 by 5pm on the 11th",
+    ],
+)
+def test_llm_decides_the_deadline_date(message):
+    # At 9pm the LLM reads each of these as tomorrow 17:00; the backend keeps its date.
+    now = local(21, day=10)
+    deadline = routes._parse_explicit_deadline("2026-11-11T17:00:00+08:00", message, now)
+    assert deadline == local(17, day=11).astimezone(UTC)
+
+
+def test_llm_date_in_the_past_is_dropped():
+    # If the LLM puts the deadline on today and that time has passed, it is not used.
+    now = local(21, day=10)
+    assert routes._parse_explicit_deadline(
+        "2026-11-10T17:00:00+08:00", "milo to com2 by 5pm", now
+    ) is None
+
+
+def test_llm_date_more_than_seven_days_away_is_dropped():
+    now = local(10, day=10)
+    assert routes._parse_explicit_deadline(
+        "2026-11-20T17:00:00+08:00", "milo to com2 by 5pm", now
+    ) is None
+
+
 def test_leading_zero_time_is_not_moved_to_pm():
     # "08:00" is 24-hour, so an LLM answer of 20:00 does not match it.
     assert routes._parse_explicit_deadline(
@@ -307,12 +436,15 @@ def test_bare_hour_accepts_the_llm_pm_reading():
     ) == local(17).astimezone(UTC)
 
 
-def test_time_without_day_assumes_today_and_passed_time_is_unset():
+def test_backend_keeps_the_llm_date_and_drops_passed_times():
     now = local(16)
-    future = routes._parse_explicit_deadline("2026-11-10T17:00:00+08:00", "deliver it by 5pm", now)
-    assert future == local(17).astimezone(UTC)
+    # The date is the LLM's call; the backend no longer forces it to today.
+    today = routes._parse_explicit_deadline("2026-11-09T17:00:00+08:00", "deliver it by 5pm", now)
+    assert today == local(17).astimezone(UTC)
+    later = routes._parse_explicit_deadline("2026-11-10T17:00:00+08:00", "deliver it by 5pm", now)
+    assert later == local(17, day=10).astimezone(UTC)
 
-    passed = routes._parse_explicit_deadline("2026-11-11T15:00:00+08:00", "deliver it by 3pm", now)
+    passed = routes._parse_explicit_deadline("2026-11-09T15:00:00+08:00", "deliver it by 3pm", now)
     assert passed is None
 
 

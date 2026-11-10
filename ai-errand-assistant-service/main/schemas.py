@@ -55,6 +55,9 @@ class LLMExtraction(BaseModel):
     # Not range-checked here: one bad index from the LLM must not fail the whole
     # draft. Out-of-range and duplicate indices are dropped in routes._response.
     similar_history_indices: list[int] = Field(default_factory=list)
+    # Credits the user explicitly offered in the message ("for 10 credits"), else null.
+    # Not range-checked here; routes._response ignores values below 1 and caps at 25.
+    requested_credits: int | None = None
 
 
 class ErrandHistoryItem(BaseModel):

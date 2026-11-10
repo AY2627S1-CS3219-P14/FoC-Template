@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type SubmitEvent } from 'react'
+import { 
+  useEffect, 
+  useRef, 
+  useState, 
+  type KeyboardEvent, 
+  type SubmitEvent } from 'react'
 import {
   AI_DRAFT_MESSAGE_MAX_LENGTH,
   AI_DRAFT_MESSAGE_MIN_LENGTH,
@@ -8,7 +13,6 @@ import {
 } from '../../features/ai-assistant/ai-assistant.api'
 
 type AiErrandAssistantProps = {
-  /** Called with the backend's draft so the page can fill in its form. */
   onDraft: (draft: AiErrandDraft) => void
   disabled?: boolean
 }
@@ -133,7 +137,7 @@ export function AiErrandAssistant({ onDraft, disabled = false }: AiErrandAssista
               maxLength={AI_DRAFT_MESSAGE_MAX_LENGTH}
               rows={3}
               disabled={isSending}
-              placeholder="e.g. Get me an iced milo from The Deck and bring it to COM3 level 2 by 5pm"
+              placeholder="e.g. Get iced milo from Deck to COM3 level 2 by 5pm"
               aria-invalid={Boolean(error)}
               aria-describedby={error ? 'ai-errand-error' : 'ai-errand-hint'}
               className="mt-2 w-full resize-none rounded-xl border border-[#dde3de] bg-white px-3 py-2.5 text-sm leading-5 text-[#17211d] outline-none transition placeholder:text-[#929c95] focus:border-[#175c45] focus:ring-4 focus:ring-[#175c45]/10 disabled:bg-[#f8faf8]"

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from math import ceil
 from statistics import median
 from typing import Annotated
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -43,6 +44,8 @@ DEADLINE_MARKER_PATTERN = re.compile(
     r"\b(?:by|before|until|due|deadline|no later than|at)\b",
     re.IGNORECASE,
 )
+# Dates in the message. Only used so numbers inside a date ("12 Nov 2026") are not
+# mistaken for clock times; the deadline's date itself is decided by the LLM.
 DATE_PATTERN = re.compile(
     r"\b(?:today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b"
     r"|\b\d{4}-\d{2}-\d{2}\b"
@@ -72,6 +75,58 @@ RELATIVE_DEADLINE_PATTERN = re.compile(
     r"\b(?:in|within)\s+(\d+)\s+(minutes?|mins?|hours?|hrs?)\b",
     re.IGNORECASE,
 )
+WORD_PATTERN = re.compile(r"[a-z0-9]+")
+# Words too common in supplier/building names to identify one on their own.
+GENERIC_NAME_WORDS = frozenset({
+    "the", "and", "cafe", "coffee", "food", "foods", "shop", "store", "express", "kitchen",
+    "court", "bar", "house", "block", "blk", "library", "park", "building", "hall",
+    "centre", "center", "engineering", "memorial", "science", "central", "unmanned",
+    "convenience",
+})
+
+
+def _words(text: str) -> list[str]:
+    return WORD_PATTERN.findall(text.casefold())
+
+
+def _names_place(message: str, name: str) -> bool:
+    """Whether the message names this supplier or building.
+
+    Matches the whole name ignoring spaces and punctuation ("Com 2" = "com2"),
+    or any distinctive word of it ("deck" for "The Deck", "chong" for
+    "Chong Pang Tai Zhi Wei"). Generic words such as "cafe" do not count.
+    """
+    name_words = _words(name)
+    message_words = _words(message)
+    if name_words and "".join(name_words) in "".join(message_words):
+        return True
+    message_word_set = set(message_words)
+    return any(
+        len(word) >= 3 and word not in GENERIC_NAME_WORDS and word in message_word_set
+        for word in name_words
+    )
+
+
+def _verified_supplier(
+    supplier_id: UUID | None, message: str, suppliers: list[SupplierCandidate]
+) -> UUID | None:
+    """Accept the LLM's supplier only if the message clearly identifies it.
+
+    Either the message names the supplier itself, or it names the supplier's
+    building and no other supplier is in that building. A building with several
+    suppliers (such as The Deck food court) is ambiguous, so the field is left
+    empty for the user to choose instead of guessing a stall.
+    """
+    chosen = next((supplier for supplier in suppliers if supplier.id == supplier_id), None)
+    if chosen is None:
+        return None
+    if _names_place(message, chosen.name):
+        return chosen.id
+    building = chosen.building.casefold()
+    in_building = [supplier for supplier in suppliers if supplier.building.casefold() == building]
+    if len(in_building) == 1 and _names_place(message, chosen.building):
+        return chosen.id
+    return None
 
 
 def _urgency_multiplier(minutes_until_deadline: float) -> float:
@@ -159,8 +214,9 @@ def _parse_explicit_deadline(value: str | None, message: str, now: datetime) -> 
     """Accept the LLM's deadline only if the message actually states it.
 
     - Clock deadlines: the LLM's local hour:minute must be one the message
-      mentions after a deadline marker. With no date in the message, the
-      deadline is today.
+      mentions after a deadline marker. The LLM decides the date (so "tmr",
+      "this friday" or any other wording works); the backend only checks the
+      result is in the future and within MAX_DEADLINE.
     - Relative deadlines: the time is computed in code (now + duration), so the
       LLM cannot shift it.
     """
@@ -176,13 +232,7 @@ def _parse_explicit_deadline(value: str | None, message: str, now: datetime) -> 
     parsed_local = parsed.astimezone(BUSINESS_TIMEZONE)
     relative = _relative_deadlines(message, now)
     if (parsed_local.hour, parsed_local.minute) in _clock_candidates(message):
-        if DATE_PATTERN.search(message):
-            deadline = parsed_local
-        else:
-            local_now = now.astimezone(BUSINESS_TIMEZONE)
-            deadline = parsed_local.replace(
-                year=local_now.year, month=local_now.month, day=local_now.day
-            )
+        deadline = parsed_local
     elif relative:
         deadline = min(relative, key=lambda candidate: abs(candidate - parsed))
     else:
@@ -253,7 +303,7 @@ def _response(
     now: datetime,
 ) -> DraftResponse:
     supplier_names = {candidate.id: candidate.name for candidate in suppliers}
-    supplier_id = extraction.supplier_id if extraction.supplier_id in supplier_names else None
+    supplier_id = _verified_supplier(extraction.supplier_id, message, suppliers)
     building_names = {candidate.id: candidate.name for candidate in buildings}
     building_id = (
         extraction.delivery_building_id
@@ -277,29 +327,40 @@ def _response(
         else DEFAULT_BASE_CREDITS
     )
 
-    multiplier = 1.0
-    if deadline is not None:
-        minutes = (deadline - now.astimezone(UTC)).total_seconds() / 60
-        multiplier = _urgency_multiplier(minutes)
-    urgency_adjusted = ceil(historical_base * multiplier)
-    credits = min(MAX_CREDITS, urgency_adjusted)
-
-    if similar_credits:
-        reason = (
-            f"Based on the median of {len(similar_credits)} similar completed errands "
-            f"({historical_base} credits before urgency)."
-        )
-    elif all_credits:
-        reason = (
-            f"No similar completed errands were identified; used the median of "
-            f"{len(all_credits)} completed errands ({historical_base} credits before urgency)."
-        )
+    requested = extraction.requested_credits
+    if requested is not None and requested >= 1:
+        # The user's own offer takes priority over the history-based estimate,
+        # and is not raised for urgency.
+        credits = min(MAX_CREDITS, requested)
+        reason = f"You offered {requested} credits."
+        if credits < requested:
+            reason = f"{reason} Capped at {MAX_CREDITS} credits."
     else:
-        reason = f"No completed errands were available; used the {DEFAULT_BASE_CREDITS}-credit default."
-    if multiplier > 1:
-        reason = f"{reason} Applied {multiplier:g}x for the deadline."
-    if credits < urgency_adjusted:
-        reason = f"{reason} Capped at {MAX_CREDITS} credits."
+        multiplier = 1.0
+        if deadline is not None:
+            minutes = (deadline - now.astimezone(UTC)).total_seconds() / 60
+            multiplier = _urgency_multiplier(minutes)
+        urgency_adjusted = ceil(historical_base * multiplier)
+        credits = min(MAX_CREDITS, urgency_adjusted)
+
+        if similar_credits:
+            reason = (
+                f"Based on the median of {len(similar_credits)} similar completed errands "
+                f"({historical_base} credits before urgency)."
+            )
+        elif all_credits:
+            reason = (
+                f"No similar completed errands were identified; used the median of "
+                f"{len(all_credits)} completed errands ({historical_base} credits before urgency)."
+            )
+        else:
+            reason = (
+                f"No completed errands were available; used the {DEFAULT_BASE_CREDITS}-credit default."
+            )
+        if multiplier > 1:
+            reason = f"{reason} Applied {multiplier:g}x for the deadline."
+        if credits < urgency_adjusted:
+            reason = f"{reason} Capped at {MAX_CREDITS} credits."
 
     return DraftResponse(
         supplier_id=supplier_id,

@@ -191,22 +191,24 @@ export function CreateErrandPage() {
   }
 
   function applyAiDraft(aiDraft: AiErrandDraft) {
+    // The dropdowns hold UUIDs. If the assistant's choice is not one of the options,
+    // reset to "" so the dropdown shows "Select a supplier" / "Select a building".
     const supplierId =
       aiDraft.supplier_id && suppliers.some((supplier) => supplier.id === aiDraft.supplier_id)
         ? aiDraft.supplier_id
-        : null
+        : ''
     const deliveryBuildingId =
       aiDraft.delivery_building_id &&
       deliveryBuildings.some((building) => building.id === aiDraft.delivery_building_id)
         ? aiDraft.delivery_building_id
-        : null
+        : ''
     const expiresAt = aiDraft.expires_at ? new Date(aiDraft.expires_at) : null
 
-    // Only overwrite fields the assistant was confident about; keep the user's other input.
+    // Other fields are only overwritten when the assistant filled them; keep the user's input.
     setDraft((current) => ({
-      supplierId: supplierId ?? current.supplierId,
+      supplierId,
       requiredItem: aiDraft.required_item ?? current.requiredItem,
-      deliveryBuildingId: deliveryBuildingId ?? current.deliveryBuildingId,
+      deliveryBuildingId,
       deliveryFloor: aiDraft.delivery_floor ?? current.deliveryFloor,
       deliveryDescription: aiDraft.delivery_description ?? current.deliveryDescription,
       expiresAt:
@@ -227,7 +229,7 @@ export function CreateErrandPage() {
       !expiresAt && 'deadline',
     ].filter(Boolean)
     setAiDraftNotice(
-      `Filled in by the AI assistant — please review before creating. ${aiDraft.credit_reason}` +
+      `Filled in by the AI assistant. Please review before creating. ${aiDraft.credit_reason}` +
         (missing.length > 0 ? ` Please fill in: ${missing.join(', ')}.` : ''),
     )
   }
@@ -324,7 +326,7 @@ export function CreateErrandPage() {
                 aria-label="Dismiss AI assistant notice"
                 className="cursor-pointer text-lg leading-none"
               >
-                ×
+                &times;
               </button>
             </div>
           ) : null}

@@ -29,6 +29,7 @@ describe('AppHeader', () => {
     useAuthMock.mockReturnValue({
       status: 'authenticated',
       currentUserId: 'user-id',
+      currentUserType: 'Student',
       signIn: vi.fn(),
       signOut,
     })

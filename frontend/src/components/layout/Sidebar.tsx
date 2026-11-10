@@ -2,6 +2,9 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import clipboardIcon from '../../assets/nav-clipboard.svg'
 import compassIcon from '../../assets/nav-compass.svg'
+import chatIcon from '../../assets/nav-chat.svg'
+import suppliersIcon from '../../assets/nav-suppliers.svg'
+import { useAuth } from '../../features/auth/useAuth'
 
 type SidebarNavItemProps = {
   to: string
@@ -37,6 +40,7 @@ function SidebarNavItem({
 }
 
 export function Sidebar() {
+  const { currentUserType } = useAuth()
   return (
     <aside className="hidden min-h-[calc(100vh-76px)] border-r border-[#dde3de] bg-white px-5 py-7 lg:block">
       <nav
@@ -51,16 +55,16 @@ export function Sidebar() {
           My errands
         </SidebarNavItem>
 
-        <SidebarNavItem to="/chats" icon={clipboardIcon}>
+        <SidebarNavItem to="/chats" icon={chatIcon}>
           Chats
         </SidebarNavItem>
 
-        <SidebarNavItem to="/suppliers" icon={clipboardIcon}>
+        <SidebarNavItem to="/suppliers" icon={suppliersIcon}>
           Suppliers
         </SidebarNavItem>
       </nav>
 
-      {import.meta.env.DEV && <NavLink to="/admin" className="mt-8 block rounded-xl border border-[#dde3de] px-3.5 py-3 text-sm font-medium text-[#175c45]">Admin dashboard <span className="text-xs text-[#68736c]">· Preview</span></NavLink>}
+      {currentUserType === 'Administrator' && <NavLink to="/admin" className="mt-8 block rounded-xl border border-[#dde3de] px-3.5 py-3 text-sm font-medium text-[#175c45]">Admin dashboard</NavLink>}
 
       <div className="mt-7 rounded-[18px] bg-[#0d3c2d] p-4 text-white">
         <p className="text-sm leading-5">Need something picked up on campus?</p>

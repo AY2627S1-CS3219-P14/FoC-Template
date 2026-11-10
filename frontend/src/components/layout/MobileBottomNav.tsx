@@ -2,6 +2,9 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import clipboardIcon from '../../assets/nav-clipboard.svg'
 import compassIcon from '../../assets/nav-compass.svg'
+import chatIcon from '../../assets/nav-chat.svg'
+import suppliersIcon from '../../assets/nav-suppliers.svg'
+import { useAuth } from '../../features/auth/useAuth'
 
 type MobileNavItemProps = {
   to: string
@@ -37,6 +40,7 @@ function MobileNavItem({
 }
 
 export function MobileBottomNav() {
+  const { currentUserType } = useAuth()
   return (
     <nav
       aria-label="Mobile navigation"
@@ -50,18 +54,18 @@ export function MobileBottomNav() {
         My errands
       </MobileNavItem>
 
-      <MobileNavItem to="/chats" icon={clipboardIcon}>
+      <MobileNavItem to="/chats" icon={chatIcon}>
         Chats
       </MobileNavItem>
 
-      <MobileNavItem to="/suppliers" icon={clipboardIcon}>
+      <MobileNavItem to="/suppliers" icon={suppliersIcon}>
         Suppliers
       </MobileNavItem>
 
       <MobileNavItem to="/errands/new">
         Create errand
       </MobileNavItem>
-      {import.meta.env.DEV && <MobileNavItem to="/admin" icon={clipboardIcon}>Admin preview</MobileNavItem>}
+      {currentUserType === 'Administrator' && <MobileNavItem to="/admin" icon={clipboardIcon}>Admin</MobileNavItem>}
     </nav>
   )
 }

@@ -6,22 +6,32 @@ const sessionExpiredListeners = new Set<() => void>()
 
 type AccessTokenPayload = {
   sub?: unknown
+  type?: unknown
 }
 
-export function getAccessTokenSubject(token: string | null) {
-  if (!token) return null
+export type AccountType = 'Administrator' | 'Student'
 
+function decodeAccessToken(token: string | null): AccessTokenPayload | null {
+  if (!token) return null
   try {
     const payloadSegment = token.split('.')[1]
     if (!payloadSegment) return null
-
     const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/')
     const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
-    const payload = JSON.parse(atob(paddedBase64)) as AccessTokenPayload
-    return typeof payload.sub === 'string' && payload.sub.length > 0 ? payload.sub : null
+    return JSON.parse(atob(paddedBase64)) as AccessTokenPayload
   } catch {
     return null
   }
+}
+
+export function getAccessTokenSubject(token: string | null) {
+  const payload = decodeAccessToken(token)
+  return typeof payload?.sub === 'string' && payload.sub.length > 0 ? payload.sub : null
+}
+
+export function getAccessTokenType(token: string | null): AccountType | null {
+  const type = decodeAccessToken(token)?.type
+  return type === 'Administrator' || type === 'Student' ? type : null
 }
 
 export function getAccessToken() {

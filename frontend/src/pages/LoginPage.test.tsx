@@ -11,6 +11,7 @@ describe('LoginPage', () => {
         value={{
           status: 'unauthenticated',
           currentUserId: null,
+          currentUserType: null,
           signIn: vi.fn(),
           signOut: vi.fn(),
         }}

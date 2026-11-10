@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+AI Assistance Disclosure:
+Tool: OpenAI Codex, date: 2026-10-22
+Scope: Explained the Maven Kafka dependency error and supplied the corrected dependency coordinates.
+Author review: I verified the dependency against the project build configuration.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>

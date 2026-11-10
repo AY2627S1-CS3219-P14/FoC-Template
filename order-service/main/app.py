@@ -1,8 +1,16 @@
+"""
+AI Assistance Disclosure:
+Tool: OpenAI Codex, date: 2026-10-02
+Scope: Provided FastAPI tutorial guidance and endpoint test examples for the initial Order Service implementation.
+Author review: I reviewed and subsequently extended the service structure and tests.
+"""
+
 import os
 import asyncio
 from contextlib import asynccontextmanager
 
 import uvicorn
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

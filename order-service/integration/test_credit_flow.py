@@ -188,3 +188,8 @@ def test_credit_retry_is_idempotent():
     for _ in range(2):
         assert httpx.post(f"{url}/{reservation}/release", headers=auth).status_code == 200
     assert balance(requester) == (30, 0)
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules; architecture and decision-rationale assistance is not attributed.
+# Author review: I reviewed, adapted, and tested the code for the project requirements.
+

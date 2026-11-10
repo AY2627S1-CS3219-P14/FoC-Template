@@ -67,3 +67,8 @@ def test_postgres_terminal_transition_has_one_winner(postgres_database, monkeypa
             assert stored.failed_at is not None
             assert stored.completed_at is None
             assert stored.failure_reason == "Missing items"
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules; architecture and decision-rationale assistance is not attributed.
+# Author review: I reviewed, adapted, and tested the code for the project requirements.
+

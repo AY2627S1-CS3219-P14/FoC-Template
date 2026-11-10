@@ -73,3 +73,8 @@ def rank_errands(
 def _as_aware(value: datetime, now: datetime) -> datetime:
     # SQLite (used in tests) drops the timezone from stored datetimes.
     return value if value.tzinfo is not None else value.replace(tzinfo=now.tzinfo)
+# AI Assistance Disclosure:
+# Tool: OpenAI Codex (model not recorded), dates: 2026-10-02–2026-10-22
+# Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules; architecture and decision-rationale assistance is not attributed.
+# Author review: I reviewed, adapted, and tested the code for the project requirements.
+

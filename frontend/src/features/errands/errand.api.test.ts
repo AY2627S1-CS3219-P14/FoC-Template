@@ -5,10 +5,12 @@ import {
   cancelErrand,
   completeErrand,
   createErrand,
+  deliverErrand,
   ErrandApiError,
   failErrand,
   getErrand,
   listErrands,
+  listRecommendedErrands,
 } from './errand.api'
 import type {
   CreateErrandRequest,
@@ -47,6 +49,7 @@ const listedErrands: ErrandListResponse = {
     {
       ...createdErrand,
       accepted_at: null,
+      delivered_at: null,
       completed_at: null,
       cancelled_at: null,
       failed_at: null,
@@ -323,6 +326,16 @@ describe('errand lifecycle actions', () => {
     })
   })
 
+  it('marks an errand ready for pickup with an empty success response', async () => {
+    authenticatedFetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+
+    await expect(deliverErrand(createdErrand.id)).resolves.toBeUndefined()
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/errand\/deliver$/),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ errand_id: createdErrand.id }) }),
+    )
+  })
+
   it('includes the failure reason when reporting an errand', async () => {
     authenticatedFetchMock.mockResolvedValue(
       new Response(
@@ -391,6 +404,46 @@ describe('errand lifecycle actions', () => {
     await expect(getErrand('missing')).rejects.toMatchObject({
       status: 404,
       message: 'Errand not found.',
+    })
+  })
+})
+
+describe('listRecommendedErrands', () => {
+  beforeEach(() => {
+    authenticatedFetchMock.mockReset()
+  })
+
+  it('requests the recommended endpoint with the requested size', async () => {
+    const body = {
+      items: [{ ...listedErrands.items[0], recommendation_reason: 'Needed soon' }],
+    }
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await expect(listRecommendedErrands(3)).resolves.toEqual(body)
+
+    const expectedBaseUrl = (import.meta.env.VITE_ORDER_API_URL ?? '').trim().replace(/\/+$/, '')
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      `${expectedBaseUrl}/errands/recommended?size=3`,
+      { headers: { Accept: 'application/json' }, signal: undefined },
+    )
+  })
+
+  it('reports service errors as ErrandApiError', async () => {
+    authenticatedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ detail: 'Invalid or expired access token' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await expect(listRecommendedErrands()).rejects.toMatchObject({
+      status: 401,
+      message: 'Invalid or expired access token',
     })
   })
 })

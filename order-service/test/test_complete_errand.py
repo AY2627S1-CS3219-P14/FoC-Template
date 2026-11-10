@@ -10,7 +10,7 @@ from main import complete_errand
 from main.app import app
 from main.models import Errand, ErrandStatus
 from test.outbox_support import assert_single_event
-from test.terminal_support import terminal_endpoint, post, assert_accepted
+from test.terminal_support import terminal_endpoint, post, assert_delivered
 
 
 ACTION = "complete"
@@ -47,10 +47,10 @@ def test_only_requester_can_terminate(terminal_endpoint, actor):
     claims["sub"] = str(fields["courier_id"] if actor == "courier" else uuid4())
     assert post(client, ACTION, fields["id"]).status_code == 403
     credit.assert_not_called()
-    assert_accepted(factory, fields["id"])
+    assert_delivered(factory, fields["id"])
 
 
-@pytest.mark.parametrize("state", [s for s in ErrandStatus if s != ErrandStatus.ACCEPTED])
+@pytest.mark.parametrize("state", [s for s in ErrandStatus if s != ErrandStatus.DELIVERED])
 def test_wrong_state_is_rejected(terminal_endpoint, state):
     client, _, factory, credit, fields = terminal_endpoint
     with factory.begin() as db:
@@ -67,7 +67,7 @@ def test_expired_errand_is_rejected(terminal_endpoint):
         db.get(Errand, fields["id"]).expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
     assert post(client, ACTION, fields["id"]).status_code == 409
     credit.assert_not_called()
-    assert_accepted(factory, fields["id"])
+    assert_delivered(factory, fields["id"])
 
 
 def test_missing_courier_is_rejected(terminal_endpoint):
@@ -95,7 +95,7 @@ def test_credit_failure_rolls_back_and_allows_retry(terminal_endpoint):
     client, _, factory, credit, fields = terminal_endpoint
     credit.side_effect = HTTPException(503, "Credit unavailable")
     assert post(client, ACTION, fields["id"]).status_code == 503
-    assert_accepted(factory, fields["id"])
+    assert_delivered(factory, fields["id"])
     credit.side_effect = None
     assert post(client, ACTION, fields["id"]).status_code == 200
 
@@ -105,7 +105,7 @@ def test_credit_exception_rolls_back(terminal_endpoint):
     credit.side_effect = RuntimeError("Credit operation failed")
     with pytest.raises(RuntimeError, match="Credit operation failed"):
         post(client, ACTION, fields["id"])
-    assert_accepted(factory, fields["id"])
+    assert_delivered(factory, fields["id"])
 
 
 def test_commit_failure_rolls_back(terminal_endpoint):
@@ -122,7 +122,7 @@ def test_commit_failure_rolls_back(terminal_endpoint):
     finally:
         event.remove(factory, "before_commit", reject_commit)
     credit.assert_called_once()
-    assert_accepted(factory, fields["id"])
+    assert_delivered(factory, fields["id"])
 
 
 @pytest.mark.parametrize("changes", [

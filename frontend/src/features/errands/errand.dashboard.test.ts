@@ -1,18 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupplier, listSupplierBuildings } from '../suppliers/supplier.api'
 import type { Supplier } from '../suppliers/supplier.types'
-import { listErrands } from './errand.api'
+import { listErrands, listRecommendedErrands } from './errand.api'
 import {
   applyDeliveryBuildingNames,
   buildOpenErrandParams,
   loadErrandDashboardBuildings,
   loadOpenErrandDashboard,
+  loadRecommendedErrands,
   type ErrandDashboardFilters,
 } from './errand.dashboard'
 import type { ErrandListItem } from './errand.types'
 
 vi.mock('./errand.api', () => ({
   listErrands: vi.fn(),
+  listRecommendedErrands: vi.fn(),
 }))
 
 vi.mock('../suppliers/supplier.api', () => ({
@@ -21,6 +23,7 @@ vi.mock('../suppliers/supplier.api', () => ({
 }))
 
 const listErrandsMock = vi.mocked(listErrands)
+const listRecommendedErrandsMock = vi.mocked(listRecommendedErrands)
 const getSupplierMock = vi.mocked(getSupplier)
 const listSupplierBuildingsMock = vi.mocked(listSupplierBuildings)
 
@@ -45,6 +48,7 @@ const errand: ErrandListItem = {
   expires_at: '2026-10-20T12:00:00.000Z',
   created_at: '2026-10-20T04:00:00.000Z',
   accepted_at: null,
+  delivered_at: null,
   completed_at: null,
   cancelled_at: null,
   failed_at: null,
@@ -249,5 +253,19 @@ describe('dashboard building references', () => {
     expect(applyDeliveryBuildingNames(data, []).items[0].delivery_building_name).toBe(
       'Delivery location unavailable',
     )
+  })
+
+  it('loads recommended errands with supplier names and keeps the reason', async () => {
+    listRecommendedErrandsMock.mockResolvedValue({
+      items: [{ ...errand, recommendation_reason: 'Needed soon' }],
+    })
+    getSupplierMock.mockResolvedValue(supplier)
+
+    const [recommended] = await loadRecommendedErrands()
+
+    expect(listRecommendedErrandsMock).toHaveBeenCalledWith(4, undefined)
+    expect(recommended.recommendation_reason).toBe('Needed soon')
+    expect(recommended.supplier_name).toBe('Techno Edge')
+    expect(recommended.supplier_building_name).toBe('Engineering E2')
   })
 })

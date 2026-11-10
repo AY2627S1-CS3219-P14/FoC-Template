@@ -8,6 +8,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ActiveSuppliersAssignedException.class)
+    public ProblemDetail handleActiveSuppliersAssigned(ActiveSuppliersAssignedException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
     @ExceptionHandler(DuplicateCategoryException.class)
     public ProblemDetail handleDuplicateCategory(DuplicateCategoryException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
@@ -28,9 +33,12 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
-    @ExceptionHandler(ReferenceNotActiveException.class)
-    public ProblemDetail handleReferenceNotActive(ReferenceNotActiveException exception) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    @ExceptionHandler(InactiveReferencesException.class)
+    public ProblemDetail handleInactiveReferences(InactiveReferencesException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, exception.getMessage());
+        problem.setProperty("inactiveReferences", exception.getInactiveReferences());
+        return problem;
     }
 
     @ExceptionHandler(InvalidQueryParameterException.class)

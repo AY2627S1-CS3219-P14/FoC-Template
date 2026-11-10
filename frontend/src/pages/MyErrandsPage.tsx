@@ -4,6 +4,7 @@ import { MyErrandCard } from '../components/errands/MyErrandCard'
 import type { MyErrandFilter, MyErrandItem } from '../features/errands/my-errands.types'
 import { loadMyErrands } from '../features/errands/errand.view'
 import { useAuth } from '../features/auth/useAuth'
+import { useErrandNotificationRevision } from '../features/notifications/useErrandNotificationRevision'
 
 const filterOptions: Array<{ value: MyErrandFilter; label: string }> = [
   { value: 'all', label: 'All' },
@@ -18,6 +19,7 @@ export function MyErrandsPage() {
   const [isLoading, setIsLoading] = useState(Boolean(currentUserId))
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [refreshCount, setRefreshCount] = useState(0)
+  const notificationRevision = useErrandNotificationRevision()
 
   useEffect(() => {
     if (!currentUserId) return
@@ -25,11 +27,12 @@ export function MyErrandsPage() {
     const controller = new AbortController()
     loadMyErrands(currentUserId, controller.signal)
       .then((items) => {
+        if (controller.signal.aborted) return
         setErrands(items)
         setErrorMessage(null)
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
+        if (controller.signal.aborted) return
         setErrorMessage(
           error instanceof Error ? error.message : 'Unable to load your errands.',
         )
@@ -39,7 +42,7 @@ export function MyErrandsPage() {
       })
 
     return () => controller.abort()
-  }, [currentUserId, refreshCount])
+  }, [currentUserId, refreshCount, notificationRevision])
 
   const displayedError = currentUserId
     ? errorMessage

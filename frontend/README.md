@@ -1,3 +1,10 @@
+## Admin dashboard mock preview
+
+Run `pnpm dev` from `frontend/` and open `http://localhost:5173/admin` (use the port Vite prints if different). No login or backend is required for the preview. Development builds also show an **Admin dashboard · Preview** link in the desktop sidebar and **Admin preview** in mobile navigation.
+
+The preview contains Overview, Suppliers, Categories, Buildings, and All Errands. Supplier creation/editing and category/building creation update local React state. Errand inspection is read-only. Navigation between preview pages preserves edits; reloading or confirming **Reset sample data** restores the fixtures. Sample activity is dated 2–4 November 2026 and timestamps display in Singapore time.
+
+The admin pages use sample data only, with no API integration. The existing application still owns its normal authentication/session handling. The preview routes and navigation entries are available only in Vite development mode; production builds do not expose `/admin`. Production admin authorization and backend integration are future work.
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -73,3 +80,4 @@ export default defineConfig([
 ])
 
 ```
+

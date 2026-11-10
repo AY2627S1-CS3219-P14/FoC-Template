@@ -39,4 +39,17 @@ public class Category {
         this.normalizedName = normalizedName;
         this.status = CategoryStatus.ACTIVE;
     }
+
+    public void rename(String name, String normalizedName) {
+        this.name = name;
+        this.normalizedName = normalizedName;
+    }
+
+    public void deactivate() {
+        this.status = CategoryStatus.RETIRED;
+    }
+
+    public void reactivate() {
+        this.status = CategoryStatus.ACTIVE;
+    }
 }

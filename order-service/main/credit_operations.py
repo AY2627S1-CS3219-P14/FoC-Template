@@ -72,7 +72,7 @@ def prepare_terminal(factory, errand_id, requester_id, action, reason=None):
             return existing.id
         if errand.pending_credit_action is not None:
             raise HTTPException(409, "A different credit operation is pending; retry that operation")
-        expected = ErrandStatus.OPEN if action == "CANCEL" else ErrandStatus.ACCEPTED
+        expected = ErrandStatus.OPEN if action == "CANCEL" else ErrandStatus.DELIVERED
         now = db.scalar(select(func.clock_timestamp()))
         if isinstance(now, str):  # SQLite unit tests.
             now = datetime.fromisoformat(now)

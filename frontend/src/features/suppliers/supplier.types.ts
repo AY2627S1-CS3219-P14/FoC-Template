@@ -1,8 +1,24 @@
 export type SupplierStatus = 'ACTIVE' | 'INACTIVE'
+export type SupplierReferenceStatus = 'ACTIVE' | 'RETIRED'
 
 export type SupplierReference = {
   id: string
   name: string
+}
+
+export type SupplierDirectoryEntry = SupplierReference & {
+  status: SupplierReferenceStatus
+}
+
+export type SupplierWriteRequest = {
+  name: string
+  categoryId: string
+  buildingId: string
+  floor: string | null
+  description: string | null
+  openingTime: string | null
+  closingTime: string | null
+  imageUrl: string | null
 }
 
 export type Supplier = {
@@ -34,4 +50,8 @@ export type SupplierListResponse = {
 
 export type SupplierReferenceListResponse = {
   items: SupplierReference[]
+}
+
+export type SupplierDirectoryListResponse = {
+  items: SupplierDirectoryEntry[]
 }

@@ -1,6 +1,6 @@
 import { getSupplier, listSupplierBuildings } from '../suppliers/supplier.api'
 import type { Supplier, SupplierReference } from '../suppliers/supplier.types'
-import { listErrands } from './errand.api'
+import { listErrands, listRecommendedErrands } from './errand.api'
 import type {
   ErrandCreditFilter,
   ErrandDashboardItem,
@@ -8,10 +8,12 @@ import type {
   ErrandListItem,
   ErrandSort,
   ListErrandsParams,
+  RecommendedErrandDashboardItem,
 } from './errand.types'
 
 const HOUR_IN_MS = 60 * 60 * 1000
 const DAY_IN_MS = 24 * HOUR_IN_MS
+const RECOMMENDED_ERRAND_COUNT = 4
 
 export type ErrandDashboardFilters = {
   deliveryBuildingId: string
@@ -60,10 +62,10 @@ export function buildOpenErrandParams(
   return params
 }
 
-function enrichErrand(
-  errand: ErrandListItem,
+function enrichErrand<T extends ErrandListItem>(
+  errand: T,
   suppliersById: Map<string, Supplier>,
-): ErrandDashboardItem {
+): T & ErrandDashboardItem {
   const supplier = suppliersById.get(errand.supplier_id)
 
   return {
@@ -74,23 +76,27 @@ function enrichErrand(
   }
 }
 
-export function applyDeliveryBuildingNames(
-  data: OpenErrandDashboardData,
+export function nameDeliveryBuildings<T extends ErrandDashboardItem>(
+  items: T[],
   deliveryBuildings: SupplierReference[],
-): OpenErrandDashboardData {
+): T[] {
   const buildingsById = new Map(
     deliveryBuildings.map((building) => [building.id, building]),
   )
 
-  return {
-    ...data,
-    items: data.items.map((errand) => ({
-      ...errand,
-      delivery_building_name:
-        buildingsById.get(errand.delivery_building_id)?.name ??
-        'Delivery location unavailable',
-    })),
-  }
+  return items.map((errand) => ({
+    ...errand,
+    delivery_building_name:
+      buildingsById.get(errand.delivery_building_id)?.name ??
+      'Delivery location unavailable',
+  }))
+}
+
+export function applyDeliveryBuildingNames(
+  data: OpenErrandDashboardData,
+  deliveryBuildings: SupplierReference[],
+): OpenErrandDashboardData {
+  return { ...data, items: nameDeliveryBuildings(data.items, deliveryBuildings) }
 }
 
 export async function loadErrandDashboardBuildings(signal?: AbortSignal) {
@@ -98,13 +104,11 @@ export async function loadErrandDashboardBuildings(signal?: AbortSignal) {
   return response.items
 }
 
-export async function loadOpenErrandDashboard(
-  filters: ErrandDashboardFilters,
+async function withSupplierNames<T extends ErrandListItem>(
+  errands: T[],
   signal?: AbortSignal,
-  now = new Date(),
-): Promise<OpenErrandDashboardData> {
-  const errandResponse = await listErrands(buildOpenErrandParams(filters, now), signal)
-  const supplierIds = [...new Set(errandResponse.items.map((errand) => errand.supplier_id))]
+): Promise<(T & ErrandDashboardItem)[]> {
+  const supplierIds = [...new Set(errands.map((errand) => errand.supplier_id))]
   const supplierResults = await Promise.allSettled(
     supplierIds.map((supplierId) => getSupplier(supplierId, signal)),
   )
@@ -121,9 +125,24 @@ export async function loadOpenErrandDashboard(
     result.status === 'fulfilled' ? [result.value] : [],
   )
   const suppliersById = new Map(suppliers.map((supplier) => [supplier.id, supplier]))
+  return errands.map((errand) => enrichErrand(errand, suppliersById))
+}
 
+export async function loadOpenErrandDashboard(
+  filters: ErrandDashboardFilters,
+  signal?: AbortSignal,
+  now = new Date(),
+): Promise<OpenErrandDashboardData> {
+  const errandResponse = await listErrands(buildOpenErrandParams(filters, now), signal)
   return {
     total: errandResponse.total,
-    items: errandResponse.items.map((errand) => enrichErrand(errand, suppliersById)),
+    items: await withSupplierNames(errandResponse.items, signal),
   }
+}
+
+export async function loadRecommendedErrands(
+  signal?: AbortSignal,
+): Promise<RecommendedErrandDashboardItem[]> {
+  const response = await listRecommendedErrands(RECOMMENDED_ERRAND_COUNT, signal)
+  return withSupplierNames(response.items, signal)
 }

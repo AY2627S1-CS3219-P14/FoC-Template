@@ -8,6 +8,7 @@ import com.campuscouriers.supplier.entity.SupplierStatus;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
 import com.campuscouriers.supplier.exception.GlobalExceptionHandler;
 import com.campuscouriers.supplier.exception.ReferenceNotFoundException;
+import com.campuscouriers.supplier.exception.InactiveReferencesException;
 import com.campuscouriers.supplier.service.SupplierService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -88,6 +90,17 @@ class SupplierControllerTest {
         mockMvc.perform(get("/suppliers").param("size", "101"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Size must be between 1 and 100"));
+    }
+
+    @Test
+    void findDeactivated_returnsInactivePage() throws Exception {
+        when(supplierService.findDeactivated(null, null, null, 0, 20, "name,asc"))
+                .thenReturn(new SupplierPageResponse(
+                        List.of(), new PageMetadata(0, 20, 0, 0, false, false)));
+
+        mockMvc.perform(get("/suppliers/deactivated"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty());
     }
 
     @Test
@@ -216,6 +229,74 @@ class SupplierControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(supplierService);
+    }
+
+    @Test
+    void deactivate_existingSupplier_returns200WithInactiveStatus() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID buildingId = UUID.randomUUID();
+        SupplierResponse inactive = new SupplierResponse(
+                supplierId, "Coffee Bean",
+                new SupplierResponse.ReferenceSummary(categoryId, "Food"),
+                new SupplierResponse.ReferenceSummary(buildingId, "COM3"),
+                "1", "Near the main entrance", LocalTime.of(9, 0),
+                LocalTime.of(18, 0), null, SupplierStatus.INACTIVE);
+        when(supplierService.deactivate(supplierId)).thenReturn(inactive);
+
+        mockMvc.perform(patch("/suppliers/{id}/deactivate", supplierId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(supplierId.toString()))
+                .andExpect(jsonPath("$.status").value("INACTIVE"));
+    }
+
+    @Test
+    void deactivate_unknownSupplier_returns404() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        doThrow(new ReferenceNotFoundException("Supplier", supplierId))
+                .when(supplierService).deactivate(supplierId);
+
+        mockMvc.perform(patch("/suppliers/{id}/deactivate", supplierId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void reactivate_inactiveSupplier_returns200WithActiveStatus() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID buildingId = UUID.randomUUID();
+        SupplierResponse active = response(
+                supplierId, categoryId, buildingId, "Coffee Bean");
+        when(supplierService.reactivate(supplierId)).thenReturn(active);
+
+        mockMvc.perform(patch("/suppliers/{id}/reactivate", supplierId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(supplierId.toString()))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void reactivate_unknownSupplier_returns404() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        doThrow(new ReferenceNotFoundException("Supplier", supplierId))
+                .when(supplierService).reactivate(supplierId);
+
+        mockMvc.perform(patch("/suppliers/{id}/reactivate", supplierId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void reactivate_withInactiveCategoryAndBuilding_returnsBothReferences() throws Exception {
+        UUID supplierId = UUID.randomUUID();
+        doThrow(new InactiveReferencesException(List.of("category", "building")))
+                .when(supplierService).reactivate(supplierId);
+
+        mockMvc.perform(patch("/suppliers/{id}/reactivate", supplierId))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.inactiveReferences[0]").value("category"))
+                .andExpect(jsonPath("$.inactiveReferences[1]").value("building"));
     }
 
     private SupplierResponse response(

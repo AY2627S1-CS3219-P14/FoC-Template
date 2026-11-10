@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import clipboardIcon from '../../assets/nav-clipboard.svg'
 import compassIcon from '../../assets/nav-compass.svg'
+import chatIcon from '../../assets/nav-chat.svg'
+import suppliersIcon from '../../assets/nav-suppliers.svg'
 
 type SidebarNavItemProps = {
   to: string
@@ -51,8 +53,16 @@ export function Sidebar() {
           My errands
         </SidebarNavItem>
 
-        <SidebarNavItem to="/suppliers" icon={clipboardIcon}>
+        <SidebarNavItem to="/chats" icon={chatIcon}>
+          Chats
+        </SidebarNavItem>
+
+        <SidebarNavItem to="/suppliers" icon={suppliersIcon}>
           Suppliers
+        </SidebarNavItem>
+
+        <SidebarNavItem to="/credit-history" icon={clipboardIcon}>
+          Credit transaction history
         </SidebarNavItem>
       </nav>
 

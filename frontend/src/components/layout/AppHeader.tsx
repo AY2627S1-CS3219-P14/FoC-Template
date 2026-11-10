@@ -1,24 +1,14 @@
-import { useState } from 'react'
 import { Link } from 'react-router'
 import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'
-import { useAuth } from '../../features/auth/useAuth'
 import { useCredits } from '../../features/credits/useCredits'
+import { useAuth } from '../../features/auth/useAuth'
+import { NotificationBell } from '../../features/notifications/NotificationBell'
+import { AccountMenu } from './AccountMenu'
 
 export function AppHeader() {
-  const { signOut } = useAuth()
   const { availableBalance, status: creditStatus, refreshBalance } = useCredits()
-  const [isSigningOut, setIsSigningOut] = useState(false)
-
-  async function handleSignOut() {
-    setIsSigningOut(true)
-
-    try {
-      await signOut()
-    } finally {
-      setIsSigningOut(false)
-    }
-  }
+  const { currentUserType } = useAuth()
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[#dde3de] bg-white px-4 lg:h-[76px] lg:px-8">
@@ -29,7 +19,7 @@ export function AppHeader() {
         <span className="grid size-9 place-items-center rounded-[11px] bg-[#175c45] lg:size-[38px]">
           <img src={routeIcon} alt="" width="20" height="20" />
         </span>
-        <span>Campus Couriers</span>
+        <span className="hidden min-[480px]:inline">Campus Couriers</span>
       </Link>
 
       <div className="flex items-center gap-2.5 text-sm text-[#17211d] lg:gap-3">
@@ -52,14 +42,16 @@ export function AppHeader() {
             Retry balance
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-          className="h-9 cursor-pointer rounded-lg border border-[#cfd8d1] bg-white px-3 text-xs font-semibold text-[#175c45] transition hover:bg-[#f0f6f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175c45] disabled:cursor-wait disabled:opacity-60 lg:h-10 lg:px-4 lg:text-sm"
-        >
-          {isSigningOut ? 'Signing out…' : 'Log out'}
-        </button>
+        <NotificationBell />
+        {currentUserType === 'Administrator' ? (
+          <Link
+            to="/admin"
+            className="rounded-lg border border-[#dce4dd] px-2.5 py-2 text-xs font-semibold text-[#175c45] hover:bg-[#edf5ef] sm:px-3"
+          >
+            Admin dashboard
+          </Link>
+        ) : null}
+        <AccountMenu />
       </div>
     </header>
   )

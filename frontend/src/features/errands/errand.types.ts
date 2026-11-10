@@ -15,6 +15,7 @@ export type ErrandDraftErrors = Partial<Record<ErrandDraftField, string>>
 export type ErrandStatus =
   | 'OPEN'
   | 'ACCEPTED'
+  | 'DELIVERED'
   | 'COMPLETED'
   | 'EXPIRED'
   | 'CANCELLED'
@@ -75,6 +76,7 @@ export type ErrandListItem = {
   expires_at: string
   created_at: string
   accepted_at: string | null
+  delivered_at: string | null
   completed_at: string | null
   cancelled_at: string | null
   failed_at: string | null
@@ -115,6 +117,18 @@ export type ErrandDashboardItem = ErrandListItem & {
   supplier_name: string
   supplier_building_name: string
   delivery_building_name: string
+}
+
+export type RecommendedErrandListItem = ErrandListItem & {
+  recommendation_reason: string
+}
+
+export type RecommendedErrandListResponse = {
+  items: RecommendedErrandListItem[]
+}
+
+export type RecommendedErrandDashboardItem = ErrandDashboardItem & {
+  recommendation_reason: string
 }
 
 export type ErrandCreditFilter = 'all' | 'up-to-5' | '6-to-10' | '11-plus'

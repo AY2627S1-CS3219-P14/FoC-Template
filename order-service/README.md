@@ -4,10 +4,12 @@ This folder contains one FastAPI order service:
 
 - `main/create_errand.py`: `POST /errand/create` validates the request, verifies the JWT and supplier, checks and reserves credits through Credit Service, and saves an open errand to PostgreSQL.
 - `main/accept_errand.py`: `POST /errand/accept` atomically assigns an open, unexpired errand to the authenticated courier.
+- `main/deliver_errand.py`: `POST /errand/deliver` lets the assigned courier mark an accepted, unexpired errand as delivered.
 - `main/cancel_errand.py`: `POST /errand/cancel` lets the requester cancel an open, unexpired errand and releases its credit reservation.
-- `main/complete_errand.py`: `POST /errand/complete` lets the requester confirm completion of an accepted, unexpired errand and transfers reserved credits to the courier.
-- `main/fail_errand.py`: `POST /errand/fail` lets the requester report failure of an accepted, unexpired errand with a required reason and releases its credit reservation.
+- `main/complete_errand.py`: `POST /errand/complete` lets the requester confirm completion of a delivered, unexpired errand and transfers reserved credits to the courier.
+- `main/fail_errand.py`: `POST /errand/fail` lets the requester report failure of a delivered, unexpired errand with a required reason and releases its credit reservation.
 - `main/get_errands.py`: `GET /errands` lists available open errands and the caller's own/assigned errands, or all errands for administrators.
+- `main/recommendations/`: `GET /errands/recommended` ranks open errands for the caller's dashboard.
 - `main/app.py`: registers the route modules in one FastAPI application.
 
 ## Install dependencies
@@ -142,7 +144,7 @@ cancellation versus acceptance using an isolated PostgreSQL schema.
 
 ## Complete or fail an errand
 
-Only the requester may terminate an ACCEPTED, unexpired errand with an assigned
+Only the requester may terminate a DELIVERED, unexpired errand with an assigned
 courier. Both endpoints obtain the requester UUID from the verified bearer token.
 
 `POST /errand/complete` accepts only `{"errand_id": "<errand UUID>"}`. It sets
@@ -197,7 +199,7 @@ private from nonexistent errands. Invalid parameters return 422.
 
 Couriers view completion confirmation using `GET /errands?errand_id=<uuid>`:
 the returned item's COMPLETED status and `completed_at` show the requester's
-confirmation, including after the deadline. Before confirmation an ACCEPTED errand
+confirmation, including after the deadline. Before confirmation a DELIVERED errand
 has `completed_at: null`. This replaces the separate completion-confirmation route.
 It reads the recorded decision after the reservation completion call succeeds.
 
@@ -225,8 +227,40 @@ are separate reads and may briefly differ during concurrent changes; a count is 
 an atomic safeguard against supplier deactivation racing with creation.
 
 No schema migration is needed. Run `python -m pytest -q test/test_get_errands.py`.
-The expiry worker/background trigger and Supplier Service integration remain future
-work. The separate sibling integration-test suite has not been changed.
+Supplier Service integration remains future work. The separate sibling
+integration-test suite has not been changed.
+
+### Automatic expiry
+
+The Order Service runs a lightweight background worker when the application starts.
+Every `ERRAND_EXPIRY_INTERVAL_SECONDS` seconds (default: 60), it processes overdue
+errands in a transaction:
+
+- `OPEN` errands become `EXPIRED`.
+- `ACCEPTED` errands become `FAILED` with the reason `Errand expired before delivery`.
+
+Each transition writes an `errand.expired` outbox event in the same transaction.
+Credit Service consumes that event and releases the reservation by the errand ID.
+The release operation is safe to retry if Kafka redelivers the event.
+
+## Recommended errands
+
+`GET /errands/recommended?size=5` (size 1-20, bearer token required) returns the
+dashboard's "Recommended for you" list. The code is in `main/recommendations/`:
+`scoring.py` holds the ranking rules and `routes.py` the endpoint.
+
+Candidates are errands the caller could accept now: available, not their own, and
+more than 10 minutes from expiry. Each is scored with simple rules:
+
+- +3 if the caller has completed a delivery from the same supplier;
+- +2 if it goes to a building the caller has delivered to or requested to;
+- up to +2 for credit value (scaled to the 25-credit maximum);
+- +1 if it expires within two hours.
+
+Ties go to higher credit, then the earlier deadline. A new user with no history is
+ranked by credit and urgency only. Each item has the usual errand fields plus a
+`recommendation_reason` naming the strongest signal. Tests:
+`python -m pytest -q test/test_recommend_errands.py`.
 
 See [CREDIT_INTEGRATION.md](CREDIT_INTEGRATION.md) for required configuration,
 migration 0005, idempotency/recovery behaviour and repeatable Docker tests.

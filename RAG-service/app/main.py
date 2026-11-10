@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth import verified_claims
-from app.claude import ClaudeClient, ClaudeNotConfiguredError
+from app.claude import ClaudeClient, ClaudeNotConfiguredError, ClaudeUnavailableError
 from app.retrieval import Retriever
 from app.schemas import QueryRequest, QueryResponse
 
@@ -39,6 +39,6 @@ def query_chunks(request: QueryRequest, _claims: dict = Depends(verified_claims)
     chunks = retriever.find_relevant_chunks(request.query, request.top_k)
     try:
         answer = claude.answer(request.query, chunks)
-    except ClaudeNotConfiguredError as exc:
+    except (ClaudeNotConfiguredError, ClaudeUnavailableError) as exc:
         raise HTTPException(503, str(exc)) from exc
     return QueryResponse(answer=answer)

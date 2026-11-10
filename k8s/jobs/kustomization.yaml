@@ -10,6 +10,7 @@ resources:
   - user-bootstrap.yaml
   - supplier-seed.yaml
   - register-connectors.yaml
+  - rag-index.yaml
 
 labels:
   - pairs:
@@ -27,3 +28,6 @@ images:
   - name: campuscouriers/order-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/order-service
     newTag: 83d64c1b237c
+  - name: campuscouriers/rag-service
+    newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/rag-service
+    newTag: set-by-scripts-image-tags

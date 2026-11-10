@@ -9,11 +9,21 @@ CLAUDE_MODEL = os.environ["CLAUDE_MODEL"]
 CLAUDE_MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "512"))
 
 
+class ClaudeNotConfiguredError(RuntimeError):
+    """ANTHROPIC_API_KEY is not set, so questions can't be answered (the service still starts)."""
+
+
 class ClaudeClient:
     def __init__(self) -> None:
-        self.client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        # Optional at startup: in Kubernetes the key arrives from Secrets Manager, possibly after the
+        # first deploy. Until then /query answers 503 instead of the service failing to start.
+        api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+        self.client = Anthropic(api_key=api_key) if api_key else None
 
     def answer(self, query: str, chunks: list[ChunkResult]) -> str:
+        if self.client is None:
+            raise ClaudeNotConfiguredError("Anthropic API key is not configured")
+
         context = "\n\n".join(
             f'<document id="{chunk.chunk_id}">\n'
             f"{chunk.chunk_text}\n"

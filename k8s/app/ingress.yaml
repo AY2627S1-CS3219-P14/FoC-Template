@@ -32,7 +32,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: api.example.com # TODO: your API domain (Route 53 record -> this ALB)
+    - host: api.example.com # set from k8s/domain.yaml (apiHost); external-dns points it at this ALB
       http:
         paths:
           # user-service

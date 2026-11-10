@@ -5,6 +5,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+  - domain.yaml # build-time settings only (never applied); see replacements below
   - namespaces.yaml
   # platform (needs the External Secrets Operator from terraform/infra installed first)
   - platform/cluster-secret-store.yaml
@@ -31,10 +32,35 @@ labels:
       app.kubernetes.io/part-of: campuscouriers
     includeSelectors: false
 
+# Copies the domain from domain.yaml into every field that needs it
+replacements:
+  - source:
+      kind: ConfigMap
+      name: domain-settings
+      fieldPath: data.apiHost
+    targets:
+      - select:
+          kind: Ingress
+          name: api
+        fieldPaths:
+          - spec.rules.0.host
+  - source:
+      kind: ConfigMap
+      name: domain-settings
+      fieldPath: data.appOrigin
+    targets:
+      - select: { kind: ConfigMap, name: user-service-config }
+        fieldPaths: [data.USER_CORS_ALLOWED_ORIGINS]
+      - select: { kind: ConfigMap, name: supplier-service-config }
+        fieldPaths: [data.SUPPLIER_CORS_ALLOWED_ORIGINS]
+      - select: { kind: ConfigMap, name: credit-service-config }
+        fieldPaths: [data.CREDIT_CORS_ALLOWED_ORIGINS]
+      - select: { kind: ConfigMap, name: order-service-config }
+        fieldPaths: [data.ORDER_CORS_ALLOWED_ORIGINS]
+
 # The manifests say "image: campuscouriers/user-service" (the compose name). This rewrites it to
 # the ECR repository and tag in one place. Keep in sync with k8s/jobs/kustomization.yaml.
-# TODO: your AWS account id and region. Prefer a git SHA tag over "latest" so each deploy is traceable:
-#   kustomize edit set image campuscouriers/user-service=<repo>:<sha>  (or let CI do it)
+# Set by scripts/build-and-push.ps1 (one git-SHA tag per build, so each deploy is traceable).
 images:
   - name: campuscouriers/user-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/user-service

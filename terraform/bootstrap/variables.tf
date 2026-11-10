@@ -30,3 +30,14 @@ variable "monthly_budget_usd" {
   type        = number
   default     = 50
 }
+
+variable "domain_name" {
+  description = "Your registered domain, e.g. campuscouriers.app. The API is served at <api_subdomain>.<domain_name>."
+  type        = string
+}
+
+variable "api_subdomain" {
+  description = "Subdomain for the backend API (ALB)."
+  type        = string
+  default     = "api"
+}

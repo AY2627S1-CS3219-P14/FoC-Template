@@ -132,3 +132,9 @@ variable "db_skip_final_snapshot" {
   type        = bool
   default     = true
 }
+
+# --- DNS -------------------------------------------------------------------------------------------
+variable "domain_name" {
+  description = "Your registered domain (same as in terraform/bootstrap). Its hosted zone is created there."
+  type        = string
+}

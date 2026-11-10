@@ -22,6 +22,7 @@ locals {
     ebs_csi                      = "kube-system:ebs-csi-controller-sa"
     aws_load_balancer_controller = "kube-system:aws-load-balancer-controller"
     external_secrets             = "external-secrets:external-secrets"
+    external_dns                 = "kube-system:external-dns"
   }
 }
 

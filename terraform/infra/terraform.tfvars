@@ -2,3 +2,4 @@
 # Never put passwords or keys in .tfvars files.
 aws_account_id = "596601390706"
 # aws_region   = "ap-southeast-1"
+domain_name = "campuscouriers.online"

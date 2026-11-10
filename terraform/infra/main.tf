@@ -1,5 +1,5 @@
 # One file per part: vpc.tf, eks.tf, irsa.tf, load-balancer-controller.tf, external-secrets.tf, rds.tf,
-# ecr.tf.
+# ecr.tf, external-dns.tf (its hosted zone and certificate live in terraform/bootstrap/dns.tf).
 # Further parts are added the same way.
 #
 # These data sources read who you are signed in as; the signed_in_as output shows it, so

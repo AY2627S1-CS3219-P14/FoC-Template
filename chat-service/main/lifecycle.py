@@ -57,6 +57,12 @@ def apply_lifecycle_event(db: Session, event_id: str, event_type: str, payload: 
     event_status = event_type.removeprefix("errand.").upper()
     if event_status == "CREATED":
         event_status = "OPEN"
+    elif event_status == "EXPIRED":
+        # Order Service emits the same event for OPEN -> EXPIRED and
+        # ACCEPTED -> FAILED, so the payload contains the actual new state.
+        event_status = payload["resultingStatus"].upper()
+        if event_status not in {"EXPIRED", "FAILED"}:
+            raise ValueError("errand.expired has an invalid resultingStatus")
 
     current_rank = STATE_RANK.get(conversation.delivery_status, -1)
     new_rank = STATE_RANK.get(event_status, -1)
@@ -78,7 +84,11 @@ def apply_lifecycle_event(db: Session, event_id: str, event_type: str, payload: 
             "CANCELLED": "cancelledAt",
             "EXPIRED": "expiredAt",
         }
-        terminal_at = parse_datetime(payload.get(timestamp_fields[event_status])) or datetime.now(timezone.utc)
+        timestamp_field = (
+            "expiredAt" if event_type == "errand.expired"
+            else timestamp_fields[event_status]
+        )
+        terminal_at = parse_datetime(payload.get(timestamp_field)) or datetime.now(timezone.utc)
         conversation.closed_at = terminal_at
         if event_status == "COMPLETED":
             conversation.chat_closes_at = terminal_at + timedelta(minutes=30)

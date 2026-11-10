@@ -14,8 +14,9 @@ Notification Service. Retried messages do not write another event.
 - `errand.delivered` keeps chat writable while confirmation is pending.
 - `errand.completed` starts a 30-minute follow-up window, after which the
   conversation becomes read-only.
-- `errand.failed`, `errand.cancelled`, and the future `errand.expired` event
-  make the conversation read-only immediately.
+- `errand.failed` and `errand.cancelled` make the conversation read-only
+  immediately. `errand.expired` does the same and uses its `resultingStatus`
+  (`EXPIRED` for an open errand or `FAILED` for an accepted errand).
 
 The consumer is idempotent through the `processed_events` inbox and applies
 monotonic state precedence because events on different Kafka topics can be

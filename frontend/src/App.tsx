@@ -13,6 +13,7 @@ import { ChatsPage } from './pages/ChatsPage'
 import { ChatPage } from './pages/ChatPage'
 import { CreditHistoryPage } from './pages/CreditHistoryPage'
 import { AdminPage } from './pages/AdminPage'
+import { RagPage } from './pages/RagPage'
 
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Route path="credit-history" element={<CreditHistoryPage />} />
           <Route path="chats" element={<ChatsPage />} />
           <Route path="chats/:conversationId" element={<ChatPage />} />
+          <Route path="assistant" element={<RagPage />} />
           <Route path="errands/new" element={<CreateErrandPage />} />
           <Route path="errands/:errandId" element={<ErrandDetailsPage />} />
         </Route>

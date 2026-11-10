@@ -57,6 +57,10 @@ export function Sidebar() {
           Chats
         </SidebarNavItem>
 
+        <SidebarNavItem to="/assistant" icon={chatIcon}>
+          Assistant
+        </SidebarNavItem>
+
         <SidebarNavItem to="/suppliers" icon={suppliersIcon}>
           Suppliers
         </SidebarNavItem>

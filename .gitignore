@@ -7,6 +7,7 @@ out/
 __pycache__/
 .pytest_cache/
 *.py[cod]
+.pnpm-store/
 
 # Environment / secrets
 .env

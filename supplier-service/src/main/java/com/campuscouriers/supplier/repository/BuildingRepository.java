@@ -12,6 +12,8 @@ public interface BuildingRepository extends JpaRepository<Building, UUID> {
 
     boolean existsByNormalizedName(String normalizedName);
 
+    boolean existsByNormalizedNameAndIdNot(String normalizedName, UUID id);
+
     Optional<Building> findByNormalizedName(String normalizedName);
 
     List<Building> findAllByStatusOrderByNormalizedNameAsc(BuildingStatus status);

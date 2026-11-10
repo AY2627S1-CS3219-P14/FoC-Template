@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router'
 import { AppLayout } from './components/layout/AppLayout'
-import { PublicOnlyRoute, RequireAuth } from './features/auth/AuthRoutes'
+import { PublicOnlyRoute, RequireAdmin, RequireAuth } from './features/auth/AuthRoutes'
 import { CreateErrandPage } from './pages/CreateErrandPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ErrandDetailsPage } from './pages/ErrandDetailsPage'
@@ -11,6 +11,9 @@ import { RegisterPage } from './pages/RegisterPage'
 import { SuppliersPage } from './pages/SuppliersPage'
 import { ChatsPage } from './pages/ChatsPage'
 import { ChatPage } from './pages/ChatPage'
+import { CreditHistoryPage } from './pages/CreditHistoryPage'
+import { AdminPage } from './pages/AdminPage'
+
 
 function App() {
   return (
@@ -21,10 +24,14 @@ function App() {
       </Route>
 
       <Route element={<RequireAuth />}>
+        <Route element={<RequireAdmin />}>
+          <Route path="admin/*" element={<AdminPage />} />
+        </Route>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="my-errands" element={<MyErrandsPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="credit-history" element={<CreditHistoryPage />} />
           <Route path="chats" element={<ChatsPage />} />
           <Route path="chats/:conversationId" element={<ChatPage />} />
           <Route path="errands/new" element={<CreateErrandPage />} />

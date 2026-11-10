@@ -25,6 +25,8 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(requests -> requests
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        // Kubernetes probes and ALB health checks (not routed through the Ingress)
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/wallets/**").authenticated()
                         .requestMatchers("/api/reservations/**").authenticated()
                         .anyRequest().denyAll())

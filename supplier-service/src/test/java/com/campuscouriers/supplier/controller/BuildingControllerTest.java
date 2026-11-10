@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +52,17 @@ class BuildingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(id.toString()))
                 .andExpect(jsonPath("$.items[0].name").value("COM3"));
+    }
+
+    @Test
+    void findDeactivated_returnsRetiredItems() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(buildingService.findDeactivated()).thenReturn(new ItemListResponse<>(List.of(
+                new BuildingResponse(id, "Old Block", BuildingStatus.RETIRED))));
+
+        mockMvc.perform(get("/buildings/deactivated"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("RETIRED"));
     }
 
     @Test
@@ -92,5 +104,23 @@ class BuildingControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.detail").value("A building named 'COM3' already exists"));
+    }
+
+    @Test
+    void detailUpdateDeactivateAndReactivate_areExposed() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(buildingService.findById(id)).thenReturn(new BuildingResponse(id, "COM3", BuildingStatus.ACTIVE));
+        when(buildingService.update(any(), any())).thenReturn(new BuildingResponse(id, "COM4", BuildingStatus.ACTIVE));
+        when(buildingService.deactivate(id)).thenReturn(new BuildingResponse(id, "COM4", BuildingStatus.RETIRED));
+        when(buildingService.reactivate(id)).thenReturn(new BuildingResponse(id, "COM4", BuildingStatus.ACTIVE));
+
+        mockMvc.perform(get("/buildings/{id}", id)).andExpect(status().isOk());
+        mockMvc.perform(put("/buildings/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"COM4\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("COM4"));
+        mockMvc.perform(post("/buildings/{id}/deactivate", id))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("RETIRED"));
+        mockMvc.perform(post("/buildings/{id}/reactivate", id))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 }

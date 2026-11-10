@@ -2,11 +2,13 @@ import { Link } from 'react-router'
 import creditCoin from '../../assets/credit-coin.svg'
 import routeIcon from '../../assets/route.svg'
 import { useCredits } from '../../features/credits/useCredits'
+import { useAuth } from '../../features/auth/useAuth'
 import { NotificationBell } from '../../features/notifications/NotificationBell'
 import { AccountMenu } from './AccountMenu'
 
 export function AppHeader() {
   const { availableBalance, status: creditStatus, refreshBalance } = useCredits()
+  const { currentUserType } = useAuth()
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[#dde3de] bg-white px-4 lg:h-[76px] lg:px-8">
@@ -17,7 +19,7 @@ export function AppHeader() {
         <span className="grid size-9 place-items-center rounded-[11px] bg-[#175c45] lg:size-[38px]">
           <img src={routeIcon} alt="" width="20" height="20" />
         </span>
-        <span>Campus Couriers</span>
+        <span className="hidden min-[480px]:inline">Campus Couriers</span>
       </Link>
 
       <div className="flex items-center gap-2.5 text-sm text-[#17211d] lg:gap-3">
@@ -41,6 +43,14 @@ export function AppHeader() {
           </button>
         ) : null}
         <NotificationBell />
+        {currentUserType === 'Administrator' ? (
+          <Link
+            to="/admin"
+            className="rounded-lg border border-[#dce4dd] px-2.5 py-2 text-xs font-semibold text-[#175c45] hover:bg-[#edf5ef] sm:px-3"
+          >
+            Admin dashboard
+          </Link>
+        ) : null}
         <AccountMenu />
       </div>
     </header>

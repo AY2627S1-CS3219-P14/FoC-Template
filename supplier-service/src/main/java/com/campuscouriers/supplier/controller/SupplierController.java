@@ -48,6 +48,18 @@ public class SupplierController {
         return supplierService.findActive(query, categoryId, buildingId, page, size, sort);
     }
 
+    @GetMapping("/deactivated")
+    public SupplierPageResponse findDeactivated(
+            @RequestParam(required = false, name = "q") String query,
+            @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) UUID buildingId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "name,asc") String sort
+    ) {
+        return supplierService.findDeactivated(query, categoryId, buildingId, page, size, sort);
+    }
+
     @GetMapping("/{id}")
     public SupplierResponse findActiveById(@PathVariable UUID id) {
         return supplierService.findActiveById(id);

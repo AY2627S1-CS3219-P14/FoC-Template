@@ -9,6 +9,7 @@ import com.campuscouriers.supplier.entity.SupplierStatus;
 import com.campuscouriers.supplier.event.SupplierEventPublisher;
 import com.campuscouriers.supplier.exception.DuplicateSupplierException;
 import com.campuscouriers.supplier.exception.ReferenceNotFoundException;
+import com.campuscouriers.supplier.exception.InactiveReferencesException;
 import com.campuscouriers.supplier.repository.BuildingRepository;
 import com.campuscouriers.supplier.repository.CategoryRepository;
 import com.campuscouriers.supplier.repository.SupplierRepository;
@@ -82,6 +83,19 @@ class SupplierServiceTest {
     }
 
     @Test
+    void findDeactivated_returnsPage() {
+        when(supplierRepository.findAll(
+                ArgumentMatchers.<Specification<Supplier>>any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(java.util.List.of()));
+
+        var response = supplierService.findDeactivated(null, null, null, 0, 20, "name,asc");
+
+        assertThat(response.items()).isEmpty();
+        verify(supplierRepository).findAll(
+                ArgumentMatchers.<Specification<Supplier>>any(), any(Pageable.class));
+    }
+
+    @Test
     void findActive_returnsMappedPageWithRequestedPaginationAndSort() {
         Supplier supplier = new Supplier(
                 "Coffee Bean", "coffee bean", category, building, "1", "1",
@@ -121,6 +135,21 @@ class SupplierServiceTest {
         assertThat(response.category().id()).isEqualTo(categoryId);
         assertThat(response.building().id()).isEqualTo(buildingId);
         verify(supplierEventPublisher).publishSupplierCreated(saved);
+    }
+
+    @Test
+    void create_whenCategoryAndBuildingAreRetired_reportsBoth() {
+        category.deactivate();
+        building.deactivate();
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(buildingRepository.findById(buildingId)).thenReturn(Optional.of(building));
+
+        assertThatThrownBy(() -> supplierService.create(validRequest("Coffee Bean", "1")))
+                .isInstanceOfSatisfying(InactiveReferencesException.class, exception ->
+                        assertThat(exception.getInactiveReferences())
+                                .containsExactly("category", "building"));
+
+        verify(supplierRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -205,6 +234,24 @@ class SupplierServiceTest {
     }
 
     @Test
+    void update_whenCategoryAndBuildingAreRetired_reportsBoth() {
+        UUID supplierId = UUID.randomUUID();
+        Supplier supplier = supplier("Coffee Bean", category, building);
+        category.deactivate();
+        building.deactivate();
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(buildingRepository.findById(buildingId)).thenReturn(Optional.of(building));
+
+        assertThatThrownBy(() -> supplierService.update(supplierId, updateRequest("Coffee Bean")))
+                .isInstanceOfSatisfying(InactiveReferencesException.class, exception ->
+                        assertThat(exception.getInactiveReferences())
+                                .containsExactly("category", "building"));
+
+        verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void update_duplicateOtherSupplier_throwsAndDoesNotSave() {
         UUID supplierId = UUID.randomUUID();
         Supplier supplier = supplier("Old Name", category, building);
@@ -271,6 +318,60 @@ class SupplierServiceTest {
         assertThatThrownBy(() -> supplierService.reactivate(supplierId))
                 .isInstanceOf(ReferenceNotFoundException.class);
 
+        verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void reactivate_whenCategoryIsRetired_throwsAndLeavesSupplierInactive() {
+        UUID supplierId = UUID.randomUUID();
+        Category retiredCategory = new Category("Old Food", "old food");
+        retiredCategory.deactivate();
+        Supplier supplier = supplier("Coffee Bean", retiredCategory, building);
+        supplier.deactivate();
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+
+        assertThatThrownBy(() -> supplierService.reactivate(supplierId))
+                .isInstanceOf(InactiveReferencesException.class)
+                .hasMessage("The following selected references are not active: category");
+
+        assertThat(supplier.getStatus()).isEqualTo(SupplierStatus.INACTIVE);
+        verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void reactivate_whenBuildingIsRetired_throwsAndLeavesSupplierInactive() {
+        UUID supplierId = UUID.randomUUID();
+        Building retiredBuilding = new Building("Old Block", "old block");
+        retiredBuilding.deactivate();
+        Supplier supplier = supplier("Coffee Bean", category, retiredBuilding);
+        supplier.deactivate();
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+
+        assertThatThrownBy(() -> supplierService.reactivate(supplierId))
+                .isInstanceOf(InactiveReferencesException.class)
+                .hasMessage("The following selected references are not active: building");
+
+        assertThat(supplier.getStatus()).isEqualTo(SupplierStatus.INACTIVE);
+        verify(supplierRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void reactivate_whenCategoryAndBuildingAreRetired_reportsBothAndLeavesSupplierInactive() {
+        UUID supplierId = UUID.randomUUID();
+        Category retiredCategory = new Category("Old Food", "old food");
+        Building retiredBuilding = new Building("Old Block", "old block");
+        retiredCategory.deactivate();
+        retiredBuilding.deactivate();
+        Supplier supplier = supplier("Coffee Bean", retiredCategory, retiredBuilding);
+        supplier.deactivate();
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+
+        assertThatThrownBy(() -> supplierService.reactivate(supplierId))
+                .isInstanceOfSatisfying(InactiveReferencesException.class, exception ->
+                        assertThat(exception.getInactiveReferences())
+                                .containsExactly("category", "building"));
+
+        assertThat(supplier.getStatus()).isEqualTo(SupplierStatus.INACTIVE);
         verify(supplierRepository, never()).saveAndFlush(any());
     }
 

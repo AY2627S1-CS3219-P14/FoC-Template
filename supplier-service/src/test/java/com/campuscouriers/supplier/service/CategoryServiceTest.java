@@ -3,8 +3,12 @@ package com.campuscouriers.supplier.service;
 import com.campuscouriers.supplier.dto.CreateCategoryRequest;
 import com.campuscouriers.supplier.entity.Category;
 import com.campuscouriers.supplier.entity.CategoryStatus;
+import com.campuscouriers.supplier.entity.SupplierStatus;
 import com.campuscouriers.supplier.exception.DuplicateCategoryException;
+import com.campuscouriers.supplier.exception.ActiveSuppliersAssignedException;
 import com.campuscouriers.supplier.repository.CategoryRepository;
+import com.campuscouriers.supplier.repository.SupplierRepository;
+import com.campuscouriers.supplier.dto.UpdateCategoryRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -20,12 +24,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTest {
 
     @Mock
     private CategoryRepository categoryRepository;
+
+    @Mock
+    private SupplierRepository supplierRepository;
 
     @InjectMocks
     private CategoryService categoryService;
@@ -38,6 +47,19 @@ class CategoryServiceTest {
         var response = categoryService.findActive();
 
         assertThat(response.items()).extracting(item -> item.name()).containsExactly("Food");
+    }
+
+    @Test
+    void findDeactivated_returnsOnlyRetiredRepositoryResults() {
+        Category category = new Category("Old Food", "old food");
+        category.deactivate();
+        when(categoryRepository.findAllByStatusOrderByNormalizedNameAsc(CategoryStatus.RETIRED))
+                .thenReturn(List.of(category));
+
+        var response = categoryService.findDeactivated();
+
+        assertThat(response.items()).extracting(item -> item.status())
+                .containsExactly(CategoryStatus.RETIRED);
     }
 
     @Test
@@ -64,5 +86,43 @@ class CategoryServiceTest {
                 .isInstanceOf(DuplicateCategoryException.class);
 
         verify(categoryRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void update_renamesReferencedCategoryUsingCreationRules() {
+        UUID id = UUID.randomUUID();
+        Category category = new Category("Food", "food");
+        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryRepository.saveAndFlush(category)).thenReturn(category);
+
+        var response = categoryService.update(id, new UpdateCategoryRequest(" Food   and Drinks "));
+
+        verify(categoryRepository).existsByNormalizedNameAndIdNot("food and drinks", id);
+        assertThat(response.name()).isEqualTo("Food and Drinks");
+    }
+
+    @Test
+    void deactivate_whenActiveSupplierIsAssigned_returnsConflictAndDoesNotSave() {
+        UUID id = UUID.randomUUID();
+        Category category = new Category("Food", "food");
+        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+        when(supplierRepository.existsByCategoryIdAndStatus(id, SupplierStatus.ACTIVE)).thenReturn(true);
+
+        assertThatThrownBy(() -> categoryService.deactivate(id))
+                .isInstanceOf(ActiveSuppliersAssignedException.class);
+
+        assertThat(category.getStatus()).isEqualTo(CategoryStatus.ACTIVE);
+        verify(categoryRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void deactivateAndReactivate_whenNoActiveSupplier_changesStatus() {
+        UUID id = UUID.randomUUID();
+        Category category = new Category("Food", "food");
+        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryRepository.saveAndFlush(category)).thenReturn(category);
+
+        assertThat(categoryService.deactivate(id).status()).isEqualTo(CategoryStatus.RETIRED);
+        assertThat(categoryService.reactivate(id).status()).isEqualTo(CategoryStatus.ACTIVE);
     }
 }

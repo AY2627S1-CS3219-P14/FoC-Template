@@ -43,7 +43,7 @@ microservice (`user-service/`, `supplier-service/`, `order-service/`,
 ├── order-service/
 ├── credit-service/
 ├── RAG-service/       # RAG knowledge chunks and indexing job
-├── <n2h-service>/
+├── notification-service/
 ├── debezium/          # Kafka Connect connectors that relay each service's outbox to Kafka
 └── README.md
 ```

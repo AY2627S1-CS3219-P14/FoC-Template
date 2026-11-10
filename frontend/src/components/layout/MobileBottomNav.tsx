@@ -58,6 +58,10 @@ export function MobileBottomNav() {
         Suppliers
       </MobileNavItem>
 
+      <MobileNavItem to="/credit-history" icon={clipboardIcon}>
+        Credits
+      </MobileNavItem>
+
       <MobileNavItem to="/errands/new">
         Create errand
       </MobileNavItem>

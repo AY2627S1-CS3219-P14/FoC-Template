@@ -11,6 +11,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { SuppliersPage } from './pages/SuppliersPage'
 import { ChatsPage } from './pages/ChatsPage'
 import { ChatPage } from './pages/ChatPage'
+import { CreditHistoryPage } from './pages/CreditHistoryPage'
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path="my-errands" element={<MyErrandsPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="credit-history" element={<CreditHistoryPage />} />
           <Route path="chats" element={<ChatsPage />} />
           <Route path="chats/:conversationId" element={<ChatPage />} />
           <Route path="errands/new" element={<CreateErrandPage />} />

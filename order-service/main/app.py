@@ -13,6 +13,7 @@ from main.cancel_errand import router as cancel_errand_router
 from main.complete_errand import router as complete_errand_router
 from main.fail_errand import router as fail_errand_router
 from main.get_errands import router as get_errands_router
+from main.recommendations.routes import router as recommendations_router
 from main.expiry_worker import expiry_worker
 
 
@@ -57,6 +58,7 @@ app.include_router(deliver_errand_router)
 app.include_router(cancel_errand_router)
 app.include_router(complete_errand_router)
 app.include_router(fail_errand_router)
+app.include_router(recommendations_router)
 app.include_router(get_errands_router)
 
 

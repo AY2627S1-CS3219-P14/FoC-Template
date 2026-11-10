@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # One-off database setup, kept apart from everything else because it needs the RDS MASTER password.
 # Apply it, wait for the Job, then delete the whole folder so that password leaves the cluster:
 #

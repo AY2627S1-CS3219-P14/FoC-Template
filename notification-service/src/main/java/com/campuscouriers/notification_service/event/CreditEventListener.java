@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-08
+ * Scope (AI-08): Removed trailing full stops from alert text and updated examples and tests.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Changes validated and confirmed.
+ */
+
 package com.campuscouriers.notification_service.event;
 
 import com.campuscouriers.notification_service.notification.NotificationService;

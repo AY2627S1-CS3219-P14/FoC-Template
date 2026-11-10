@@ -1,4 +1,9 @@
 /*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol) and GitHub Copilot code review (model unrecorded), 2026-10-23
+ * Scope (AI-04): Reused balance loading logic and tested request cleanup.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Changes validated and confirmed.
  * AI Assistance Disclosure:
  * Tool: OpenAI Codex (GPT-5), date: 2026-11-09
  * Scope: Updated tests for notification-driven frontend behavior.

@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # external-dns: keeps Route 53 records in sync with Kubernetes. When an Ingress says
 # `host: api.yourdomain.com`, it creates the record api.yourdomain.com -> that Ingress's ALB.
 #

@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-20
+ * Scope (AI-19): Rendered and tested the requested dashboard preview.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Changes validated and confirmed.
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActiveErrandsPanel,

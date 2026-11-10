@@ -1,3 +1,13 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+# Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # Everything that runs continuously. Preview:  kubectl kustomize k8s
 #                                     Apply:    kubectl apply -k k8s
 # One-off Jobs live separately in k8s/jobs/ so they run only when you choose.
@@ -26,6 +36,7 @@ resources:
   - app/notification-service.yaml
   - app/chat-service.yaml
   - app/ai-errand-assistant-service.yaml
+  - app/rag-service.yaml
   - app/ingress.yaml
   - app/network-policies.yaml
 
@@ -54,6 +65,9 @@ configMapGenerator:
   - name: ai-errand-assistant-service-config
     namespace: campuscouriers-app
     envs: [app/config/ai-errand-assistant-service.env]
+  - name: rag-service-config
+    namespace: campuscouriers-app
+    envs: [app/config/rag-service.env]
 
 # Added to every resource's metadata (not to selectors, which can't change after creation)
 labels:
@@ -92,6 +106,8 @@ replacements:
         fieldPaths: [data.CHAT_CORS_ALLOWED_ORIGINS]
       - select: { kind: ConfigMap, name: ai-errand-assistant-service-config }
         fieldPaths: [data.CORS_ALLOWED_ORIGINS]
+      - select: { kind: ConfigMap, name: rag-service-config }
+        fieldPaths: [data.RAG_CORS_ALLOWED_ORIGINS]
 
 # The manifests say "image: campuscouriers/user-service" (the compose name). This rewrites it to
 # the ECR repository and tag in one place. Keep in sync with k8s/jobs/kustomization.yaml.
@@ -117,4 +133,7 @@ images:
     newTag: 88ca99a6c06a
   - name: campuscouriers/ai-errand-assistant-service
     newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/ai-errand-assistant-service
+    newTag: set-by-scripts-image-tags
+  - name: campuscouriers/rag-service
+    newName: 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/rag-service
     newTag: set-by-scripts-image-tags

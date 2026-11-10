@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # ai-errand-assistant-service (FastAPI): turns a short request ("iced milo from the Deck to COM3 by
 # 5pm") into a draft errand using OpenAI. POST /errands/draft. It stores nothing, so it scales freely.
 # Same layout as order-service.yaml; differences are commented.

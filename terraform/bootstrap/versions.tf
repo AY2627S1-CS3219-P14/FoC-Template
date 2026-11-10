@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # The bootstrap stack creates the S3 bucket that holds every OTHER stack's state. It can't keep its
 # own state in that bucket (the bucket doesn't exist yet when it first runs), so its state stays in
 # a local file: terraform/bootstrap/terraform.tfstate. It's run once, by one person.

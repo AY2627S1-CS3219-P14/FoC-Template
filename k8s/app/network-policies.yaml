@@ -1,3 +1,13 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+# Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # Who may connect to which pod in campuscouriers-app.
 #
 # Start from "deny all incoming traffic", then allow only the connections the system needs.
@@ -32,7 +42,8 @@ spec:
       - key: app.kubernetes.io/name
         operator: In
         values: ["user-service", "supplier-service", "credit-service", "order-service",
-                 "notification-service", "chat-service", "ai-errand-assistant-service"]
+                 "notification-service", "chat-service", "ai-errand-assistant-service",
+                 "rag-service"]
   policyTypes: ["Ingress"]
   ingress:
     - from:
@@ -61,7 +72,8 @@ spec:
               - key: app.kubernetes.io/name
                 operator: In
                 values: ["supplier-service", "credit-service", "order-service",
-                         "notification-service", "chat-service", "ai-errand-assistant-service"]
+                         "notification-service", "chat-service", "ai-errand-assistant-service",
+                         "rag-service"]
       ports:
         - port: http
 ---

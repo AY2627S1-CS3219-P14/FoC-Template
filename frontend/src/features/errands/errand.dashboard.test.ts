@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-21
+ * Scope (AI-03): Isolated failed supplier lookups and added regression tests.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Changes validated and confirmed.
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupplier, listSupplierBuildings } from '../suppliers/supplier.api'
 import type { Supplier } from '../suppliers/supplier.types'

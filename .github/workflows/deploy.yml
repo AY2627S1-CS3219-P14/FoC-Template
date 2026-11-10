@@ -1,3 +1,11 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10
+# Scope (AI-27): Generated the deploy workflow, CI helper scripts and deploy-role Terraform I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # Deploys main to AWS on every push (and on demand: Actions tab -> Deploy -> Run workflow).
 # How it works and the one-time setup: .github/workflows/README.md
 #
@@ -16,7 +24,6 @@ on:
       - "**/*.md"
       - "docs/**"
       - "terraform/**"
-      - "RAG-service/**"
       - "compose.yaml"
   workflow_dispatch:
 
@@ -54,13 +61,13 @@ jobs:
         id: tags
         run: |
           builds="[]"
-          while read -r service tag; do
+          while read -r service tag folder; do
             if aws ecr describe-images --repository-name "campuscouriers/$service" \
                  --image-ids "imageTag=$tag" > /dev/null 2>&1; then
               echo "$service:$tag already in ECR"
             else
               echo "$service:$tag needs building"
-              builds=$(jq -c --arg s "$service" --arg t "$tag" '. + [{service: $s, tag: $t}]' <<< "$builds")
+              builds=$(jq -c --arg s "$service" --arg t "$tag" --arg f "$folder" '. + [{service: $s, tag: $t, folder: $f}]' <<< "$builds")
             fi
           done < <(bash scripts/image-tags.sh)
           echo "builds=$builds" >> "$GITHUB_OUTPUT"
@@ -89,7 +96,7 @@ jobs:
       # provenance/sbom off: push one plain image, as scripts/build-and-push.ps1 does (see the comment there)
       - uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.service }}
+          context: ${{ matrix.folder }}
           platforms: linux/amd64
           push: true
           provenance: false
@@ -145,8 +152,25 @@ jobs:
           echo "order-service: ${live:-none} -> $new"
           bash scripts/ci/run-job.sh "$APP_NAMESPACE" order-migrate 600
 
+      # Checked before applying, since applying changes what's live
+      - name: Check whether the RAG knowledge base needs importing
+        id: rag
+        run: |
+          new=$(kubectl kustomize k8s | yq 'select(.kind == "Deployment" and .metadata.name == "rag-service") | .spec.template.spec.containers[0].image')
+          live=$(kubectl get deployment rag-service -n "$APP_NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)
+          if [[ "$new" == "$live" ]]; then echo "rag-service unchanged ($live), chunks already imported"; exit 0; fi
+          echo "rag-service: ${live:-none} -> $new"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
       - name: Apply the manifests
         run: kubectl apply -k k8s
+
+      # The chunks (RAG-service/ingestion/chunks.csv) are inside the image, so a new image may mean new
+      # chunks. Runs after applying, which creates the database login Secret on the first deploy; until
+      # it finishes, the Assistant answers from the previous chunks.
+      - name: Import the RAG knowledge chunks
+        if: steps.rag.outputs.changed == 'true'
+        run: bash scripts/ci/run-job.sh "$APP_NAMESPACE" rag-index 900
 
       - name: Wait for the rollouts
         run: |
@@ -168,7 +192,7 @@ jobs:
             echo "### Deployed images"
             echo "| Service | Tag |"
             echo "|---|---|"
-            bash scripts/image-tags.sh | while read -r service tag; do echo "| $service | \`$tag\` |"; done
+            bash scripts/image-tags.sh | while read -r service tag _; do echo "| $service | \`$tag\` |"; done
           } >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
@@ -221,6 +245,7 @@ jobs:
           VITE_NOTIFICATION_API_URL: ${{ steps.version.outputs.api_url }}
           VITE_CHAT_API_URL: ${{ steps.version.outputs.api_url }}
           VITE_AI_ASSISTANT_API_URL: ${{ steps.version.outputs.api_url }}
+          VITE_RAG_API_URL: ${{ steps.version.outputs.api_url }}
           VITE_MOCK_AUTH: "false"
         run: |
           corepack enable

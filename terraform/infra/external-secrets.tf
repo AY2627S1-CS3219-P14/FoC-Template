@@ -1,3 +1,11 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # External Secrets Operator (ESO): copies secrets from AWS Secrets Manager into Kubernetes Secrets,
 # and keeps them in sync when they change in AWS.
 #
@@ -88,6 +96,14 @@ resource "aws_secretsmanager_secret" "user_bootstrap_admin" {
   name                    = "${local.secrets_prefix}user-bootstrap-admin"
   description             = "First administrator. JSON keys: BOOTSTRAP_ADMIN_NAME, BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD"
   recovery_window_in_days = 0
+}
+
+# Claude (Anthropic) API key for rag-service, the Assistant page. Same approach as the OpenAI key below:
+# Terraform creates only the empty secret, a person stores the key (k8s/README.md, "API keys").
+resource "aws_secretsmanager_secret" "anthropic_api_key" {
+  name                    = "${local.secrets_prefix}anthropic-api-key"
+  description             = "Claude API key for rag-service. JSON key: ANTHROPIC_API_KEY"
+  recovery_window_in_days = 7 # can't be regenerated, so allow recovery after an accidental delete
 }
 
 # OpenAI API key for ai-errand-assistant-service. Terraform creates only the empty secret: the key is

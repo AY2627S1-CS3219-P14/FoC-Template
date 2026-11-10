@@ -1,3 +1,12 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+# Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
 # AI Assistance Disclosure:
 # Tool: OpenAI Codex (GPT-5), date: 2026-11-10
 # Scope: Debugged and updated Chat Service cloud endpoint routing.
@@ -128,6 +137,14 @@ spec:
             backend:
               service:
                 name: chat-service
+                port:
+                  name: http
+          # rag-service: the Assistant page (POST /query, signed-in users only)
+          - path: /query
+            pathType: Prefix
+            backend:
+              service:
+                name: rag-service
                 port:
                   name: http
           # notification-service (includes the live stream GET /notifications/stream)

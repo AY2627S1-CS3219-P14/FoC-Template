@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # AWS Load Balancer Controller: watches Kubernetes Ingress objects (k8s/app/ingress.yaml) and creates
 # and updates a matching Application Load Balancer, its listeners, rules and target groups.
 #

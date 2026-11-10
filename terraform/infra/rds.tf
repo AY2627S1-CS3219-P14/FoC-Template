@@ -1,3 +1,11 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # RDS for PostgreSQL: one instance holding one database per service, in the database subnets.
 #
 #   ┌───────────────────── RDS instance (campuscouriers) ─────────────────────┐
@@ -7,6 +15,7 @@
 #   │ campuscouriers_order         owner order_service         ← Debezium     │
 #   │ campuscouriers_chat          owner chat_service          ← Debezium     │
 #   │ campuscouriers_notification  owner notification_service                 │
+#   │ campuscouriers_rag           owner rag_service           + pgvector     │
 #   └──────────────────────────────────────────────────────────────────────────┘
 #
 # Each service still only sees its own database (database-per-service), but they share one instance,
@@ -27,6 +36,7 @@ locals {
     order        = { cdc = true }
     chat         = { cdc = true }
     notification = { cdc = false }
+    rag          = { cdc = false } # RAG-service: knowledge chunks + pgvector embeddings
   }
 }
 

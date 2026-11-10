@@ -1,4 +1,13 @@
 <!--
+AI Assistance Disclosure
+Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-06
+Scope (AI-05): Documented existing notification endpoints.
+Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-08
+Scope (AI-08): Removed trailing full stops from alert text and updated examples and tests.
+Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-07
+Scope (AI-22): Implemented and tested the requested requester delivery alert.
+Usage log: AI_USAGE_LOG.md
+Author review: Changes validated and confirmed.
 AI Assistance Disclosure:
 Tool: OpenAI Codex (GPT-5), date: 2026-11-08
 Scope: Implementation, testing, and documentation assistance for chat notifications.

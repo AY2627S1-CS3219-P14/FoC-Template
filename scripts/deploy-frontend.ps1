@@ -1,3 +1,11 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 <#
 .SYNOPSIS
   Builds the frontend and publishes it to S3 + CloudFront (https://app.<domain>).
@@ -56,6 +64,7 @@ $env:VITE_ORDER_API_URL = $apiUrl
 $env:VITE_CREDIT_API_URL = $apiUrl
 $env:VITE_NOTIFICATION_API_URL = $apiUrl
 $env:VITE_AI_ASSISTANT_API_URL = $apiUrl
+$env:VITE_RAG_API_URL = $apiUrl
 $env:VITE_CHAT_API_URL = $apiUrl # the chat WebSocket becomes wss://<same host>/conversations/{id}/ws
 $env:VITE_MOCK_AUTH = "false"
 

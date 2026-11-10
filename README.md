@@ -1,4 +1,9 @@
 <!--
+AI Assistance Disclosure
+Tool and date: OpenAI Codex (gpt-6.1-sol), 2026-11-11
+Scope (AI-16): Compiled the attribution documentation.
+Usage log: AI_USAGE_LOG.md
+Author review: Changes validated and confirmed.
 AI Assistance Disclosure:
 Tool: OpenAI Codex (GPT-5), date: 2026-11-11
 Scope: Added only the project-level AI disclosure section and usage-log link at the end.
@@ -58,6 +63,11 @@ Services publish events through a **transactional outbox** relayed to Kafka by D
 
 ---
 
+## AI assistance disclosure
+
+We used OpenAI Codex for frontend and notification implementation, debugging, refactoring, tests, and documentation. GitHub Copilot code review and Autofix contributed to specific fixes and configuration changes.
+
+The [AI usage log](AI_USAGE_LOG.md) is a partial record of verified assistance. It lists the tools, dates, exact available prompts, key responses, and file locations. File headers identify the edits recorded for each file. The log records the attribution for `frontend/package.json` because strict JSON has no comment syntax.
 ## AI Use Summary
 
 Tool recorded here: OpenAI Codex (GPT-5).

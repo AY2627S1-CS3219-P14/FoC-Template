@@ -1,3 +1,14 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-09-18 to 2026-10-03
+# Scope (AI-23): Generated code and tests for the User Service endpoints, entities, validation and token handling I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-10-09 to 2026-10-15
+# Scope (AI-24): Generated code, configuration and tests for the specified user event, Kafka setup and outbox changes.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-11
+# Scope (AI-30): Updated the RAG service to the specified Claude model and added API error handling.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
 # AI Assistance Disclosure:
 # Tool: OpenAI Codex (GPT-5), dates: 2026-09-26 to 2026-11-10
 # Scope: Generated the initial Supplier PostgreSQL Compose scaffold and later added the
@@ -472,9 +483,13 @@ services:
       EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
       RAG_TOP_K: ${RAG_TOP_K:-5}
       RAG_CORS_ALLOWED_ORIGINS: ${RAG_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      # /query requires a signed-in user's access token, checked against user-service's keys
+      USER_SERVICE_URL: ${USER_SERVICE_DOCKER_URL:-http://user-service:8080}
+      JWT_ISSUER: ${JWT_ISSUER:-campuscouriers-user-service}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-5-20250929}
-      CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-512}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+      CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-2048}
+      CLAUDE_EFFORT: ${CLAUDE_EFFORT:-low}
     ports:
       - "${RAG_SERVICE_PORT:-8005}:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,3 +1,11 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # ECR: private container registries, one repository per service.
 #
 #   scripts/build-and-push.ps1 ──docker push──> 596601390706.dkr.ecr.ap-southeast-1.amazonaws.com/campuscouriers/user-service:<git sha>
@@ -9,7 +17,7 @@
 # deploy traceable and every rollback exact (unlike "latest", which changes under you).
 
 locals {
-  ecr_services = ["user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service"]
+  ecr_services = ["user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service", "ai-errand-assistant-service", "rag-service"]
 }
 
 resource "aws_ecr_repository" "service" {

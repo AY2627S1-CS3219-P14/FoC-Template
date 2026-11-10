@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool and date: OpenAI Codex (gpt-5.6-sol), 2026-10-14
+ * Scope (AI-15): Implemented and tested the requested create-account UI.
+ * Usage log: AI_USAGE_LOG.md
+ * Author review: Changes validated and confirmed.
+ */
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

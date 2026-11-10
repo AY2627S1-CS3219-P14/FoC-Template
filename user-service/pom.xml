@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+AI Assistance Disclosure
+Tool and date: Anthropic Claude (model unrecorded), 2026-09-18 to 2026-10-03
+Scope (AI-23): Generated code and tests for the User Service endpoints, entities, validation and token handling I specified.
+Tool and date: Anthropic Claude (model unrecorded), 2026-10-09 to 2026-10-15
+Scope (AI-24): Generated code, configuration and tests for the specified user event, Kafka setup and outbox changes.
+Tool and date: Anthropic Claude (model unrecorded), 2026-11-06
+Scope (AI-25): Generated Kubernetes manifests, health endpoints and probe settings from my deployment specification.
+Usage log: AI_USAGE_LOG.md
+Author review: Pending confirmation by Melodi Joy Halim.
+-->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>

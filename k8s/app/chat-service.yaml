@@ -1,3 +1,9 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-09 to 2026-11-10
+# Scope (AI-26): Generated Terraform, Kubernetes manifests and scripts for the AWS resources I specified.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # chat-service (FastAPI): one conversation per errand between requester and courier. REST for
 # history, a WebSocket for live messages (/conversations/{id}/ws, opened with a one-time ticket from
 # POST /conversations/{id}/ws-ticket), and a Kafka consumer that opens/closes conversations as

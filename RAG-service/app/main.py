@@ -1,3 +1,11 @@
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-11
+# Scope (AI-30): Updated the RAG service to the specified Claude model and added API error handling.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 import os
 
 from fastapi import Depends, FastAPI, HTTPException

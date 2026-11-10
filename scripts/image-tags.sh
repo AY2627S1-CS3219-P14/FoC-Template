@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+
+# AI Assistance Disclosure
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10
+# Scope (AI-27): Generated the deploy workflow, CI helper scripts and deploy-role Terraform I specified.
+# Tool and date: Anthropic Claude (model unrecorded), 2026-11-10 to 2026-11-11
+# Scope (AI-29): Generated manifests, secret wiring and service changes to deploy the AI assistant and RAG services.
+# Usage log: AI_USAGE_LOG.md
+# Author review: Pending confirmation by Melodi Joy Halim.
+
 # The image tag of each backend service = the first 12 characters of the git tree hash of its folder
 # at HEAD. Same code, same tag; any change in the folder, a new tag. So a deploy can tell which images
 # need building (tag not yet in ECR), and which tags to deploy, from git alone.

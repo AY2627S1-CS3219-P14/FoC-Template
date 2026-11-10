@@ -5,10 +5,14 @@
 # routed here, by path. The ALB cannot rewrite paths, so the rules use each service's existing paths.
 #
 # Paths left out on purpose (reachable only inside the cluster):
-#   /api/reservations/**    credit reservations; only order-service should call these, and today any
-#                           logged-in user's JWT is accepted, so exposing them would let users change credits
+#   /api/reservations/**    credit reservations: only order-service calls these (it also proves itself
+#                           with a shared key), so they stay off the internet
 #   /.well-known/jwks.json  only the services need the JWT public keys
 #   /actuator/**, /health   health checks
+#
+# Rule ORDER matters: the ALB checks rules top to bottom and uses the first match. Any path that sits
+# inside another service's prefix (like chat's /errands/*/conversation inside order's /errands) must
+# come BEFORE that prefix.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -29,12 +33,24 @@ metadata:
     # Lets new pods start receiving traffic sooner after a deploy (default is 300s)
     alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=30
     alb.ingress.kubernetes.io/tags: project=campuscouriers
+    # Live notifications (Server-Sent Events) and chat (WebSockets) keep connections open; the ALB
+    # closes any that stay silent longer than this (default 60s). Both send heartbeats well within it.
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
 spec:
   ingressClassName: alb
   rules:
     - host: api.example.com # set from k8s/domain.yaml (apiHost); external-dns points it at this ALB
       http:
         paths:
+          # chat-service, FIRST: GET /errands/{id}/conversation sits inside order-service's /errands.
+          # "*" wildcards need pathType ImplementationSpecific (passed to the ALB as written)
+          - path: /errands/*/conversation
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: chat-service
+                port:
+                  name: http
           # user-service
           - path: /auth
             pathType: Prefix
@@ -100,5 +116,21 @@ spec:
             backend:
               service:
                 name: order-service
+                port:
+                  name: http
+          # chat-service (REST + the WebSocket at /conversations/{id}/ws; the ALB passes WebSockets through)
+          - path: /conversations
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  name: http
+          # notification-service (includes the live stream GET /notifications/stream)
+          - path: /notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
                 port:
                   name: http

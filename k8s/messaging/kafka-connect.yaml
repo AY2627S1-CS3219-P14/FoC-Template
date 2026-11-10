@@ -60,7 +60,8 @@ spec:
             - name: HEAP_OPTS
               value: -Xms512m -Xmx512m
           envFrom:
-            # USER_DB_NAME / _USERNAME / _PASSWORD, and the same for ORDER_ and SUPPLIER_ (see README)
+            # USER_DB_NAME / _USERNAME / _PASSWORD, and the same for SUPPLIER_, ORDER_, CREDIT_ and CHAT_.
+            # Read only at pod start: after this Secret changes, restart Kafka Connect (see k8s/README.md)
             - secretRef:
                 name: debezium-db-credentials
           resources:

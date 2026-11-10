@@ -71,8 +71,10 @@ spec:
 
               init_db "$USER_DB_USERNAME"     "$USER_DB_PASSWORD"     campuscouriers_user     true
               init_db "$SUPPLIER_DB_USERNAME" "$SUPPLIER_DB_PASSWORD" campuscouriers_supplier true
-              init_db "$CREDIT_DB_USERNAME"   "$CREDIT_DB_PASSWORD"   campuscouriers_credit   false
+              init_db "$CREDIT_DB_USERNAME"   "$CREDIT_DB_PASSWORD"   campuscouriers_credit   true
               init_db "$ORDER_DB_USERNAME"    "$ORDER_DB_PASSWORD"    campuscouriers_order    true
+              init_db "$CHAT_DB_USERNAME"     "$CHAT_DB_PASSWORD"     campuscouriers_chat     true
+              init_db "$NOTIFICATION_DB_USERNAME" "$NOTIFICATION_DB_PASSWORD" campuscouriers_notification false
               echo "== done"
           resources:
             requests:

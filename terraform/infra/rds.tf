@@ -1,14 +1,16 @@
 # RDS for PostgreSQL: one instance holding one database per service, in the database subnets.
 #
-#   ┌──────────────── RDS instance (campuscouriers) ────────────────┐
-#   │ campuscouriers_user      owner user_service     ← Debezium    │
-#   │ campuscouriers_supplier  owner supplier_service ← Debezium    │
-#   │ campuscouriers_credit    owner credit_service                 │
-#   │ campuscouriers_order     owner order_service    ← Debezium    │
-#   └────────────────────────────────────────────────────────────────┘
+#   ┌───────────────────── RDS instance (campuscouriers) ─────────────────────┐
+#   │ campuscouriers_user          owner user_service          ← Debezium     │
+#   │ campuscouriers_supplier      owner supplier_service      ← Debezium     │
+#   │ campuscouriers_credit        owner credit_service        ← Debezium     │
+#   │ campuscouriers_order         owner order_service         ← Debezium     │
+#   │ campuscouriers_chat          owner chat_service          ← Debezium     │
+#   │ campuscouriers_notification  owner notification_service                 │
+#   └──────────────────────────────────────────────────────────────────────────┘
 #
 # Each service still only sees its own database (database-per-service), but they share one instance,
-# which costs a quarter of four. Give a service its own instance later if it needs to scale alone.
+# which costs a fraction of one each. Give a service its own instance later if it needs to scale alone.
 #
 # Passwords:
 #   - master user: generated and stored in Secrets Manager BY RDS (manage_master_user_password).
@@ -19,10 +21,12 @@
 locals {
   # service -> does Debezium read its outbox? (those users need the rds_replication role)
   db_services = {
-    user     = { cdc = true }
-    supplier = { cdc = true }
-    credit   = { cdc = false }
-    order    = { cdc = true }
+    user         = { cdc = true }
+    supplier     = { cdc = true }
+    credit       = { cdc = true }
+    order        = { cdc = true }
+    chat         = { cdc = true }
+    notification = { cdc = false }
   }
 }
 

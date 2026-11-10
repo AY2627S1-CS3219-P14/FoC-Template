@@ -16,21 +16,23 @@ public class KafkaConfig {
     @Bean
     KafkaAdmin.NewTopics notificationTopics() {
         // Match the existing outbox topics' three partitions, including their DLTs.
+        // No .replicas(): use the broker's default replication factor (1 locally, 3 on EKS). A fixed
+        // 1 breaks on EKS, where min.insync.replicas=2 makes writes to a 1-copy topic fail.
         return new KafkaAdmin.NewTopics(
-            TopicBuilder.name("errand.accepted").partitions(3).replicas(1).build(),
-            TopicBuilder.name("errand.delivered").partitions(3).replicas(1).build(),
-            TopicBuilder.name("errand.completed").partitions(3).replicas(1).build(),
-            TopicBuilder.name("errand.failed").partitions(3).replicas(1).build(),
-            TopicBuilder.name("credit.received").partitions(3).replicas(1).build(),
-            TopicBuilder.name("credit.released").partitions(3).replicas(1).build(),
-            TopicBuilder.name("chat.message.created").partitions(3).replicas(1).build(),
-            TopicBuilder.name("errand.accepted.notification-dlt").partitions(3).replicas(1).build(),
-            TopicBuilder.name("errand.delivered.notification-dlt").partitions(3).replicas(1).build(),
-            TopicBuilder.name("errand.completed.notification-dlt").partitions(3).replicas(1).build(),
-            TopicBuilder.name("errand.failed.notification-dlt").partitions(3).replicas(1).build(),
-            TopicBuilder.name("credit.received.notification-dlt").partitions(3).replicas(1).build(),
-            TopicBuilder.name("credit.released.notification-dlt").partitions(3).replicas(1).build(),
-            TopicBuilder.name("chat.message.created.notification-dlt").partitions(3).replicas(1).build());
+            TopicBuilder.name("errand.accepted").partitions(3).build(),
+            TopicBuilder.name("errand.delivered").partitions(3).build(),
+            TopicBuilder.name("errand.completed").partitions(3).build(),
+            TopicBuilder.name("errand.failed").partitions(3).build(),
+            TopicBuilder.name("credit.received").partitions(3).build(),
+            TopicBuilder.name("credit.released").partitions(3).build(),
+            TopicBuilder.name("chat.message.created").partitions(3).build(),
+            TopicBuilder.name("errand.accepted.notification-dlt").partitions(3).build(),
+            TopicBuilder.name("errand.delivered.notification-dlt").partitions(3).build(),
+            TopicBuilder.name("errand.completed.notification-dlt").partitions(3).build(),
+            TopicBuilder.name("errand.failed.notification-dlt").partitions(3).build(),
+            TopicBuilder.name("credit.received.notification-dlt").partitions(3).build(),
+            TopicBuilder.name("credit.released.notification-dlt").partitions(3).build(),
+            TopicBuilder.name("chat.message.created.notification-dlt").partitions(3).build());
     }
 
     @Bean

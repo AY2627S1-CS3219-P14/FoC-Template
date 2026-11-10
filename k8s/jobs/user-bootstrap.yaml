@@ -30,9 +30,14 @@ spec:
             # application-bootstrap-admin.properties: no web server, create the admin, exit
             - name: SPRING_PROFILES_ACTIVE
               value: bootstrap-admin
+            # Same values as k8s/app/config/user-service.env (Jobs can't reference the generated,
+            # hash-named ConfigMap from their separate kustomization)
+            - { name: DB_HOST, value: user-db }
+            - { name: DB_PORT, value: "5432" }
+            - { name: DB_NAME, value: campuscouriers_user }
+            - { name: JWT_PRIVATE_KEY_LOCATION, value: "file:/app/keys/private.pem" }
+            - { name: JWT_PUBLIC_KEY_LOCATION, value: "file:/app/keys/public.pem" }
           envFrom:
-            - configMapRef:
-                name: user-service-config
             - secretRef:
                 name: user-db-credentials
             - secretRef:

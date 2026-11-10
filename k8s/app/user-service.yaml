@@ -14,20 +14,9 @@ metadata:
   #   eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/campuscouriers-user-service
 ---
 # --- Non-secret settings ---------------------------------------------------------------------------
-# Injected as environment variables. Passwords and keys live in Secrets instead (see k8s/README.md).
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: user-service-config
-  namespace: campuscouriers-app
-data:
-  DB_HOST: user-db # ExternalName alias for RDS (database-endpoints.yaml)
-  DB_PORT: "5432"
-  DB_NAME: campuscouriers_user
-  JWT_PRIVATE_KEY_LOCATION: file:/app/keys/private.pem
-  JWT_PUBLIC_KEY_LOCATION: file:/app/keys/public.pem
-  USER_CORS_ALLOWED_ORIGINS: https://app.example.com # set from k8s/domain.yaml (appOrigin)
----
+# Not in this file: they're in k8s/app/config/user-service.env, which k8s/kustomization.yaml turns into
+# a ConfigMap whose name includes a hash of its contents. Any settings change = new name = the
+# Deployment below changes = Kubernetes rolls the pods. Passwords and keys come from Secrets.
 # --- The pods ----------------------------------------------------------------------------------------
 apiVersion: apps/v1
 kind: Deployment
@@ -85,7 +74,7 @@ spec:
               containerPort: 8080
           envFrom:
             - configMapRef:
-                name: user-service-config
+                name: user-service-config # generated from k8s/app/config/user-service.env
             - secretRef:
                 name: user-db-credentials # DB_USERNAME, DB_PASSWORD
           volumeMounts:

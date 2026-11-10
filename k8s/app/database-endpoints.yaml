@@ -41,3 +41,21 @@ metadata:
 spec:
   type: ExternalName
   externalName: campuscouriers.cd2g48wauxqx.ap-southeast-1.rds.amazonaws.com # terraform output rds_address
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-db
+  namespace: campuscouriers-app
+spec:
+  type: ExternalName
+  externalName: campuscouriers.cd2g48wauxqx.ap-southeast-1.rds.amazonaws.com # terraform output rds_address
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-db
+  namespace: campuscouriers-app
+spec:
+  type: ExternalName
+  externalName: campuscouriers.cd2g48wauxqx.ap-southeast-1.rds.amazonaws.com # terraform output rds_address

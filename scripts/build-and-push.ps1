@@ -13,7 +13,7 @@
   On first run it registers the ECR credential helper for your registry in ~/.docker/config.json.
 
 .EXAMPLE
-  ./scripts/build-and-push.ps1                              # all four services
+  ./scripts/build-and-push.ps1                              # all services
   ./scripts/build-and-push.ps1 -Services order-service      # just one
   ./scripts/build-and-push.ps1 -Services user-service,credit-service   # several (no spaces needed)
   ./scripts/build-and-push.ps1 -AllowDirty                  # uncommitted changes allowed (tag gets a -dirty suffix)
@@ -21,7 +21,7 @@
 # PositionalBinding off: a stray argument is an error, instead of silently becoming -Region/-Project
 [CmdletBinding(PositionalBinding = $false)]
 param(
-  [string[]]$Services = @("user-service", "supplier-service", "credit-service", "order-service"),
+  [string[]]$Services = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service"),
   [ValidatePattern("^[a-z]{2}(-[a-z]+)+-\d$")]
   [string]$Region = "ap-southeast-1",
   [string]$Project = "campuscouriers",
@@ -34,7 +34,7 @@ $root = Split-Path $PSScriptRoot -Parent
 
 # Accept "-Services a,b" and "-Services a, b" alike: under `powershell -File` a comma list arrives
 # as one string (or several), not as an array
-$allServices = @("user-service", "supplier-service", "credit-service", "order-service")
+$allServices = @("user-service", "supplier-service", "credit-service", "order-service", "notification-service", "chat-service")
 $Services = @($Services | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $unknown = @($Services | Where-Object { $allServices -notcontains $_ })
 if ($unknown.Count) { throw "Unknown service(s): $($unknown -join ', '). Choose from: $($allServices -join ', ')" }

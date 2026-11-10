@@ -2,7 +2,7 @@
 # k8s/kustomization.yaml (replacements) copies these values into:
 #   apiHost   -> app/ingress.yaml: the ALB's hostname (external-dns creates its DNS record, and the
 #                ALB picks the ACM certificate for this name from terraform/bootstrap/dns.tf)
-#   appOrigin -> the CORS setting of all four services: the frontend's address, allowed to call the API
+#   appOrigin -> the CORS setting of every service: the frontend's address, allowed to call the API
 #
 # "local-config": kustomize reads this file but never sends it to the cluster.
 apiVersion: v1

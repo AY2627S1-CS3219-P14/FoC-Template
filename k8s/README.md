@@ -4,13 +4,18 @@ Runs the backend on EKS. The frontend is not here: it is a static build served f
 
 ```text
 k8s/
-├── kustomization.yaml        # everything long-running; also sets the ECR image names
+├── kustomization.yaml        # everything long-running; generates ConfigMaps; sets the ECR image names
+├── domain.yaml               # the API hostname and frontend origin (copied in at build time)
 ├── namespaces.yaml           # campuscouriers-app, campuscouriers-messaging
 ├── app/
+│   ├── config/               # each service's non-secret settings (<service>.env) -> generated ConfigMaps
 │   ├── user-service.yaml     # fully commented reference; the other services follow the same layout:
-│   ├── supplier-service.yaml #   ServiceAccount, ConfigMap, Deployment, Service, HPA, PodDisruptionBudget
+│   ├── supplier-service.yaml #   ServiceAccount, Deployment, Service, HPA, PodDisruptionBudget
 │   ├── credit-service.yaml
 │   ├── order-service.yaml
+│   ├── notification-service.yaml  # 1 pod only (live notifications), no HPA/PDB
+│   ├── chat-service.yaml     # 1 pod only (live WebSockets), no HPA/PDB
+│   ├── external-secrets.yaml # DB credentials, JWT keys, first admin, order<->credit key
 │   ├── database-endpoints.yaml  # user-db, order-db, ... -> RDS endpoint (DNS aliases)
 │   ├── ingress.yaml          # ALB: api.<domain>, routed by path
 │   └── network-policies.yaml
@@ -127,6 +132,9 @@ Replicas climb from 2 toward 5 as CPU passes 70%. About 5 minutes after the load
 PodDisruptionBudget demo: `kubectl drain <node> --ignore-daemonsets --delete-emptydir-data`. Kubernetes evicts pods one at a time and never leaves a service with zero ready pods.
 
 ## Notes
+- **Changing settings:** edit `app/config/<service>.env` (or `domain.yaml`) and `kubectl apply -k k8s`. The ConfigMap gets a new hash-suffixed name, so the affected Deployments roll by themselves. Old ConfigMaps stay behind (harmless); clean up with `kubectl delete configmap -n campuscouriers-app <old name>`. **Secrets don't do this:** after a secret changes in Secrets Manager, environment variables only update on restart (`kubectl rollout restart deployment/<name> -n campuscouriers-app`, or `-n campuscouriers-messaging deployment/kafka-connect` for the Debezium logins); mounted files (the JWT keys) update by themselves.
+- **notification-service and chat-service run exactly one pod.** Their live connections (Server-Sent Events, WebSockets) live in one pod's memory, and an event or message only reaches browsers connected to the pod that handled it. More pods would silently drop some live updates. Scaling them needs a shared broadcast (e.g. Redis pub/sub or PostgreSQL LISTEN/NOTIFY) in their code first.
+- **RAG-service is not deployed** yet: nothing calls it, it has no login check, and each request spends Anthropic API credits. Add it once it's integrated and authenticated.
 - **Login cookie:** the refresh token cookie is `SameSite=Strict` and `Secure`. It works when the frontend and API share a registrable domain (`app.example.com` and `api.example.com`), over HTTPS. It does **not** work between the default `*.cloudfront.net` address and the ALB's `*.elb.amazonaws.com` address: they count as different sites, and the ALB address has no certificate. Use your own domain, even for testing.
-- **Internal-only routes:** `/api/reservations/**` (credit) is deliberately not in the Ingress. It accepts any logged-in user's token, so it should only be called by order-service from inside the cluster.
+- **Internal-only routes:** `/api/reservations/**` (credit) is deliberately not in the Ingress: only order-service calls it, from inside the cluster, with the shared `order-credit-service-key`.
 - **Kubelet probes and NetworkPolicies:** if pods fail their probes only after the policies are applied, check that the VPC CNI network policy agent allows traffic from the node. Kubelet probes come from the node's IP.

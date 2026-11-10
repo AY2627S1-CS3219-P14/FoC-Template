@@ -26,9 +26,13 @@ spec:
         - name: migrate
           image: campuscouriers/order-service
           command: ["alembic", "upgrade", "head"]
+          # Database settings only (same values as k8s/app/config/order-service.env). Set here because
+          # Jobs live in a separate kustomization and can't know the generated ConfigMap's hashed name.
+          env:
+            - { name: DB_HOST, value: order-db }
+            - { name: DB_PORT, value: "5432" }
+            - { name: DB_NAME, value: campuscouriers_order }
           envFrom:
-            - configMapRef:
-                name: order-service-config
             - secretRef:
                 name: order-db-credentials
           resources:

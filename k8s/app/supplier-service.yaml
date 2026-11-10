@@ -6,18 +6,6 @@ metadata:
   name: supplier-service
   namespace: campuscouriers-app
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: supplier-service-config
-  namespace: campuscouriers-app
-data:
-  DB_HOST: supplier-db
-  DB_PORT: "5432"
-  DB_NAME: campuscouriers_supplier
-  USER_SERVICE_URL: http://user-service:8080 # JWT public keys (/.well-known/jwks.json)
-  SUPPLIER_CORS_ALLOWED_ORIGINS: https://app.example.com # set from k8s/domain.yaml (appOrigin)
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -70,7 +58,7 @@ spec:
               containerPort: 8080
           envFrom:
             - configMapRef:
-                name: supplier-service-config
+                name: supplier-service-config # generated from k8s/app/config/supplier-service.env
             - secretRef:
                 name: supplier-db-credentials # DB_USERNAME, DB_PASSWORD
           resources:

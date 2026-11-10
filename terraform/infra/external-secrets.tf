@@ -89,3 +89,27 @@ resource "aws_secretsmanager_secret" "user_bootstrap_admin" {
   description             = "First administrator. JSON keys: BOOTSTRAP_ADMIN_NAME, BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD"
   recovery_window_in_days = 0
 }
+
+# Shared key order-service sends to credit-service (header X-Order-Service-Key) to prove a credit
+# reservation really comes from order-service. Generated like the DB passwords: ephemeral +
+# write-only, so it never appears in the state file. To rotate: bump secret_string_wo_version, apply,
+# wait for External Secrets to sync (up to 1h, or force-sync), then restart BOTH services together:
+# environment variables from Secrets are only read at pod start.
+ephemeral "random_password" "order_credit_service_key" {
+  length  = 48
+  special = false
+}
+
+resource "aws_secretsmanager_secret" "order_credit_service_key" {
+  name                    = "${local.secrets_prefix}order-credit-service-key"
+  description             = "Shared key between order-service and credit-service. JSON key: ORDER_CREDIT_SERVICE_KEY"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "order_credit_service_key" {
+  secret_id = aws_secretsmanager_secret.order_credit_service_key.id
+  secret_string_wo = jsonencode({
+    ORDER_CREDIT_SERVICE_KEY = ephemeral.random_password.order_credit_service_key.result
+  })
+  secret_string_wo_version = 1
+}

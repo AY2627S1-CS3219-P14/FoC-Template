@@ -30,9 +30,13 @@ spec:
               value: "true"
             - name: SPRING_MAIN_WEB_APPLICATION_TYPE # no web server, so the app exits after the import
               value: none
+            # Same values as k8s/app/config/supplier-service.env (Jobs can't reference the generated,
+            # hash-named ConfigMap from their separate kustomization)
+            - { name: DB_HOST, value: supplier-db }
+            - { name: DB_PORT, value: "5432" }
+            - { name: DB_NAME, value: campuscouriers_supplier }
+            - { name: USER_SERVICE_URL, value: "http://user-service:8080" }
           envFrom:
-            - configMapRef:
-                name: supplier-service-config
             - secretRef:
                 name: supplier-db-credentials
           resources:

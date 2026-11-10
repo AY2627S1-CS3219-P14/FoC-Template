@@ -11,7 +11,7 @@ spec:
   policyTypes: ["Ingress"]
 ---
 # 2. Kafka brokers: each other (replication + controller quorum), Kafka Connect, and consumers in the
-#    app namespace. Add new consumers here (e.g. a future notification-service).
+#    app namespace. Add new consumers here.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -42,7 +42,7 @@ spec:
             matchExpressions:
               - key: app.kubernetes.io/name
                 operator: In
-                values: ["credit-service"]
+                values: ["credit-service", "notification-service", "chat-service"]
       ports:
         - port: 9092
 ---

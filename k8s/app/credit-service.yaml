@@ -6,23 +6,6 @@ metadata:
   name: credit-service
   namespace: campuscouriers-app
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: credit-service-config
-  namespace: campuscouriers-app
-data:
-  DB_HOST: credit-db
-  DB_PORT: "5432"
-  DB_NAME: campuscouriers_credit
-  USER_SERVICE_URL: http://user-service:8080
-  SUPPLIER_SERVICE_URL: http://supplier-service:8080
-  JWT_ISSUER: campuscouriers-user-service
-  CREDIT_CORS_ALLOWED_ORIGINS: https://app.example.com # set from k8s/domain.yaml (appOrigin)
-  # Kafka lives in the other namespace, so use its full DNS name. Without this, Spring Kafka
-  # falls back to localhost:9092 (note: compose.yaml does not set this yet either).
-  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka.campuscouriers-messaging.svc.cluster.local:9092
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -75,9 +58,11 @@ spec:
               containerPort: 8080
           envFrom:
             - configMapRef:
-                name: credit-service-config
+                name: credit-service-config # generated from k8s/app/config/credit-service.env
             - secretRef:
                 name: credit-db-credentials # DB_USERNAME, DB_PASSWORD
+            - secretRef:
+                name: order-credit-service-key # ORDER_CREDIT_SERVICE_KEY, expected from order-service
           resources:
             requests:
               cpu: 250m

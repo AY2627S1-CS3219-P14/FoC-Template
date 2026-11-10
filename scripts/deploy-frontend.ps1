@@ -54,6 +54,8 @@ $env:VITE_USER_API_URL = $apiUrl
 $env:VITE_SUPPLIER_API_URL = $apiUrl
 $env:VITE_ORDER_API_URL = $apiUrl
 $env:VITE_CREDIT_API_URL = $apiUrl
+$env:VITE_NOTIFICATION_API_URL = $apiUrl
+$env:VITE_CHAT_API_URL = $apiUrl # the chat WebSocket becomes wss://<same host>/conversations/{id}/ws
 $env:VITE_MOCK_AUTH = "false"
 
 Push-Location $frontend

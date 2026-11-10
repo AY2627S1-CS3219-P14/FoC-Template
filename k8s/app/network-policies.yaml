@@ -17,7 +17,7 @@ spec:
   podSelector: {}
   policyTypes: ["Ingress"]
 ---
-# 2. The ALB may reach the four API services (requests and health checks).
+# 2. The ALB may reach the API services (requests and health checks).
 #    With target-type "ip", traffic arrives from the ALB's addresses in the PUBLIC subnets.
 #    Use the public subnet CIDRs here, not the whole VPC CIDR: pods also get VPC addresses,
 #    so allowing the whole VPC would let every pod in, defeating the policies below.
@@ -31,7 +31,8 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: ["user-service", "supplier-service", "credit-service", "order-service"]
+        values: ["user-service", "supplier-service", "credit-service", "order-service",
+                 "notification-service", "chat-service"]
   policyTypes: ["Ingress"]
   ingress:
     - from:
@@ -59,7 +60,8 @@ spec:
             matchExpressions:
               - key: app.kubernetes.io/name
                 operator: In
-                values: ["supplier-service", "credit-service", "order-service"]
+                values: ["supplier-service", "credit-service", "order-service",
+                         "notification-service", "chat-service"]
       ports:
         - port: http
 ---

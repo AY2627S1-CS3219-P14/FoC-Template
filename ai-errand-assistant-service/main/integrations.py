@@ -15,10 +15,9 @@ REQUEST_TIMEOUT = 8.0
 SUPPLIER_PAGE_SIZE = 100
 MAX_SUPPLIER_PAGES = 20
 HISTORY_PAGE_SIZE = 100
-
 # Suppliers and buildings are the same active catalog for every caller, so a
 # short shared cache is safe. Set to 0 to disable.
-CATALOG_CACHE_SECONDS = float(os.getenv("CATALOG_CACHE_SECONDS", "150"))
+CATALOG_CACHE_SECONDS = float(os.getenv("CATALOG_CACHE_SECONDS", "60"))
 
 Catalog = tuple[list[SupplierCandidate], list[BuildingCandidate]]
 _catalog_cache: tuple[float, Catalog] | None = None

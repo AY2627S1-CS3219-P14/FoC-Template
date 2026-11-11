@@ -21,10 +21,6 @@ app.add_middleware(
 app.include_router(router)
 
 
-@app.get("/health", include_in_schema=False)
-def health() -> dict[str, str]:
-    # Liveness only: no auth and no downstream calls, so it is safe to expose
-    # and cheap enough for a container health check.
-    return {"status": "ok"}
+
 
 

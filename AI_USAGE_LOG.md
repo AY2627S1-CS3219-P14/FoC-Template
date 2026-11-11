@@ -1601,3 +1601,83 @@ team subsequently reviewed and edited the retained seed CSV.
 
 CSV note: no file-header comment was added because the importer requires the exact CSV header as
 the first row and CSV has no safe comment syntax. This entry provides the file-level attribution.
+
+
+## Contributor note · Tan Ye Xin (AI-61)
+
+I used Anthropic Claude to generate code for the entries below. These sessions were not saved, so the exact prompts and model versions are unavailable. Each entry lists reconstructed prompt gists that summarize the kinds of requests I made. They are not verbatim. File lists come from my commits for each period.
+
+## AI-60 Credit Service implementation
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate.
+- **Date** — 2026-09-18 to 2026-10-03
+- **Key response** — Generated the Credit Service's wallet and reservation APIs and services, credit-record persistence, user-registration and errand-expiry event handling, Kafka/outbox integration, exception handling, configuration, and tests.
+
+**Commit evidence** — `fa1fd69`
+
+**Affected files**
+
+- [`.env.example`](.env.example)
+- [`compose.yaml`](compose.yaml)
+- [`credit-service/.gitattributes`](credit-service/.gitattributes)
+- [`credit-service/.gitignore`](credit-service/.gitignore)
+- [`credit-service/.mvn/wrapper/maven-wrapper.properties`](credit-service/.mvn/wrapper/maven-wrapper.properties)
+- [`credit-service/Dockerfile`](credit-service/Dockerfile)
+- [`credit-service/mvnw`](credit-service/mvnw)
+- [`credit-service/mvnw.cmd`](credit-service/mvnw.cmd)
+- [`credit-service/pom.xml`](credit-service/pom.xml)
+- [`credit-service/src/main/java/com/campuscouriers/credit/CreditApplication.java`](credit-service/src/main/java/com/campuscouriers/credit/CreditApplication.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/config/KafkaConsumerConfig.java`](credit-service/src/main/java/com/campuscouriers/credit/config/KafkaConsumerConfig.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/config/SecurityConfig.java`](credit-service/src/main/java/com/campuscouriers/credit/config/SecurityConfig.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/controller/ReservationController.java`](credit-service/src/main/java/com/campuscouriers/credit/controller/ReservationController.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/controller/WalletController.java`](credit-service/src/main/java/com/campuscouriers/credit/controller/WalletController.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/dto/AdjustReservationRequest.java`](credit-service/src/main/java/com/campuscouriers/credit/dto/AdjustReservationRequest.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/dto/CompleteReservationRequest.java`](credit-service/src/main/java/com/campuscouriers/credit/dto/CompleteReservationRequest.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/dto/CreditRecordsResponse.java`](credit-service/src/main/java/com/campuscouriers/credit/dto/CreditRecordsResponse.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/dto/ReservationResponse.java`](credit-service/src/main/java/com/campuscouriers/credit/dto/ReservationResponse.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/dto/ReserveCreditsRequest.java`](credit-service/src/main/java/com/campuscouriers/credit/dto/ReserveCreditsRequest.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/dto/WalletBalanceResponse.java`](credit-service/src/main/java/com/campuscouriers/credit/dto/WalletBalanceResponse.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/entity/CreditRecords.java`](credit-service/src/main/java/com/campuscouriers/credit/entity/CreditRecords.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/entity/CreditRecordsType.java`](credit-service/src/main/java/com/campuscouriers/credit/entity/CreditRecordsType.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/entity/OutboxEvent.java`](credit-service/src/main/java/com/campuscouriers/credit/entity/OutboxEvent.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/entity/Reservation.java`](credit-service/src/main/java/com/campuscouriers/credit/entity/Reservation.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/entity/ReservationStatus.java`](credit-service/src/main/java/com/campuscouriers/credit/entity/ReservationStatus.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/entity/Wallet.java`](credit-service/src/main/java/com/campuscouriers/credit/entity/Wallet.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/entity/WalletStatus.java`](credit-service/src/main/java/com/campuscouriers/credit/entity/WalletStatus.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/event/CreditChangedEvent.java`](credit-service/src/main/java/com/campuscouriers/credit/event/CreditChangedEvent.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/event/CreditEventPublisher.java`](credit-service/src/main/java/com/campuscouriers/credit/event/CreditEventPublisher.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/event/ErrandExpiredEvent.java`](credit-service/src/main/java/com/campuscouriers/credit/event/ErrandExpiredEvent.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/event/ErrandExpiredListener.java`](credit-service/src/main/java/com/campuscouriers/credit/event/ErrandExpiredListener.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/event/UserRegisteredEvent.java`](credit-service/src/main/java/com/campuscouriers/credit/event/UserRegisteredEvent.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/event/UserRegisteredListener.java`](credit-service/src/main/java/com/campuscouriers/credit/event/UserRegisteredListener.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/DuplicateReservationException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/DuplicateReservationException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/GlobalExceptionHandler.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/GlobalExceptionHandler.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/IllegalReservedStateException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/IllegalReservedStateException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/IllegalUUIDNullException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/IllegalUUIDNullException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/IllegalWalletException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/IllegalWalletException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/InsufficientCreditsException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/InsufficientCreditsException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/InvalidReservationStateException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/InvalidReservationStateException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/MisconfiguredCreditsException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/MisconfiguredCreditsException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/ReservationNotFoundException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/ReservationNotFoundException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/WalletNotFoundException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/WalletNotFoundException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/exception/WalletSuspendedException.java`](credit-service/src/main/java/com/campuscouriers/credit/exception/WalletSuspendedException.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/repository/CreditRecordsRepository.java`](credit-service/src/main/java/com/campuscouriers/credit/repository/CreditRecordsRepository.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/repository/OutboxEventRepository.java`](credit-service/src/main/java/com/campuscouriers/credit/repository/OutboxEventRepository.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/repository/ReservationRepository.java`](credit-service/src/main/java/com/campuscouriers/credit/repository/ReservationRepository.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/repository/WalletRepository.java`](credit-service/src/main/java/com/campuscouriers/credit/repository/WalletRepository.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/service/CreditRecordsService.java`](credit-service/src/main/java/com/campuscouriers/credit/service/CreditRecordsService.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/service/ReservationService.java`](credit-service/src/main/java/com/campuscouriers/credit/service/ReservationService.java)
+- [`credit-service/src/main/java/com/campuscouriers/credit/service/WalletService.java`](credit-service/src/main/java/com/campuscouriers/credit/service/WalletService.java)
+- [`credit-service/src/main/resources/application.properties`](credit-service/src/main/resources/application.properties)
+- [`credit-service/src/test/java/com/campuscouriers/credit/CreditApplicationTests.java`](credit-service/src/test/java/com/campuscouriers/credit/CreditApplicationTests.java)
+- [`credit-service/src/test/java/com/campuscouriers/credit/controller/ReservationControllerTests.java`](credit-service/src/test/java/com/campuscouriers/credit/controller/ReservationControllerTests.java)
+- [`credit-service/src/test/java/com/campuscouriers/credit/controller/WalletControllerTests.java`](credit-service/src/test/java/com/campuscouriers/credit/controller/WalletControllerTests.java)
+- [`credit-service/src/test/java/com/campuscouriers/credit/dto/CreditRecordsResponseTests.java`](credit-service/src/test/java/com/campuscouriers/credit/dto/CreditRecordsResponseTests.java)
+- [`credit-service/src/test/java/com/campuscouriers/credit/event/CreditEventTests.java`](credit-service/src/test/java/com/campuscouriers/credit/event/CreditEventTests.java)
+- [`credit-service/src/test/java/com/campuscouriers/credit/service/CreditRecordsServiceTests.java`](credit-service/src/test/java/com/campuscouriers/credit/service/CreditRecordsServiceTests.java)
+- [`credit-service/src/test/java/com/campuscouriers/credit/service/ReservationServiceTests.java`](credit-service/src/test/java/com/campuscouriers/credit/service/ReservationServiceTests.java)
+- [`credit-service/src/test/java/com/campuscouriers/credit/service/WalletServiceTests.java`](credit-service/src/test/java/com/campuscouriers/credit/service/WalletServiceTests.java)
+- [`debezium/connectors/credit-outbox.json`](debezium/connectors/credit-outbox.json) (attribution recorded here because JSON has no comment syntax)
+- [`k8s/app/chat-service.yaml`](k8s/app/chat-service.yaml)
+- [`k8s/app/config/chat-service.env`](k8s/app/config/chat-service.env)
+- [`k8s/app/config/credit-service.env`](k8s/app/config/credit-service.env)
+- [`supplier-service/src/main/resources/application.properties`](supplier-service/src/main/resources/application.properties)

@@ -3,6 +3,12 @@
 # Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
 # Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
 
+  
+#   AI Assistance Disclosure
+#   Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+#   Scope (AI-65): Added unit tests for the recommendation logic, errand scoring, and ranking based on various criteria.
+#   Author review: Code changes were checked and validated
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 

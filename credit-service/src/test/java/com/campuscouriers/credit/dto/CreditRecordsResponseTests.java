@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-62):  Generated unit tests for CreditRecordsResponse DTO, including mapping from CreditRecords entity to user-facing response with correct field values and descriptions.
+ * Author review: Code changes were checked and validated
+ */  
+
 package com.campuscouriers.credit.dto;
 
 import com.campuscouriers.credit.entity.CreditRecords;

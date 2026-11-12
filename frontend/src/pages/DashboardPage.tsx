@@ -6,6 +6,13 @@
  * Author review: Changes validated and confirmed.
  */
 
+  /*
+  * AI Assistance Disclosure
+  * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+  * Scope (AI-65): Added recommended errands UI into errand dashboard page
+  */
+
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActiveErrandsPanel,

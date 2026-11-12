@@ -1,3 +1,8 @@
+  /*
+  * AI Assistance Disclosure
+  * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+  * Scope (AI-65): Added type definitions for recommended errands
+  */
 export type ErrandDraft = {
   supplierId: string
   requiredItem: string

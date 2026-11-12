@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-61): Generated unit tests for WalletService, including scenarios for creating wallets, reserving and releasing credits, and transferring balances.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.service;
 
 import com.campuscouriers.credit.entity.Wallet;

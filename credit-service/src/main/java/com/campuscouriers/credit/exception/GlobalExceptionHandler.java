@@ -1,3 +1,9 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-10-21 to 2026-10-22
+ * Scope (AI-61): Generated the GlobalExceptionHandler class for the credit service
+*/
+
 package com.campuscouriers.credit.exception;
 
 import org.springframework.http.HttpStatus;

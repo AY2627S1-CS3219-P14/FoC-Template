@@ -1,3 +1,8 @@
+#  AI Assistance Disclosure
+#  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+#  Scope (AI-64): Generated the main FastAPI application file for the AI Errand Assistant Service, including CORS configuration, health check endpoint, and router inclusion.
+# Author review: Code changes were checked and validated
+
 import os
 
 from fastapi import FastAPI

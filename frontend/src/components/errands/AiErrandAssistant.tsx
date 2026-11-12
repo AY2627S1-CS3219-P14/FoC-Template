@@ -1,3 +1,9 @@
+//
+// AI Assistance Disclosure
+// Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+// Scope (AI-64): Generated the AiErrandAssistant component for the frontend, including state management, form handling, and API integration for drafting errands. 
+// Author review: Code changes were checked and validated
+
 import { 
   useEffect, 
   useRef, 

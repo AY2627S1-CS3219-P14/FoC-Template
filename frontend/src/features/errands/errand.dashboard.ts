@@ -6,6 +6,14 @@
  * Author review: Changes validated and confirmed.
  */
 
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-65): Added recommended errands UI into errand dashboard
+ * Author review: Code changes were checked and validated
+ */
+
+
 import { getSupplier, listSupplierBuildings } from '../suppliers/supplier.api'
 import type { Supplier, SupplierReference } from '../suppliers/supplier.types'
 import { listErrands, listRecommendedErrands } from './errand.api'

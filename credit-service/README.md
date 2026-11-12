@@ -1,3 +1,12 @@
+<!---
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-09 to 2026-11-10
+ * Scope (AI-63): Generated README for Credit service
+ * Author review: Changes made were checked and reviewed
+--->
+
+
+
 # Credit Service
 
 Spring Boot service for user credit wallets, credit reservations for errands, and transaction history. It uses PostgreSQL, validates JWT access tokens issued by User Service, consumes user registration events from Kafka, and publishes credit change events through a transactional outbox.

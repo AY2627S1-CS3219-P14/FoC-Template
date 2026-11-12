@@ -6,6 +6,14 @@
  * Author review: Changes validated and confirmed.
  */
 
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-65): Added tests for recommended errands show as intended in the dashboard page
+ * Author review: Code changes were checked and validated 
+ */
+
+
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

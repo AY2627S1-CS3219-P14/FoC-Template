@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-61): Generated tests for wallet-related endpoints, including validation of JWT tokens and retrieval of wallet balance and transaction history.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.controller;
 
 import com.campuscouriers.credit.dto.CreditRecordsResponse;

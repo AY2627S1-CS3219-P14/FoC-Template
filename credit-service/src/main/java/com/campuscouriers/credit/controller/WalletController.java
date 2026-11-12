@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-10-21 to 2026-11-06
+ * Scope (AI-61): Define API endpoints for wallet operations, including retrieving wallet balance and transaction history. Implement access control based on JWT authentication.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.controller;
 
 import com.campuscouriers.credit.dto.WalletBalanceResponse;

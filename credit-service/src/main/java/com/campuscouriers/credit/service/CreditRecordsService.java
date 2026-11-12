@@ -1,3 +1,12 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-06
+ * Scope (AI-62): Implement the Credit Records Service logic class for the credit service, where credit records are made after every change in credit and a way to get the credit history of a user.
+ * Author review: Code changes were checked and validated
+ */
+
+
+
 package com.campuscouriers.credit.service;
 
 import com.campuscouriers.credit.entity.CreditRecords;

@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-64): Generated the ai-assistant.api.ts file for the frontend, including API integration for drafting errands and error handling.
+ * Author review: Code changes were checked and validated
+ */
+
+
 import { authenticatedFetch } from '../auth/auth.fetch'
 
 const aiAssistantApiBaseUrl = (import.meta.env.VITE_AI_ASSISTANT_API_URL ?? '')

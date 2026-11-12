@@ -1601,3 +1601,281 @@ team subsequently reviewed and edited the retained seed CSV.
 
 CSV note: no file-header comment was added because the importer requires the exact CSV header as
 the first row and CSV has no safe comment syntax. This entry provides the file-level attribution.
+
+
+AI usage log
+
+
+
+## Contributor note · Tan Ye Xin (AI-61 to AI-65)
+
+
+
+
+I used Anthropic Claude to generate code for the entries below. These sessions were not saved, so the exact prompts and model versions are unavailable. Each entry lists reconstructed prompt gists that summarize the kinds of requests I made. They are not verbatim. File lists come from my commits for each period.
+
+
+
+
+## AI-61 Credit Service implementation
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate and test
+- **Date** — 2026-10-20 to 2026-11-10
+- **Key response** — Generated the entities and services the performs the credit operations I specified, as well as querying if my entity designs was well suited for credit service, plus tests to ensure that the features are working as intended. Helped debug issues Kafka listener configuration issue that prevented me from listening to kafka
+
+
+
+
+**Commit evidence** — `
+fa1fd69` `6b61469` `c277ca5`
+
+
+
+
+**Affected files**
+
+
+
+
+- [`FoC-Template\.env.example`](FoC-Template\.env.example)
+- [`FoC-Template\credit-service\pom.xml`](FoC-Template\credit-service\pom.xml)
+- [`FoC-Template/credit-service/Dockerfile`](FoC-Template/credit-service/Dockerfile)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\CreditApplication.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\CreditApplication.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\config\SecurityConfig.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\config\SecurityConfig.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\controller\ReservationController.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\controller\ReservationController.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\controller\WalletController.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\controller\WalletController.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\AdjustReservationRequest.javaa`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\AdjustReservationRequest.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\ReservationResponse.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\ReservationResponse.java)
+- [`FoC-Template/credit-service/src/main/java/com/campuscouriers/credit/dto/CompleteReservationRequest.java`](FoC-Template/credit-service/src/main/java/com/campuscouriers/credit/dto/CompleteReservationRequest.java)
+- [`FoC-Template/credit-service/src/main/java/com/campuscouriers/credit/dto/ReserveCreditsRequest.java`](FoC-Template/credit-service/src/main/java/com/campuscouriers/credit/dto/ReserveCreditsRequest.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\WalletBalanceResponse.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\WalletBalanceResponse.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\Reservation.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\Reservation.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\ReservationStatus.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\ReservationStatus.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\Wallet.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\Wallet.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\WalletStatus.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\WalletStatus.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\UserRegisteredEvent.java`](FoC-Template\.env.example)
+- [`FoC-Template\.env.example`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\UserRegisteredEvent.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\UserRegisteredListener.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\UserRegisteredListener.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\ReservationRepository.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\ReservationRepository.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\WalletRepository.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\WalletRepository.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\service\ReservationService.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\service\ReservationService.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\service\WalletService.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\service\WalletService.java)
+- [`FoC-Template\credit-service\src\main\resources\application.properties`](FoC-Template\credit-service\src\main\resources\application.properties)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\controller\ReservationControllerTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\controller\ReservationControllerTests.java)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\controller\WalletControllerTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\controller\WalletControllerTests.java)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\dto\CreditRecordsResponseTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\dto\CreditRecordsResponseTests.java)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\event\CreditEventTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\event\CreditEventTests.java)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\service\CreditRecordsServiceTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\service\CreditRecordsServiceTests.java)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\service\ReservationServiceTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\service\ReservationServiceTests.java)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\service\WalletServiceTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\service\WalletServiceTests.java)
+
+
+
+
+**Prompt availability** — Sessions were not saved. The gists below are reconstructed and are not verbatim.
+
+
+
+
+**Reconstructed prompt gists**
+
+
+
+
+- Generate the given entities, exceptions, controllers, and dtos and add the added dependencies as well
+- Add authentcation so only an authenticated user can access credit service
+- Implement the wallet and reservation service based on the cases `reserved`, `released`, `transferred` and `received`
+- How to implement the `user.registered` listener for credit service
+- Generate test cases for credit service
+- Why cant i receive `user.registered` even though user service is successfully publishing the event
+- How to containerize the service
+
+
+
+
+
+
+## AI-62 Implemented Credit transaction History and credit record events
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate and test
+- **Date** — 2026-11-06 to 2026-11-10
+- **Key response** — Added credit transaction history and implemented the UI for transaction history page, and made credit record events and the associated publisher to publish events wehenver there is a change in credits
+
+
+
+
+**Commit evidence** — `
+  4b0df16` `4939e1a`
+
+
+
+
+**Affected files**
+
+
+
+
+- [`FoC-Template\credit-service\pom.xml`](FoC-Template\credit-service\pom.xml)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\config\SecurityConfig.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\config\SecurityConfig.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\controller\WalletController.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\controller\WalletController.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\CreditRecordsResponse.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\dto\CreditRecordsResponse.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\CreditRecords.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\CreditRecords.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\OutboxEvent.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\entity\OutboxEvent.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\CreditChangedEvent.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\CreditChangedEvent.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\CreditEventPublisher.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\event\CreditEventPublisher.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\CreditRecordsRepository.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\CreditRecordsRepository.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\OutboxEventRepository.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\repository\OutboxEventRepository.java)
+- [`FoC-Template/credit-service/src/main/java/com/campuscouriers/credit/service/CreditRecordsService.java`](FoC-Template/credit-service/src/main/java/com/campuscouriers/credit/service/CreditRecordsService.java)
+- [`FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\service\ReservationService.java`](FoC-Template\credit-service\src\main\java\com\campuscouriers\credit\service\ReservationService.java)
+- [`FoC-Template/debezium/connectors/credit-outbox.json`](FoC-Template/debezium/connectors/credit-outbox.json)
+- [`FoC-Template\frontend\src\App.tsx`](FoC-Template\frontend\src\App.tsx)
+- [`FoC-Template\frontend\src\components\layout\MobileBottomNav.tsx`](FoC-Template\frontend\src\components\layout\MobileBottomNav.tsxe)
+- [`FoC-Template\frontend\src\components\layout\Sidebar.tsx`](FoC-Template\frontend\src\components\layout\Sidebar.tsx)
+- [`FoC-Template\frontend\src\pages\CreditHistoryPage.tsx`](FoC-Template\frontend\src\pages\CreditHistoryPage.tsx)
+
+
+
+
+**Reconstructed prompt gists**
+
+
+
+
+- Make the UI of credit transaction history. With the stated API endpoint, add a page for it, where navigation to the page will be in the side bar below supplier
+- Generate the credit record entity provided, and make it such that every time there is a change in credits in the wallet, a credit record is made and cannot be updated, where each record has the status `released`, `transferreed`, `reserved` and `received`
+- How to implement the event publisher for credit service so that credit records can be sent out
+
+
+
+
+
+
+
+
+
+
+## AI-63 Updated READMEs for credit service and debezium
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate
+- **Date** — 2026-11-08 - 2026-11-09
+- **Key response** — Gave READMEs for the services, with different API endpoints and events by credit service explained inside
+
+
+
+
+**Commit evidence** — `
+ fd43124` `c277ca5`
+
+
+
+
+**Affected files**
+
+
+
+
+- [`FoC-Template/debezium/README.md`](FoC-Template/debezium/README.md)
+- [`FoC-Template\credit-service\README.md`](FoC-Template\credit-service\README.md)
+- [`FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\CreditApplicationTests.java`](FoC-Template\credit-service\src\test\java\com\campuscouriers\credit\CreditApplicationTests.java)
+ 
+**Reconstructed prompt gists**
+
+
+
+
+- Generate the READMEs for credit service, not changing the order credit integration part
+- Generate events in the debezium README that is associated with debezium
+- Check the README matches the credit service code
+
+
+
+
+## AI-64 Implemeted AI Errand Assistance Service
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate
+- **Date** — 2026-11-09 to 2026-11-11
+- **Key response** — Implemented the AI Errand assistance service, and fixed bugs where suppliers and buildings may be arbitarily given even when not insdie the given query by user, with an added message so that couriers will always be asked to text the requesters in the instruction field, Configuring such that the output in the text fields do not contain random words
+
+
+
+
+**Commit evidence** — `
+df1bca0``c59756a` `fc3aed6` `80727b2` `c5c013e`
+**Affected files**
+
+
+
+
+- [`FoC-Template\.env.example`](FoC-Template\.env.example)
+- [`FoC-Template\ai-errand-assistant-service\Dockerfile`](FoC-Template\ai-errand-assistant-service\Dockerfile)
+- [`FoC-Template\ai-errand-assistant-service\main\app.py`](FoC-Template\ai-errand-assistant-service\main\app.py)
+- [`FoC-Template\ai-errand-assistant-service\main\integrations.py`](FoC-Template\ai-errand-assistant-service\main\integrations.py)
+- [`FoC-Template\ai-errand-assistant-service\main\llm.py`](FoC-Template\ai-errand-assistant-service\main\llm.py)
+- [`FoC-Template\ai-errand-assistant-service\main\ratelimit.py`](FoC-Template\ai-errand-assistant-service\main\ratelimit.py)
+- [`FoC-Template\ai-errand-assistant-service\main\routes.py`](FoC-Template\ai-errand-assistant-service\main\routes.py)
+- [`FoC-Template/ai-errand-assistant-service/main/schemas.py`](FoC-Template/ai-errand-assistant-service/main/schemas.py)
+- [`FoC-Template\ai-errand-assistant-service\requirements.txt`](FoC-Template\ai-errand-assistant-service\requirements.txt)
+- [`FoC-Template\ai-errand-assistant-service\test\test_auth.py`](FoC-Template\ai-errand-assistant-service\test\test_auth.py)
+- [`FoC-Template\ai-errand-assistant-service\test\test_integrations.py`](FoC-Template\ai-errand-assistant-service\test\test_integrations.py)
+- [`FoC-Template\ai-errand-assistant-service\test\test_llm.py`](FoC-Template\ai-errand-assistant-service\test\test_llm.py)
+- [`FoC-Template\ai-errand-assistant-service\test\test_ratelimit.py`](FoC-Template\ai-errand-assistant-service\test\test_ratelimit.py)
+- [`FoC-Template\ai-errand-assistant-service\test\test_routes.py`](FoC-Template\ai-errand-assistant-service\test\test_routes.py)
+- [`FoC-Template\ai-errand-assistant-service\README.md`](FoC-Template\ai-errand-assistant-service\README.md)
+- [`FoC-Template\frontend\src\components\errands\AiErrandAssistant.tsx`](FoC-Template\frontend\src\components\errands\AiErrandAssistant.tsx)
+- [`FoC-Template\frontend\src\features\ai-assistant\ai-assistant.api.ts`](FoC-Template\frontend\src\features\ai-assistant\ai-assistant.api.ts)
+- [`FoC-Template\frontend\src\pages\CreateErrandPage.tsx`](FoC-Template\frontend\src\pages\CreateErrandPage.tsx)
+- [`FoC-Template\frontend\src\vite-env.d.ts`](FoC-Template\frontend\src\vite-env.d.ts)
+
+
+
+
+ **Reconstructed prompt gists**
+
+
+
+
+- Make a AI errand asssitance service, where the user gives a single line input, then llm parse the information and fill in the appropriate fields in the create errand page. Credits output is based on the users past completed errands and a rule based sorting mechanism where time nearer to deadline will be have more credits
+- Implement the ui for this, such that theres a button at the bottom right of the screen, anad when it is pressed a text field appears for the user to key in
+- Sometimes the pickup date and time is set and other times its empty even when date and time is provided, fix it
+- Why are random suppliers sometimes set when I send "Get milo to com2 by 1pm today"
+
+
+
+
+## AI-65 Allowed users to view recommended errands
+- **Source and mode** — Anthropic Claude (model unrecorded). Generate and test
+- **Date** — 2026-11-09 to 2026-11-10
+- **Key response** — Implemented recommended errands, where the errands are recommended based on the rules set, displaying in the main errand page for the user to choose from
+
+
+
+
+**Commit evidence** — `
+ 3b3d12d` `267230a`
+
+
+
+
+**Affected files**
+
+
+
+
+- [`FoC-Template\order-service\main\recommendations\__init__.py`](FoC-Template\order-service\main\recommendations\__init__.py)
+- [`FoC-Template\order-service\README.md`](FoC-Template\order-service\README.md)
+- [`FoC-Template\order-service\main\recommendations\routes.py`](FoC-Template\order-service\main\recommendations\routes.py)
+- [`FoC-Template\order-service\main\recommendations\scoring.py`](FoC-Template\order-service\main\recommendations\scoring.py)
+- [`FoC-Template\order-service\test\test_recommend_errands.py`](FoC-Template\order-service\test\test_recommend_errands.py)
+- [`FoC-Template\frontend\src\features\errands\errand.api.ts`](FoC-Template\frontend\src\features\errands\errand.api.ts)
+- [`FoC-Template\frontend\src\features\errands\errand.api.test.ts`](FoC-Template\frontend\src\features\errands\errand.api.test.ts)
+- [`FoC-Template\frontend\src\features\errands\errand.dashboard.test.ts`](FoC-Template\frontend\src\features\errands\errand.dashboard.test.ts)
+- [`FoC-Template\frontend\src\features\errands\errand.dashboard.ts`](FoC-Template\frontend\src\features\errands\errand.dashboard.ts)
+- [`FoC-Template\frontend\src\features\errands\errand.types.ts`](FoC-Template\frontend\src\features\errands\errand.types.ts)
+- [`FoC-Template\frontend\src\pages\DashboardPage.test.tsx`](FoC-Template\frontend\src\pages\DashboardPage.test.tsx)
+- [`FoC-Template\frontend\src\pages\DashboardPage.tsx`](FoC-Template\frontend\src\pages\DashboardPage.tsx)
+
+
+
+
+**Reconstructed prompt gists**
+
+- I want to make so that users can see recommended errands, wehre errands are recommended based on the with priority score stated in descending order user's completed errands (3), credit value (2), and expiry time (1)
+- Generate the UI for recommended errands
+- Generate tests for the frontend
+- Generate test cases in order service

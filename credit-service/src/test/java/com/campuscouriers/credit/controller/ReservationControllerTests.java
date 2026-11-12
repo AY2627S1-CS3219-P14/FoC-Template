@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-61): Generated tests for reservation-related endpoints and validation of service key and user ownership.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.controller;
 
 import com.campuscouriers.credit.dto.AdjustReservationRequest;

@@ -1,3 +1,9 @@
+
+#  AI Assistance Disclosure
+#  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+#  Scope (AI-64): Generated unit tests for the authentication module of the AI Errand Assistant Service
+#  Author review: Code changes were checked and validated
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 

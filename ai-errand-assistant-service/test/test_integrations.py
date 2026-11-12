@@ -1,3 +1,9 @@
+#  AI Assistance Disclosure
+#  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+#  Scope (AI-64): Generated unit tests for integration functions of the AI Errand Assistant Service, including supplier catalog and completed errand history fetching.
+#  Author review: Code changes were checked and validated
+
+
 import asyncio
 from uuid import UUID
 

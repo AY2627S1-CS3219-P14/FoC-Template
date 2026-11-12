@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-61): Generated unit tests for ReservationService, including scenarios for reserving, adjusting, releasing, and completing reservations
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.service;
 
 import com.campuscouriers.credit.dto.ReservationResponse;

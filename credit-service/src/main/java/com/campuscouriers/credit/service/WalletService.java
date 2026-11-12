@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-10-21 to 2026-10-22
+ * Scope (AI-61): Implement the Wallet Service logic for the credit service, including methods for managing user wallets and handling user's credits.
+ * Author review: Code changes were checked and validated
+*/
+
 package com.campuscouriers.credit.service;
 
 import com.campuscouriers.credit.entity.Wallet;

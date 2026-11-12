@@ -9,6 +9,10 @@
  * AI Assistance Disclosure:
  * Tool: OpenAI Codex (GPT-5), date: 2026-11-10
  * Scope: Implementation, refactoring, and test assistance for the recorded frontend work.
+ * AI Assistance Disclosure:
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-62): Added the credit transaction history section in the side bar
+ * Author review: Code changes were checked and validated
  */
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'

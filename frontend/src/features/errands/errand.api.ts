@@ -6,6 +6,14 @@
  * Author review: Changes validated and confirmed.
  */
 
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-65): Added recommended errands api calls for frontend
+ * Author review: Code changes were checked and validated
+ */
+
+
 import { authenticatedFetch } from '../auth/auth.fetch'
 import type {
   AcceptErrandResponse,

@@ -6,6 +6,14 @@
  * Author review: Changes validated and confirmed.
  */
 
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-65): Added tests for recommended errands 
+ * Author review: Code changes were checked and validated
+ */
+
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { authenticatedFetch } from '../auth/auth.fetch'
 import {

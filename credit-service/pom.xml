@@ -14,6 +14,14 @@ Usage log: AI_USAGE_LOG.md
 Author review: Pending confirmation by Melodi Joy Halim.
 -->
 
+<!---
+ AI Assistance Disclosure
+ Tool: Anthropic Claude (model unrecorded), date: 2026-10-20 to 2026-11-10
+ Scope: Added additional dependencies after the initial project setup, including Spring Boot and PostgreSQL dependencies.
+ Author review: Changes made to dependencies was checked.
+ -->
+
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>

@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-10-21 to 2026-10-22
+ * Scope (AI-61): Define API endpoints for credit reservations, including reserve, adjust, release, and complete operations. Implement access control based on JWT authentication and service key validation.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.controller;
 
 import com.campuscouriers.credit.dto.CompleteReservationRequest;

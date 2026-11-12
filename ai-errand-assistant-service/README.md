@@ -1,3 +1,11 @@
+<!---
+  AI Assistance Disclosure
+  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+  Scope (AI-64): Generated README for the ai errand assistance service
+  Author review: Code changes were checked and validated
+--->
+
+
 # AI Errand Assistant Service
 
 This FastAPI service turns a short natural-language request into a **draft** for
@@ -87,7 +95,7 @@ mistaken for 2 o'clock). The backend then checks the LLM did not invent one:
   `deadline`, `no later than`, `at`). After `at`, only a time directly following
   it counts, since "at" usually introduces a place. A time without am/pm (for
   example "by 5") may mean either 05:00 or 17:00; the LLM chooses, preferring
-  09:00–20:59. The LLM decides the date from the wording ("tmr", "friday", "on the 11th";
+  09:00ï¿½20:59. The LLM decides the date from the wording ("tmr", "friday", "on the 11th";
   if no day is given it uses today), and the deadline is left unset if it has
   already passed.
 - **Relative deadlines** ("in 1h", "within 30 mins", "an hour from now", "in half an

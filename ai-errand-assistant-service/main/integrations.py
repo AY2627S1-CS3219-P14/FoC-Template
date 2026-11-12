@@ -1,3 +1,9 @@
+#  AI Assistance Disclosure
+#  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+#  Scope (AI-64): Generated the main FastAPI application file for the AI Errand Assistant Service
+#  Author review: Code changes were checked and validated
+
+
 import asyncio
 import os
 import time

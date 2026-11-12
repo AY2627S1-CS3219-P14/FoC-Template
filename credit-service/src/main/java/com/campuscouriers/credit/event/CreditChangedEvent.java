@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-06 to 2026-11-09
+ * Scope (AI-62): Generated the CreditChangedEvent class for the credit service, including static methods to determine the Kafka topic for a given change type and to create an event from CreditRecords and Wallet entities.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.event;
 
 import com.campuscouriers.credit.entity.CreditRecords;

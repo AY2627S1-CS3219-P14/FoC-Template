@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-10-21 to 2026-11-06
+ * Scope (AI-61): Implement the Reservation Service logic for the credit service, including methods for reserving, adjusting, releasing and transferring credit.
+ * Author review: Code changes were checked and validated
+*/
+
 package com.campuscouriers.credit.service;
 
 import com.campuscouriers.credit.dto.ReservationResponse;

@@ -1,3 +1,9 @@
+#  AI Assistance Disclosure
+#  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+#  Scope (AI-64): Generated the LLM integration, request parsing, and error handling.
+#  Author review: Code changes were checked and validated
+
+
 import json
 import os
 from datetime import datetime

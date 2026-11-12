@@ -3,6 +3,10 @@
 # Scope: Implementation, debugging, refactoring, and test assistance for Order Service modules.
 # Author review: I reviewed, adapted, and tested the code. Architecture and decision-rationale assistance is not attributed.
 
+# AI Assistance Disclosure
+# Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+# Scope (AI-65): Added rule-based scoring of open errands for one user, including scoring based on supplier familiarity, building familiarity, credit value, and urgency. Implemented ranking of errands based on scores and additional criteria.
+# Author review: Code changes were checked and validated
 """Rule-based ranking of open errands for one user.
 
 Kept free of database and HTTP code so the rules are easy to read and test.

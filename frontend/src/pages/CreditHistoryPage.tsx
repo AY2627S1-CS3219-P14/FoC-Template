@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+ * Scope (AI-62): Implemented credit transaction history page
+ * Author review: Code changes were checked and validated
+ */
+
+
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { getTransactionHistory } from '../features/credits/credit.api'

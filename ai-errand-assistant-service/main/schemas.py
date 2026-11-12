@@ -1,3 +1,8 @@
+#  AI Assistance Disclosure
+#  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+#  Scope (AI-64): Generated the Pydantic schemas for the AI Errand Assistant Service, including request and response models, candidate representations, and LLM extraction structures.
+#  Author review: Code changes were checked and validated
+
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID

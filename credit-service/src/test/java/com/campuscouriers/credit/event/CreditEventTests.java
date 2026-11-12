@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-62): Generated unit tests for credit event publishing and user registration event handling, including validation of outbox event creation and wallet creation.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.event;
 
 import com.campuscouriers.credit.entity.CreditRecordsType;

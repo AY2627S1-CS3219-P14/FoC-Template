@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-06
+ * Scope (AI-61): Generated the Wallet entity for the credit service
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.entity;
 
 import jakarta.persistence.Column;

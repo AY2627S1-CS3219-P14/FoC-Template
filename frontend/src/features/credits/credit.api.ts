@@ -1,3 +1,11 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-62): Added the credit transaction history API endpoint in the frontend to allow for fetching and displaying the user's credit transaction history
+ * Author review: Code changes were checked and validated
+ */
+
+
 import { authenticatedFetch } from '../auth/auth.fetch'
 import type {
   CreditHistoryPage,

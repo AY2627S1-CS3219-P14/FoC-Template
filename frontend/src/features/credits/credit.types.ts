@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-10
+ * Scope (AI-62): Added type definitions for wallet balance and credit transaction history.
+ * Author review: Code changes were checked and validated
+ */
+
 export type WalletBalanceResponse = {
   availableBalance: number
 }

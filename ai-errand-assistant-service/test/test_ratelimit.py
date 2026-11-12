@@ -1,3 +1,8 @@
+#  AI Assistance Disclosure
+#  Tool: Anthropic Claude (model unrecorded), date: 2026-11-10 to 2026-11-11
+#  Scope (AI-64): Generated unit tests for the rate limiting logic of the AI Errand Assistant Service, including request counting, window sliding, and per-user enforcement.
+#  Author review: Code changes were checked and validated
+
 import pytest
 from fastapi import HTTPException
 

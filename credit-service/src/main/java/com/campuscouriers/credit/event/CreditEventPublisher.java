@@ -1,3 +1,10 @@
+/*
+ * AI Assistance Disclosure
+ * Tool: Anthropic Claude (model unrecorded), date: 2026-11-06
+ * Scope (AI-62): Generated the CreditEventPublisher class for the credit service, methods to publish credit change events through the transactional outbox.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.event;
 
 import com.campuscouriers.credit.entity.OutboxEvent;

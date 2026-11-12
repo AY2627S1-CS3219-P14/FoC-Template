@@ -6,6 +6,13 @@
  * Author review: Pending confirmation by Melodi Joy Halim.
  */
 
+/*
+ * AI Assistance Disclosure
+ * Tool and date: Anthropic Claude (model unrecorded), 2026-10-21 to 2026-11-06
+ * Scope (AI-61): Ensure only authenticated users can access the /api/wallets and /api/reservations endpoints, and configure CORS for the /api/wallets endpoint.
+ * Author review: Code changes were checked and validated
+ */
+
 package com.campuscouriers.credit.config;
 
 import org.springframework.context.annotation.Bean;
